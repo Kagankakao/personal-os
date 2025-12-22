@@ -1,0 +1,19 @@
+﻿  Determining projects to restore...
+  All projects are up-to-date for restore.
+C:\Users\ariba\OneDrive\Documenti\Software Projects\AI Projects\personal-os\personal-os\KeganOS\App.xaml.cs(11,28): error CS0104: 'Application' is an ambiguous reference between 'System.Windows.Forms.Application' and 'System.Windows.Application' [C:\Users\ariba\OneDrive\Documenti\Software Projects\AI Projects\personal-os\personal-os\KeganOS\KeganOS_llye1m5x_wpftmp.csproj]
+C:\Users\ariba\OneDrive\Documenti\Software Projects\AI Projects\personal-os\personal-os\KeganOS\Infrastructure\AI\GeminiProvider.cs(68,80): error CS0104: 'ChatMessage' is an ambiguous reference between 'KeganOS.Core.Interfaces.ChatMessage' and 'Mscc.GenerativeAI.ChatMessage' [C:\Users\ariba\OneDrive\Documenti\Software Projects\AI Projects\personal-os\personal-os\KeganOS\KeganOS_llye1m5x_wpftmp.csproj]
+C:\Users\ariba\OneDrive\Documenti\Software Projects\AI Projects\personal-os\personal-os\KeganOS\Infrastructure\AI\GeminiProvider.cs(11,31): error CS0535: 'GeminiProvider' does not implement interface member 'IAIProvider.GenerateResponseAsync(string, IEnumerable<ChatMessage>?)' [C:\Users\ariba\OneDrive\Documenti\Software Projects\AI Projects\personal-os\personal-os\KeganOS\KeganOS_llye1m5x_wpftmp.csproj]
+C:\Users\ariba\OneDrive\Documenti\Software Projects\AI Projects\personal-os\personal-os\KeganOS\Infrastructure\Services\PixelaService.cs(16,22): error CS0246: The type or namespace name 'HttpClient' could not be found (are you missing a using directive or an assembly reference?) [C:\Users\ariba\OneDrive\Documenti\Software Projects\AI Projects\personal-os\personal-os\KeganOS\KeganOS_llye1m5x_wpftmp.csproj]
+
+Build FAILED.
+
+C:\Users\ariba\OneDrive\Documenti\Software Projects\AI Projects\personal-os\personal-os\KeganOS\App.xaml.cs(11,28): error CS0104: 'Application' is an ambiguous reference between 'System.Windows.Forms.Application' and 'System.Windows.Application' [C:\Users\ariba\OneDrive\Documenti\Software Projects\AI Projects\personal-os\personal-os\KeganOS\KeganOS_llye1m5x_wpftmp.csproj]
+C:\Users\ariba\OneDrive\Documenti\Software Projects\AI Projects\personal-os\personal-os\KeganOS\Infrastructure\AI\GeminiProvider.cs(68,80): error CS0104: 'ChatMessage' is an ambiguous reference between 'KeganOS.Core.Interfaces.ChatMessage' and 'Mscc.GenerativeAI.ChatMessage' [C:\Users\ariba\OneDrive\Documenti\Software Projects\AI Projects\personal-os\personal-os\KeganOS\KeganOS_llye1m5x_wpftmp.csproj]
+C:\Users\ariba\OneDrive\Documenti\Software Projects\AI Projects\personal-os\personal-os\KeganOS\Infrastructure\AI\GeminiProvider.cs(11,31): error CS0535: 'GeminiProvider' does not implement interface member 'IAIProvider.GenerateResponseAsync(string, IEnumerable<ChatMessage>?)' [C:\Users\ariba\OneDrive\Documenti\Software Projects\AI Projects\personal-os\personal-os\KeganOS\KeganOS_llye1m5x_wpftmp.csproj]
+C:\Users\ariba\OneDrive\Documenti\Software Projects\AI Projects\personal-os\personal-os\KeganOS\Infrastructure\Services\PixelaService.cs(16,22): error CS0246: The type or namespace name 'HttpClient' could not be found (are you missing a using directive or an assembly reference?) [C:\Users\ariba\OneDrive\Documenti\Software Projects\AI Projects\personal-os\personal-os\KeganOS\KeganOS_llye1m5x_wpftmp.csproj]
+    0 Warning(s)
+    4 Error(s)
+
+Time Elapsed 00:00:01.24
+
+Workload updates are available. Run `dotnet workload list` for more information.

@@ -1,0 +1,10 @@
+2025-12-22 01:05:17.082 [INF] : KeganOS starting up...
+2025-12-22 01:05:17.134 [DBG] : Configuring services...
+2025-12-22 01:05:17.134 [DBG] : Services configured successfully
+2025-12-22 01:05:17.158 [DBG] Microsoft.Extensions.Hosting.Internal.Host: Hosting starting
+2025-12-22 01:05:17.167 [INF] Microsoft.Hosting.Lifetime: Application started. Press Ctrl+C to shut down.
+2025-12-22 01:05:17.170 [INF] Microsoft.Hosting.Lifetime: Hosting environment: Production
+2025-12-22 01:05:17.170 [INF] Microsoft.Hosting.Lifetime: Content root path: C:\Users\ariba\OneDrive\Documenti\Software Projects\AI Projects\personal-os\personal-os\KeganOS\bin\Debug\net9.0-windows
+2025-12-22 01:05:17.171 [DBG] Microsoft.Extensions.Hosting.Internal.Host: Hosting started
+2025-12-22 01:05:17.387 [INF] KeganOS.MainWindow: MainWindow initialized
+2025-12-22 01:05:17.492 [INF] : Main window displayed
