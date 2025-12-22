@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("KeganOS")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+9ba751de29a17615ecfe033736aebf8536121be6")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+5770bcf261d11bdefa58f99464b7323ba0437f57")]
 [assembly: System.Reflection.AssemblyProductAttribute("KeganOS")]
 [assembly: System.Reflection.AssemblyTitleAttribute("KeganOS")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

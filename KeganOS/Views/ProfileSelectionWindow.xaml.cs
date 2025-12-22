@@ -27,8 +27,18 @@ public partial class ProfileSelectionWindow : System.Windows.Window
     private async void LoadProfiles()
     {
         _logger.Debug("Loading user profiles...");
-        var users = await _userService.GetAllUsersAsync();
-        ProfileList.ItemsSource = users;
+        
+        try
+        {
+            var users = await _userService.GetAllUsersAsync();
+            ProfileList.ItemsSource = users;
+        }
+        catch (System.Exception ex)
+        {
+            _logger.Error(ex, "Failed to load profiles");
+            System.Windows.MessageBox.Show($"Failed to load profiles: {ex.Message}", "Error",
+                System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+        }
     }
 
     private void TitleBar_MouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
@@ -47,14 +57,24 @@ public partial class ProfileSelectionWindow : System.Windows.Window
         if (sender is System.Windows.Controls.Border border && border.Tag is int userId)
         {
             _logger.Information("User selected: {UserId}", userId);
-            SelectedUser = await _userService.GetUserByIdAsync(userId);
             
-            if (SelectedUser != null)
+            try
             {
-                // Update last login
-                await _userService.UpdateUserAsync(SelectedUser);
-                DialogResult = true;
-                Close();
+                SelectedUser = await _userService.GetUserByIdAsync(userId);
+                
+                if (SelectedUser != null)
+                {
+                    // Update last login
+                    await _userService.UpdateUserAsync(SelectedUser);
+                    DialogResult = true;
+                    Close();
+                }
+            }
+            catch (System.Exception ex)
+            {
+                _logger.Error(ex, "Failed to load user {UserId}", userId);
+                System.Windows.MessageBox.Show($"Failed to load profile: {ex.Message}", "Error",
+                    System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
             }
         }
     }
