@@ -19,6 +19,9 @@ public partial class App : System.Windows.Application
     {
         base.OnStartup(e);
         
+        // IMPORTANT: Prevent app from auto-closing when dialog closes
+        ShutdownMode = System.Windows.ShutdownMode.OnExplicitShutdown;
+        
         // Configure Serilog
         Log.Logger = new LoggerConfiguration()
             .MinimumLevel.Debug()
@@ -30,38 +33,57 @@ public partial class App : System.Windows.Application
 
         Log.Information("KeganOS starting up...");
 
-        // Configure Host with DI
-        _host = Host.CreateDefaultBuilder()
-            .UseSerilog()
-            .ConfigureServices((context, services) =>
+        try
+        {
+            // Configure Host with DI
+            _host = Host.CreateDefaultBuilder()
+                .UseSerilog()
+                .ConfigureServices((context, services) =>
+                {
+                    ConfigureServices(services);
+                })
+                .Build();
+
+            _host.Start();
+
+            // Initialize database
+            var db = _host.Services.GetRequiredService<AppDbContext>();
+            db.Initialize();
+            Log.Information("Database initialized");
+
+            // Show profile selection first
+            var userService = _host.Services.GetRequiredService<IUserService>();
+            var profileWindow = new ProfileSelectionWindow(userService);
+            
+            if (profileWindow.ShowDialog() == true && profileWindow.SelectedUser != null)
             {
-                ConfigureServices(services);
-            })
-            .Build();
-
-        _host.Start();
-
-        // Initialize database
-        var db = _host.Services.GetRequiredService<AppDbContext>();
-        db.Initialize();
-        Log.Information("Database initialized");
-
-        // Show profile selection first
-        var userService = _host.Services.GetRequiredService<IUserService>();
-        var profileWindow = new ProfileSelectionWindow(userService);
-        
-        if (profileWindow.ShowDialog() == true && profileWindow.SelectedUser != null)
-        {
-            // User selected, open main window
-            var mainWindow = new MainWindow();
-            mainWindow.SetCurrentUser(profileWindow.SelectedUser);
-            mainWindow.Show();
-            Log.Information("Main window displayed for user: {User}", profileWindow.SelectedUser.DisplayName);
+                // User selected, open main window with services
+                var kegomoDoroService = _host.Services.GetRequiredService<IKegomoDoroService>();
+                var journalService = _host.Services.GetRequiredService<IJournalService>();
+                var pixelaService = _host.Services.GetRequiredService<IPixelaService>();
+                
+                var mainWindow = new MainWindow(kegomoDoroService, journalService, pixelaService);
+                mainWindow.SetCurrentUser(profileWindow.SelectedUser);
+                
+                // Set as main window and switch shutdown mode
+                MainWindow = mainWindow;
+                ShutdownMode = System.Windows.ShutdownMode.OnMainWindowClose;
+                
+                mainWindow.Show();
+                Log.Information("Main window displayed for user: {User}", profileWindow.SelectedUser.DisplayName);
+            }
+            else
+            {
+                // No user selected, shutdown
+                Log.Information("No user selected, shutting down");
+                Shutdown();
+            }
         }
-        else
+        catch (System.Exception ex)
         {
-            // No user selected, shutdown
-            Log.Information("No user selected, shutting down");
+            Log.Fatal(ex, "Application failed to start");
+            System.Windows.MessageBox.Show($"Failed to start: {ex.Message}", "Error", 
+                System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
             Shutdown();
         }
     }

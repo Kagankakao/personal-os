@@ -8,3 +8,176 @@
 2025-12-22 01:05:17.171 [DBG] Microsoft.Extensions.Hosting.Internal.Host: Hosting started
 2025-12-22 01:05:17.387 [INF] KeganOS.MainWindow: MainWindow initialized
 2025-12-22 01:05:17.492 [INF] : Main window displayed
+2025-12-22 12:15:19.995 [INF] : KeganOS starting up...
+2025-12-22 12:15:20.060 [DBG] : Configuring services...
+2025-12-22 12:15:20.060 [DBG] : Services configured successfully
+2025-12-22 12:15:20.088 [DBG] Microsoft.Extensions.Hosting.Internal.Host: Hosting starting
+2025-12-22 12:15:20.101 [INF] Microsoft.Hosting.Lifetime: Application started. Press Ctrl+C to shut down.
+2025-12-22 12:15:20.104 [INF] Microsoft.Hosting.Lifetime: Hosting environment: Production
+2025-12-22 12:15:20.105 [INF] Microsoft.Hosting.Lifetime: Content root path: C:\Users\ariba\OneDrive\Documenti\Software Projects\AI Projects\personal-os\personal-os\KeganOS\bin\Debug\net9.0-windows
+2025-12-22 12:15:20.105 [DBG] Microsoft.Extensions.Hosting.Internal.Host: Hosting started
+2025-12-22 12:15:20.106 [DBG] KeganOS.Infrastructure.Data.AppDbContext: Database path: keganos.db
+2025-12-22 12:15:20.108 [INF] KeganOS.Infrastructure.Data.AppDbContext: Initializing database...
+2025-12-22 12:15:20.148 [INF] KeganOS.Infrastructure.Data.AppDbContext: Database initialized successfully
+2025-12-22 12:15:20.150 [INF] : Database initialized
+2025-12-22 12:15:20.150 [DBG] KeganOS.Infrastructure.Services.UserService: UserService initialized
+2025-12-22 12:15:20.367 [INF] KeganOS.Views.ProfileSelectionWindow: ProfileSelectionWindow initialized
+2025-12-22 12:15:20.368 [DBG] KeganOS.Views.ProfileSelectionWindow: Loading user profiles...
+2025-12-22 12:15:20.369 [DBG] KeganOS.Infrastructure.Services.UserService: Fetching all users...
+2025-12-22 12:15:20.370 [INF] KeganOS.Infrastructure.Services.UserService: Found 0 users
+2025-12-22 12:15:25.741 [INF] KeganOS.Views.ProfileSelectionWindow: Opening profile creation...
+2025-12-22 12:15:25.762 [INF] KeganOS.Views.CreateProfileWindow: CreateProfileWindow initialized
+2025-12-22 12:15:40.435 [INF] KeganOS.Views.CreateProfileWindow: Validating journal file: C:\Users\ariba\OneDrive\Desktop\KAÆ[Æß#\KEGOMODORO\main\_internal\dependencies\texts\KAÆ[Æß#.txt
+2025-12-22 12:15:40.436 [INF] KeganOS.Views.CreateProfileWindow: Journal validation: 342 days, 311 times, 212 notes
+2025-12-22 12:15:46.897 [INF] KeganOS.Views.CreateProfileWindow: Creating user: kegan with symbol: negan, journal: KAÆ[Æß#.txt
+2025-12-22 12:15:46.898 [INF] KeganOS.Infrastructure.Services.UserService: Creating user: kegan
+2025-12-22 12:15:46.914 [INF] KeganOS.Infrastructure.Services.UserService: Created user 1: kegan
+2025-12-22 12:15:46.937 [DBG] KeganOS.Infrastructure.Services.KegomoDoroService: KEGOMODORO path: C:\Users\ariba\OneDrive\Documenti\Software Projects\AI Projects\personal-os\personal-os\KeganOS\bin\Debug\net9.0-windows\..\..\..\..\kegomodoro
+2025-12-22 12:15:46.937 [DBG] KeganOS.Infrastructure.Services.KegomoDoroService: Config path: C:\Users\ariba\OneDrive\Documenti\Software Projects\AI Projects\personal-os\personal-os\KeganOS\bin\Debug\net9.0-windows\..\..\..\..\kegomodoro\dependencies\texts\Configurations\configuration.csv
+2025-12-22 12:15:46.938 [DBG] KeganOS.Infrastructure.Services.JournalService: KEGOMODORO base path: C:\Users\ariba\OneDrive\Documenti\Software Projects\AI Projects\personal-os\personal-os\KeganOS\bin\Debug\net9.0-windows\..\..\..\..\kegomodoro
+2025-12-22 12:15:46.942 [DBG] KeganOS.Infrastructure.Services.PixelaService: PixelaService initialized
+2025-12-22 12:15:46.948 [INF] KeganOS.MainWindow: MainWindow initialized with services
+2025-12-22 12:15:46.949 [INF] KeganOS.MainWindow: User set: kegan
+2025-12-22 12:15:46.950 [DBG] KeganOS.MainWindow: Loading user data for kegan
+2025-12-22 12:15:46.952 [DBG] KeganOS.Infrastructure.Services.JournalService: Journal file path for user kegan: C:\Users\ariba\OneDrive\Documenti\Software Projects\AI Projects\personal-os\personal-os\KeganOS\bin\Debug\net9.0-windows\..\..\..\..\kegomodoro\dependencies\texts\KAÆ[Æß#.txt
+2025-12-22 12:15:46.952 [INF] KeganOS.Infrastructure.Services.JournalService: Reading journal entries from: C:\Users\ariba\OneDrive\Documenti\Software Projects\AI Projects\personal-os\personal-os\KeganOS\bin\Debug\net9.0-windows\..\..\..\..\kegomodoro\dependencies\texts\KAÆ[Æß#.txt
+2025-12-22 12:15:46.952 [WRN] KeganOS.Infrastructure.Services.JournalService: Journal file not found: C:\Users\ariba\OneDrive\Documenti\Software Projects\AI Projects\personal-os\personal-os\KeganOS\bin\Debug\net9.0-windows\..\..\..\..\kegomodoro\dependencies\texts\KAÆ[Æß#.txt
+2025-12-22 12:15:46.952 [INF] : Main window displayed for user: kegan
+2025-12-22 12:15:46.954 [INF] : Application shutting down...
+2025-12-22 12:15:46.955 [DBG] Microsoft.Extensions.Hosting.Internal.Host: Hosting stopping
+2025-12-22 12:15:46.955 [INF] Microsoft.Hosting.Lifetime: Application is shutting down...
+2025-12-22 12:15:46.956 [DBG] Microsoft.Extensions.Hosting.Internal.Host: Hosting stopped
+2025-12-22 12:30:05.635 [INF] : KeganOS starting up...
+2025-12-22 12:30:05.688 [DBG] : Configuring services...
+2025-12-22 12:30:05.688 [DBG] : Services configured successfully
+2025-12-22 12:30:05.712 [DBG] Microsoft.Extensions.Hosting.Internal.Host: Hosting starting
+2025-12-22 12:30:05.722 [INF] Microsoft.Hosting.Lifetime: Application started. Press Ctrl+C to shut down.
+2025-12-22 12:30:05.725 [INF] Microsoft.Hosting.Lifetime: Hosting environment: Production
+2025-12-22 12:30:05.725 [INF] Microsoft.Hosting.Lifetime: Content root path: C:\Users\ariba\OneDrive\Documenti\Software Projects\AI Projects\personal-os\personal-os\KeganOS\bin\Debug\net9.0-windows
+2025-12-22 12:30:05.725 [DBG] Microsoft.Extensions.Hosting.Internal.Host: Hosting started
+2025-12-22 12:30:05.726 [DBG] KeganOS.Infrastructure.Data.AppDbContext: Database path: keganos.db
+2025-12-22 12:30:05.728 [INF] KeganOS.Infrastructure.Data.AppDbContext: Initializing database...
+2025-12-22 12:30:05.745 [INF] KeganOS.Infrastructure.Data.AppDbContext: Database initialized successfully
+2025-12-22 12:30:05.746 [INF] : Database initialized
+2025-12-22 12:30:05.746 [DBG] KeganOS.Infrastructure.Services.UserService: UserService initialized
+2025-12-22 12:30:05.969 [INF] KeganOS.Views.ProfileSelectionWindow: ProfileSelectionWindow initialized
+2025-12-22 12:30:05.970 [DBG] KeganOS.Views.ProfileSelectionWindow: Loading user profiles...
+2025-12-22 12:30:05.970 [DBG] KeganOS.Infrastructure.Services.UserService: Fetching all users...
+2025-12-22 12:30:05.975 [INF] KeganOS.Infrastructure.Services.UserService: Found 1 users
+2025-12-22 12:30:07.070 [INF] KeganOS.Views.ProfileSelectionWindow: User selected: 1
+2025-12-22 12:30:07.071 [DBG] KeganOS.Infrastructure.Services.UserService: Fetching user 1...
+2025-12-22 12:30:07.074 [INF] KeganOS.Infrastructure.Services.UserService: Updating user 1: kegan
+2025-12-22 12:30:07.130 [DBG] KeganOS.Infrastructure.Services.KegomoDoroService: KEGOMODORO path: C:\Users\ariba\OneDrive\Documenti\Software Projects\AI Projects\personal-os\personal-os\KeganOS\bin\Debug\net9.0-windows\..\..\..\..\kegomodoro
+2025-12-22 12:30:07.130 [DBG] KeganOS.Infrastructure.Services.KegomoDoroService: Config path: C:\Users\ariba\OneDrive\Documenti\Software Projects\AI Projects\personal-os\personal-os\KeganOS\bin\Debug\net9.0-windows\..\..\..\..\kegomodoro\dependencies\texts\Configurations\configuration.csv
+2025-12-22 12:30:07.130 [DBG] KeganOS.Infrastructure.Services.JournalService: KEGOMODORO base path: C:\Users\ariba\OneDrive\Documenti\Software Projects\AI Projects\personal-os\personal-os\KeganOS\bin\Debug\net9.0-windows\..\..\..\..\kegomodoro
+2025-12-22 12:30:07.134 [DBG] KeganOS.Infrastructure.Services.PixelaService: PixelaService initialized
+2025-12-22 12:30:07.153 [INF] KeganOS.MainWindow: MainWindow initialized with services
+2025-12-22 12:30:07.153 [INF] KeganOS.MainWindow: User set: kegan
+2025-12-22 12:30:07.155 [DBG] KeganOS.MainWindow: Loading user data for kegan
+2025-12-22 12:30:07.156 [DBG] KeganOS.Infrastructure.Services.JournalService: Journal file path for user kegan: C:\Users\ariba\OneDrive\Documenti\Software Projects\AI Projects\personal-os\personal-os\KeganOS\bin\Debug\net9.0-windows\..\..\..\..\kegomodoro\dependencies\texts\KAÆ[Æß#.txt
+2025-12-22 12:30:07.156 [INF] KeganOS.Infrastructure.Services.JournalService: Reading journal entries from: C:\Users\ariba\OneDrive\Documenti\Software Projects\AI Projects\personal-os\personal-os\KeganOS\bin\Debug\net9.0-windows\..\..\..\..\kegomodoro\dependencies\texts\KAÆ[Æß#.txt
+2025-12-22 12:30:07.156 [WRN] KeganOS.Infrastructure.Services.JournalService: Journal file not found: C:\Users\ariba\OneDrive\Documenti\Software Projects\AI Projects\personal-os\personal-os\KeganOS\bin\Debug\net9.0-windows\..\..\..\..\kegomodoro\dependencies\texts\KAÆ[Æß#.txt
+2025-12-22 12:30:07.156 [INF] : Main window displayed for user: kegan
+2025-12-22 12:30:07.157 [INF] : Application shutting down...
+2025-12-22 12:30:07.158 [DBG] Microsoft.Extensions.Hosting.Internal.Host: Hosting stopping
+2025-12-22 12:30:07.158 [INF] Microsoft.Hosting.Lifetime: Application is shutting down...
+2025-12-22 12:30:07.158 [DBG] Microsoft.Extensions.Hosting.Internal.Host: Hosting stopped
+2025-12-22 12:30:12.609 [INF] : KeganOS starting up...
+2025-12-22 12:30:12.798 [DBG] : Configuring services...
+2025-12-22 12:30:12.799 [DBG] : Services configured successfully
+2025-12-22 12:30:12.832 [DBG] Microsoft.Extensions.Hosting.Internal.Host: Hosting starting
+2025-12-22 12:30:12.847 [INF] Microsoft.Hosting.Lifetime: Application started. Press Ctrl+C to shut down.
+2025-12-22 12:30:12.851 [INF] Microsoft.Hosting.Lifetime: Hosting environment: Production
+2025-12-22 12:30:12.852 [INF] Microsoft.Hosting.Lifetime: Content root path: C:\Users\ariba\OneDrive\Documenti\Software Projects\AI Projects\personal-os\personal-os\KeganOS\bin\Debug\net9.0-windows
+2025-12-22 12:30:12.852 [DBG] Microsoft.Extensions.Hosting.Internal.Host: Hosting started
+2025-12-22 12:30:12.853 [DBG] KeganOS.Infrastructure.Data.AppDbContext: Database path: keganos.db
+2025-12-22 12:30:12.867 [INF] KeganOS.Infrastructure.Data.AppDbContext: Initializing database...
+2025-12-22 12:30:12.912 [INF] KeganOS.Infrastructure.Data.AppDbContext: Database initialized successfully
+2025-12-22 12:30:12.914 [INF] : Database initialized
+2025-12-22 12:30:12.914 [DBG] KeganOS.Infrastructure.Services.UserService: UserService initialized
+2025-12-22 12:30:13.218 [INF] KeganOS.Views.ProfileSelectionWindow: ProfileSelectionWindow initialized
+2025-12-22 12:30:13.219 [DBG] KeganOS.Views.ProfileSelectionWindow: Loading user profiles...
+2025-12-22 12:30:13.220 [DBG] KeganOS.Infrastructure.Services.UserService: Fetching all users...
+2025-12-22 12:30:13.229 [INF] KeganOS.Infrastructure.Services.UserService: Found 1 users
+2025-12-22 12:30:17.554 [INF] : Application shutting down...
+2025-12-22 12:30:17.556 [DBG] Microsoft.Extensions.Hosting.Internal.Host: Hosting stopping
+2025-12-22 12:30:17.557 [INF] Microsoft.Hosting.Lifetime: Application is shutting down...
+2025-12-22 12:30:17.557 [DBG] Microsoft.Extensions.Hosting.Internal.Host: Hosting stopped
+2025-12-22 12:30:19.657 [INF] : KeganOS starting up...
+2025-12-22 12:30:19.817 [DBG] : Configuring services...
+2025-12-22 12:30:19.818 [DBG] : Services configured successfully
+2025-12-22 12:30:19.847 [DBG] Microsoft.Extensions.Hosting.Internal.Host: Hosting starting
+2025-12-22 12:30:19.859 [INF] Microsoft.Hosting.Lifetime: Application started. Press Ctrl+C to shut down.
+2025-12-22 12:30:19.862 [INF] Microsoft.Hosting.Lifetime: Hosting environment: Production
+2025-12-22 12:30:19.863 [INF] Microsoft.Hosting.Lifetime: Content root path: C:\Users\ariba\OneDrive\Documenti\Software Projects\AI Projects\personal-os\personal-os\KeganOS\bin\Debug\net9.0-windows
+2025-12-22 12:30:19.863 [DBG] Microsoft.Extensions.Hosting.Internal.Host: Hosting started
+2025-12-22 12:30:19.864 [DBG] KeganOS.Infrastructure.Data.AppDbContext: Database path: keganos.db
+2025-12-22 12:30:19.874 [INF] KeganOS.Infrastructure.Data.AppDbContext: Initializing database...
+2025-12-22 12:30:19.916 [INF] KeganOS.Infrastructure.Data.AppDbContext: Database initialized successfully
+2025-12-22 12:30:19.917 [INF] : Database initialized
+2025-12-22 12:30:19.917 [DBG] KeganOS.Infrastructure.Services.UserService: UserService initialized
+2025-12-22 12:30:20.153 [INF] KeganOS.Views.ProfileSelectionWindow: ProfileSelectionWindow initialized
+2025-12-22 12:30:20.154 [DBG] KeganOS.Views.ProfileSelectionWindow: Loading user profiles...
+2025-12-22 12:30:20.155 [DBG] KeganOS.Infrastructure.Services.UserService: Fetching all users...
+2025-12-22 12:30:20.160 [INF] KeganOS.Infrastructure.Services.UserService: Found 1 users
+2025-12-22 12:30:21.525 [INF] KeganOS.Views.ProfileSelectionWindow: User selected: 1
+2025-12-22 12:30:21.527 [DBG] KeganOS.Infrastructure.Services.UserService: Fetching user 1...
+2025-12-22 12:30:21.533 [INF] KeganOS.Infrastructure.Services.UserService: Updating user 1: kegan
+2025-12-22 12:30:21.567 [DBG] KeganOS.Infrastructure.Services.KegomoDoroService: KEGOMODORO path: C:\Users\ariba\OneDrive\Documenti\Software Projects\AI Projects\personal-os\personal-os\KeganOS\bin\Debug\net9.0-windows\..\..\..\..\kegomodoro
+2025-12-22 12:30:21.567 [DBG] KeganOS.Infrastructure.Services.KegomoDoroService: Config path: C:\Users\ariba\OneDrive\Documenti\Software Projects\AI Projects\personal-os\personal-os\KeganOS\bin\Debug\net9.0-windows\..\..\..\..\kegomodoro\dependencies\texts\Configurations\configuration.csv
+2025-12-22 12:30:21.568 [DBG] KeganOS.Infrastructure.Services.JournalService: KEGOMODORO base path: C:\Users\ariba\OneDrive\Documenti\Software Projects\AI Projects\personal-os\personal-os\KeganOS\bin\Debug\net9.0-windows\..\..\..\..\kegomodoro
+2025-12-22 12:30:21.592 [DBG] KeganOS.Infrastructure.Services.PixelaService: PixelaService initialized
+2025-12-22 12:30:21.602 [INF] KeganOS.MainWindow: MainWindow initialized with services
+2025-12-22 12:30:21.603 [INF] KeganOS.MainWindow: User set: kegan
+2025-12-22 12:30:21.604 [DBG] KeganOS.MainWindow: Loading user data for kegan
+2025-12-22 12:30:21.606 [DBG] KeganOS.Infrastructure.Services.JournalService: Journal file path for user kegan: C:\Users\ariba\OneDrive\Documenti\Software Projects\AI Projects\personal-os\personal-os\KeganOS\bin\Debug\net9.0-windows\..\..\..\..\kegomodoro\dependencies\texts\KAÆ[Æß#.txt
+2025-12-22 12:30:21.606 [INF] KeganOS.Infrastructure.Services.JournalService: Reading journal entries from: C:\Users\ariba\OneDrive\Documenti\Software Projects\AI Projects\personal-os\personal-os\KeganOS\bin\Debug\net9.0-windows\..\..\..\..\kegomodoro\dependencies\texts\KAÆ[Æß#.txt
+2025-12-22 12:30:21.606 [WRN] KeganOS.Infrastructure.Services.JournalService: Journal file not found: C:\Users\ariba\OneDrive\Documenti\Software Projects\AI Projects\personal-os\personal-os\KeganOS\bin\Debug\net9.0-windows\..\..\..\..\kegomodoro\dependencies\texts\KAÆ[Æß#.txt
+2025-12-22 12:30:21.606 [INF] : Main window displayed for user: kegan
+2025-12-22 12:30:21.607 [INF] : Application shutting down...
+2025-12-22 12:30:21.608 [DBG] Microsoft.Extensions.Hosting.Internal.Host: Hosting stopping
+2025-12-22 12:30:21.609 [INF] Microsoft.Hosting.Lifetime: Application is shutting down...
+2025-12-22 12:30:21.609 [DBG] Microsoft.Extensions.Hosting.Internal.Host: Hosting stopped
+2025-12-22 17:34:32.543 [INF] : KeganOS starting up...
+2025-12-22 17:34:32.691 [DBG] : Configuring services...
+2025-12-22 17:34:32.691 [DBG] : Services configured successfully
+2025-12-22 17:34:32.754 [DBG] Microsoft.Extensions.Hosting.Internal.Host: Hosting starting
+2025-12-22 17:34:32.782 [INF] Microsoft.Hosting.Lifetime: Application started. Press Ctrl+C to shut down.
+2025-12-22 17:34:32.790 [INF] Microsoft.Hosting.Lifetime: Hosting environment: Production
+2025-12-22 17:34:32.790 [INF] Microsoft.Hosting.Lifetime: Content root path: C:\Users\ariba\OneDrive\Documenti\Software Projects\AI Projects\personal-os\personal-os\KeganOS\bin\Debug\net9.0-windows
+2025-12-22 17:34:32.791 [DBG] Microsoft.Extensions.Hosting.Internal.Host: Hosting started
+2025-12-22 17:34:32.793 [DBG] KeganOS.Infrastructure.Data.AppDbContext: Database path: keganos.db
+2025-12-22 17:34:32.800 [INF] KeganOS.Infrastructure.Data.AppDbContext: Initializing database...
+2025-12-22 17:34:32.842 [INF] KeganOS.Infrastructure.Data.AppDbContext: Database initialized successfully
+2025-12-22 17:34:32.845 [INF] : Database initialized
+2025-12-22 17:34:32.846 [DBG] KeganOS.Infrastructure.Services.UserService: UserService initialized
+2025-12-22 17:34:33.307 [INF] KeganOS.Views.ProfileSelectionWindow: ProfileSelectionWindow initialized
+2025-12-22 17:34:33.308 [DBG] KeganOS.Views.ProfileSelectionWindow: Loading user profiles...
+2025-12-22 17:34:33.310 [DBG] KeganOS.Infrastructure.Services.UserService: Fetching all users...
+2025-12-22 17:34:33.323 [INF] KeganOS.Infrastructure.Services.UserService: Found 1 users
+2025-12-22 17:34:36.566 [INF] KeganOS.Views.ProfileSelectionWindow: User selected: 1
+2025-12-22 17:34:36.567 [DBG] KeganOS.Infrastructure.Services.UserService: Fetching user 1...
+2025-12-22 17:34:36.570 [INF] KeganOS.Infrastructure.Services.UserService: Updating user 1: kegan
+2025-12-22 17:34:36.604 [DBG] KeganOS.Infrastructure.Services.KegomoDoroService: Checking for KEGOMODORO at: C:\Users\ariba\OneDrive\Documenti\Software Projects\AI Projects\personal-os\kegomodoro
+2025-12-22 17:34:36.606 [DBG] KeganOS.Infrastructure.Services.KegomoDoroService: Checking for KEGOMODORO at: C:\Users\ariba\OneDrive\Documenti\Software Projects\AI Projects\personal-os\personal-os\kegomodoro
+2025-12-22 17:34:36.606 [INF] KeganOS.Infrastructure.Services.KegomoDoroService: Found KEGOMODORO at: C:\Users\ariba\OneDrive\Documenti\Software Projects\AI Projects\personal-os\personal-os\kegomodoro
+2025-12-22 17:34:36.606 [DBG] KeganOS.Infrastructure.Services.KegomoDoroService: KEGOMODORO path: C:\Users\ariba\OneDrive\Documenti\Software Projects\AI Projects\personal-os\personal-os\kegomodoro
+2025-12-22 17:34:36.606 [DBG] KeganOS.Infrastructure.Services.KegomoDoroService: Config path: C:\Users\ariba\OneDrive\Documenti\Software Projects\AI Projects\personal-os\personal-os\kegomodoro\dependencies\texts\Configurations\configuration.csv
+2025-12-22 17:34:36.607 [DBG] KeganOS.Infrastructure.Services.JournalService: KEGOMODORO base path: C:\Users\ariba\OneDrive\Documenti\Software Projects\AI Projects\personal-os\personal-os\KeganOS\bin\Debug\net9.0-windows\..\..\..\..\kegomodoro
+2025-12-22 17:34:36.614 [DBG] KeganOS.Infrastructure.Services.PixelaService: PixelaService initialized
+2025-12-22 17:34:36.649 [INF] KeganOS.MainWindow: MainWindow initialized with services
+2025-12-22 17:34:36.649 [INF] KeganOS.MainWindow: User set: kegan
+2025-12-22 17:34:36.652 [DBG] KeganOS.MainWindow: Loading user data for kegan
+2025-12-22 17:34:36.654 [DBG] KeganOS.Infrastructure.Services.JournalService: Journal file path for user kegan: C:\Users\ariba\OneDrive\Documenti\Software Projects\AI Projects\personal-os\personal-os\KeganOS\bin\Debug\net9.0-windows\..\..\..\..\kegomodoro\dependencies\texts\KAÆ[Æß#.txt
+2025-12-22 17:34:36.654 [INF] KeganOS.Infrastructure.Services.JournalService: Reading journal entries from: C:\Users\ariba\OneDrive\Documenti\Software Projects\AI Projects\personal-os\personal-os\KeganOS\bin\Debug\net9.0-windows\..\..\..\..\kegomodoro\dependencies\texts\KAÆ[Æß#.txt
+2025-12-22 17:34:36.654 [WRN] KeganOS.Infrastructure.Services.JournalService: Journal file not found: C:\Users\ariba\OneDrive\Documenti\Software Projects\AI Projects\personal-os\personal-os\KeganOS\bin\Debug\net9.0-windows\..\..\..\..\kegomodoro\dependencies\texts\KAÆ[Æß#.txt
+2025-12-22 17:34:36.816 [INF] : Main window displayed for user: kegan
+2025-12-22 17:34:40.273 [INF] KeganOS.MainWindow: Starting KEGOMODORO...
+2025-12-22 17:34:40.274 [INF] KeganOS.Infrastructure.Services.KegomoDoroService: Launching KEGOMODORO...
+2025-12-22 17:34:40.275 [INF] KeganOS.Infrastructure.Services.KegomoDoroService: Launching from: C:\Users\ariba\OneDrive\Documenti\Software Projects\AI Projects\personal-os\personal-os\kegomodoro\main.py
+2025-12-22 17:34:40.308 [INF] KeganOS.Infrastructure.Services.KegomoDoroService: KEGOMODORO launched successfully (PID: 26768)
+2025-12-22 17:34:40.816 [INF] KeganOS.MainWindow: KEGOMODORO is running
+2025-12-22 17:35:16.261 [INF] : Application shutting down...
+2025-12-22 17:35:16.265 [DBG] Microsoft.Extensions.Hosting.Internal.Host: Hosting stopping
+2025-12-22 17:35:16.266 [INF] Microsoft.Hosting.Lifetime: Application is shutting down...
+2025-12-22 17:35:16.266 [DBG] Microsoft.Extensions.Hosting.Internal.Host: Hosting stopped

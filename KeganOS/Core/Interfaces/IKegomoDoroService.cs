@@ -16,6 +16,11 @@ public interface IKegomoDoroService
     /// Check if KEGOMODORO is currently running
     /// </summary>
     bool IsRunning { get; }
+    
+    /// <summary>
+    /// Last error message if launch failed
+    /// </summary>
+    string? LastError { get; }
 
     /// <summary>
     /// Update timer configuration

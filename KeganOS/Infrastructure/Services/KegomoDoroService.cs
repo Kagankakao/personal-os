@@ -15,11 +15,42 @@ public class KegomoDoroService : IKegomoDoroService
     private readonly string _kegomoDoroPath;
     private readonly string _configPath;
     private Process? _process;
+    private string? _lastError;
 
     public KegomoDoroService()
     {
-        // Relative to the application directory
-        _kegomoDoroPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "..", "kegomodoro");
+        // Try multiple possible locations for kegomodoro folder
+        var possiblePaths = new[]
+        {
+            // From bin folder: go up to project root, then to kegomodoro
+            Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "..", "..", "kegomodoro")),
+            // From solution folder
+            Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "..", "kegomodoro")),
+            // Direct sibling folder (if running from KeganOS project)
+            Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "kegomodoro")),
+            // User's projects folder - try to find it
+            @"C:\Users\ariba\OneDrive\Documenti\Software Projects\AI Projects\personal-os\personal-os\kegomodoro"
+        };
+
+        _kegomoDoroPath = "";
+        foreach (var path in possiblePaths)
+        {
+            var mainPy = Path.Combine(path, "main.py");
+            _logger.Debug("Checking for KEGOMODORO at: {Path}", path);
+            if (File.Exists(mainPy))
+            {
+                _kegomoDoroPath = path;
+                _logger.Information("Found KEGOMODORO at: {Path}", path);
+                break;
+            }
+        }
+
+        if (string.IsNullOrEmpty(_kegomoDoroPath))
+        {
+            _logger.Error("KEGOMODORO not found in any expected location");
+            _kegomoDoroPath = possiblePaths[0]; // Use first as default
+        }
+
         _configPath = Path.Combine(_kegomoDoroPath, "dependencies", "texts", "Configurations", "configuration.csv");
         
         _logger.Debug("KEGOMODORO path: {Path}", _kegomoDoroPath);
@@ -27,35 +58,64 @@ public class KegomoDoroService : IKegomoDoroService
     }
 
     public bool IsRunning => _process != null && !_process.HasExited;
+    
+    public string? LastError => _lastError;
 
     public void Launch()
     {
         _logger.Information("Launching KEGOMODORO...");
+        _lastError = null;
         
         try
         {
             var mainPyPath = Path.Combine(_kegomoDoroPath, "main.py");
             
+            // Debug: Show what path we're using
+            System.Diagnostics.Debug.WriteLine($"KEGOMODORO path: {_kegomoDoroPath}");
+            System.Diagnostics.Debug.WriteLine($"main.py path: {mainPyPath}");
+            System.Diagnostics.Debug.WriteLine($"main.py exists: {File.Exists(mainPyPath)}");
+            
             if (!File.Exists(mainPyPath))
             {
+                _lastError = $"main.py not found at:\n{mainPyPath}";
                 _logger.Error("KEGOMODORO main.py not found at {Path}", mainPyPath);
                 return;
             }
 
+            _logger.Information("Launching from: {Path}", mainPyPath);
+
+            // Launch Python with hidden console window
             var startInfo = new ProcessStartInfo
             {
                 FileName = "python",
                 Arguments = $"\"{mainPyPath}\"",
                 WorkingDirectory = _kegomoDoroPath,
                 UseShellExecute = false,
-                CreateNoWindow = false
+                CreateNoWindow = true,
+                RedirectStandardOutput = false,
+                RedirectStandardError = false
             };
 
             _process = Process.Start(startInfo);
-            _logger.Information("KEGOMODORO launched successfully (PID: {PID})", _process?.Id);
+            
+            if (_process != null)
+            {
+                _logger.Information("KEGOMODORO launched successfully (PID: {PID})", _process.Id);
+            }
+            else
+            {
+                _lastError = "Process.Start returned null";
+                _logger.Error("Failed to start KEGOMODORO process");
+            }
+        }
+        catch (System.ComponentModel.Win32Exception ex) when (ex.NativeErrorCode == 2)
+        {
+            _lastError = "Python not found. Make sure Python is installed and in your PATH.";
+            _logger.Error(ex, "Python not found in PATH");
         }
         catch (Exception ex)
         {
+            _lastError = ex.Message;
             _logger.Error(ex, "Failed to launch KEGOMODORO");
         }
     }
