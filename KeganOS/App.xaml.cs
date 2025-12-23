@@ -22,6 +22,11 @@ public partial class App : System.Windows.Application
         // IMPORTANT: Prevent app from auto-closing when dialog closes
         ShutdownMode = System.Windows.ShutdownMode.OnExplicitShutdown;
         
+        // Register global exception handlers FIRST
+        DispatcherUnhandledException += OnDispatcherUnhandledException;
+        System.Threading.Tasks.TaskScheduler.UnobservedTaskException += OnUnobservedTaskException;
+        AppDomain.CurrentDomain.UnhandledException += OnAppDomainUnhandledException;
+        
         // Configure Serilog
         Log.Logger = new LoggerConfiguration()
             .MinimumLevel.Debug()
@@ -116,5 +121,48 @@ public partial class App : System.Windows.Application
         Log.CloseAndFlush();
         
         base.OnExit(e);
+    }
+
+    /// <summary>
+    /// Handle uncaught exceptions on the UI thread
+    /// </summary>
+    private void OnDispatcherUnhandledException(object sender, System.Windows.Threading.DispatcherUnhandledExceptionEventArgs e)
+    {
+        Log.Error(e.Exception, "Unhandled UI thread exception");
+        
+        System.Windows.MessageBox.Show(
+            $"An unexpected error occurred:\n{e.Exception.Message}\n\nThe error has been logged.",
+            "KeganOS Error",
+            System.Windows.MessageBoxButton.OK,
+            System.Windows.MessageBoxImage.Error);
+        
+        e.Handled = true; // Prevent app crash
+    }
+
+    /// <summary>
+    /// Handle unobserved task exceptions (background tasks)
+    /// </summary>
+    private void OnUnobservedTaskException(object? sender, System.Threading.Tasks.UnobservedTaskExceptionEventArgs e)
+    {
+        Log.Error(e.Exception, "Unobserved task exception");
+        e.SetObserved(); // Prevent app crash
+    }
+
+    /// <summary>
+    /// Handle AppDomain unhandled exceptions (last resort)
+    /// </summary>
+    private void OnAppDomainUnhandledException(object sender, UnhandledExceptionEventArgs e)
+    {
+        var ex = e.ExceptionObject as System.Exception;
+        Log.Fatal(ex, "AppDomain unhandled exception (IsTerminating: {IsTerminating})", e.IsTerminating);
+        
+        if (e.IsTerminating)
+        {
+            System.Windows.MessageBox.Show(
+                $"A fatal error occurred:\n{ex?.Message ?? "Unknown error"}\n\nThe application will now close.",
+                "Fatal Error",
+                System.Windows.MessageBoxButton.OK,
+                System.Windows.MessageBoxImage.Error);
+        }
     }
 }
