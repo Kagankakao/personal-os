@@ -160,7 +160,8 @@
                                         Content="▶ Start Focus" Foreground="#87CEEB"
                                         x:Name="StartFocusButton" Click="StartFocusButton_Click"/>
                                 <Button Style="{StaticResource BracketButton}" 
-                                        Content="⚙ Customize" Margin="15,0,0,0"/>
+                                        Content="⚙ Customize" Margin="15,0,0,0"
+                                        x:Name="CustomizeButton" Click="CustomizeButton_Click"/>
                             </StackPanel>
                         </StackPanel>
                     </Border>

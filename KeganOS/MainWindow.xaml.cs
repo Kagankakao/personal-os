@@ -347,4 +347,18 @@ public partial class MainWindow : System.Windows.Window
         
         AIChatInput.Text = "Ask me anything about your journey...";
     }
+
+    private void CustomizeButton_Click(object sender, System.Windows.RoutedEventArgs e)
+    {
+        _logger.Information("Opening KEGOMODORO settings...");
+        
+        var settingsWindow = new Views.KegomoDoroSettingsWindow();
+        settingsWindow.Owner = this;
+        settingsWindow.ShowDialog();
+        
+        if (settingsWindow.SettingsChanged)
+        {
+            _logger.Information("KEGOMODORO settings changed - user should restart timer");
+        }
+    }
 }
