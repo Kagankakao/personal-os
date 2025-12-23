@@ -12,13 +12,15 @@ public partial class ProfileSelectionWindow : System.Windows.Window
 {
     private readonly ILogger _logger = Log.ForContext<ProfileSelectionWindow>();
     private readonly IUserService _userService;
+    private readonly IPixelaService _pixelaService;
     
     public User? SelectedUser { get; private set; }
 
-    public ProfileSelectionWindow(IUserService userService)
+    public ProfileSelectionWindow(IUserService userService, IPixelaService pixelaService)
     {
         InitializeComponent();
         _userService = userService;
+        _pixelaService = pixelaService;
         _logger.Information("ProfileSelectionWindow initialized");
         
         LoadProfiles();
@@ -82,7 +84,7 @@ public partial class ProfileSelectionWindow : System.Windows.Window
     private void CreateProfile_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
     {
         _logger.Information("Opening profile creation...");
-        var createWindow = new CreateProfileWindow(_userService);
+        var createWindow = new CreateProfileWindow(_userService, _pixelaService);
         createWindow.Owner = this;
         
         if (createWindow.ShowDialog() == true && createWindow.CreatedUser != null)

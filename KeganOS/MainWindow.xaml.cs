@@ -2,6 +2,8 @@
 using KeganOS.Core.Models;
 using Serilog;
 using System.Linq;
+using System.Text.RegularExpressions;
+using System.Collections.Generic;
 
 namespace KeganOS;
 
@@ -22,6 +24,7 @@ public partial class MainWindow : System.Windows.Window
         _kegomoDoroService = kegomoDoroService;
         _journalService = journalService;
         _pixelaService = pixelaService;
+        
         _logger.Information("MainWindow initialized with services");
     }
 
@@ -128,13 +131,142 @@ public partial class MainWindow : System.Windows.Window
                 }
                 TodayHours.Text = $"{(int)todayTime.TotalHours} hrs";
                 
-                _logger.Information("Stats loaded: Total={Total}h, Week={Week}h, Today={Today}h", 
+                _logger.Information("Stats loaded from journal: Total={Total}h, Week={Week}h, Today={Today}h", 
                     (int)totalTime.TotalHours, (int)weekTime.TotalHours, (int)todayTime.TotalHours);
             }
+            else
+            {
+                // Fallback to Pixe.la stats if journal is empty
+                _logger.Information("Journal is empty, attempting to load stats from Pixe.la");
+                
+                // 1. Get aggregate stats for the true total
+                var pixelaStats = await _pixelaService.GetStatsAsync(_currentUser);
+                if (pixelaStats != null)
+                {
+                    TotalHours.Text = $"{(int)pixelaStats.TotalQuantity} hrs";
+                    _logger.Information("TotalHours from Pixe.la stats: {Total}", pixelaStats.TotalQuantity);
+                }
+
+                // 2. Get pixels for last 365 days to calculate Today and Week stats
+                // Fetching a larger window to ensure the dashboard looks "alive" even for occasional users
+                var toDate = DateTime.Today;
+                var fromDate = toDate.AddDays(-365);
+                var pixels = await _pixelaService.GetPixelsAsync(_currentUser, fromDate, toDate);
+                var pixelList = pixels.ToList();
+
+                double weekQty = 0;
+                double todayQty = 0;
+                
+                var weekAgo = DateTime.Today.AddDays(-7);
+
+                foreach (var p in pixelList)
+                {
+                    if (p.Date >= weekAgo) weekQty += p.Quantity;
+                    if (p.Date.Date == DateTime.Today) todayQty += p.Quantity;
+                }
+
+                WeekHours.Text = $"{(int)weekQty} hrs";
+                TodayHours.Text = $"{(int)todayQty} hrs";
+                
+                _logger.Information("Pixe.la stats (bulk 365d): Week={Week}h, Today={Today}h", 
+                    (int)weekQty, (int)todayQty);
+            }
+            
+            // Load Pixe.la heatmap if configured
+            await LoadPixelaHeatmapAsync();
         }
         catch (System.Exception ex)
         {
             _logger.Error(ex, "Failed to load user data");
+        }
+    }
+
+    private async System.Threading.Tasks.Task LoadPixelaHeatmapAsync()
+    {
+        if (_currentUser == null || !_pixelaService.IsConfigured(_currentUser))
+        {
+            PixelaStatus.Text = "Pixe.la not configured";
+            return;
+        }
+
+        try
+        {
+            _logger.Information("Loading Pixe.la heatmap for {User}", _currentUser.PixelaUsername);
+            PixelaStatus.Text = "Loading...";
+            
+            // 1. Find the latest NON-ZERO activity date to ensure we show "greens" 
+            // instead of just today's (empty) dashboard view.
+            var latestDate = await _pixelaService.GetLatestActiveDateAsync(_currentUser);
+            
+            // 2. Fetch the SVG with that date as the anchor and DARK appearance
+            var svg = await _pixelaService.GetSvgAsync(_currentUser, latestDate, "dark");
+            
+            if (string.IsNullOrEmpty(svg))
+            {
+                PixelaStatus.Text = "Could not fetch heatmap";
+                return;
+            }
+
+            // Cleanup SVG string: remove XML declaration and DOCTYPE
+            svg = Regex.Replace(svg, @"<\?xml.*?\?>", "", RegexOptions.IgnoreCase | RegexOptions.Singleline);
+            svg = Regex.Replace(svg, @"<!DOCTYPE.*?>", "", RegexOptions.IgnoreCase | RegexOptions.Singleline);
+
+            var graphUrl = $"https://pixe.la/v1/users/{_currentUser.PixelaUsername}/graphs/{_currentUser.PixelaGraphId}.html";
+            
+            var html = $@"
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body {{ 
+            margin: 0; 
+            padding: 0; 
+            background: #0A0A0A; 
+            overflow: hidden; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            height: 100vh;
+            cursor: pointer;
+        }}
+        svg {{ 
+            width: 100% !important; 
+            height: 100% !important;
+            display: block;
+        }}
+        svg:hover {{  
+            opacity: 0.85;
+        }}
+        /* Block all internal SVG links */
+        svg a {{
+            pointer-events: none;
+        }}
+    </style>
+</head>
+<body>
+    {svg}
+    <script>
+        document.body.addEventListener('click', function(e) {{
+            e.preventDefault();
+            e.stopPropagation();
+            window.open('{graphUrl}', '_blank');
+        }});
+    </script>
+</body>
+</html>";
+            
+            // Ensure WebView2 is initialized before navigating
+            await PixelaHeatmapWebView.EnsureCoreWebView2Async();
+            PixelaHeatmapWebView.NavigateToString(html);
+            
+            PixelaStatus.Text = $"📊 {_currentUser.PixelaUsername}/{_currentUser.PixelaGraphId}";
+            
+            _logger.Information("Pixe.la heatmap (anchor: {Date}) rendered with WebView2", latestDate ?? "today");
+        }
+        catch (System.Exception ex)
+        {
+            _logger.Warning(ex, "Failed to load Pixe.la heatmap");
+            PixelaStatus.Text = "Could not load heatmap";
         }
     }
 

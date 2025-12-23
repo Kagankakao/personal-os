@@ -78,12 +78,41 @@
                     
                     <!-- Pixe.la (Optional) -->
                     <TextBlock Text="│ Pixe.la Username (optional)" Foreground="#555555" FontSize="11" Margin="0,20,0,5"/>
-                    <TextBox x:Name="PixelaUsernameInput" 
-                             Background="#1A1A1A" Foreground="#FFFFFF"
-                             BorderBrush="#333333" BorderThickness="1"
-                             Padding="10,8" FontSize="13"/>
-                    <TextBlock Text="  For habit tracking integration" 
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBox x:Name="PixelaUsernameInput" 
+                                 Background="#1A1A1A" Foreground="#FFFFFF"
+                                 BorderBrush="#333333" BorderThickness="1"
+                                 Padding="10,8" FontSize="13"/>
+                        <Button Grid.Column="1" Content="[ Check ]" 
+                                Background="Transparent" Foreground="#87CEEB"
+                                BorderThickness="0" Padding="10,8" Cursor="Hand"
+                                x:Name="CheckUsernameButton"
+                                Click="CheckUsernameButton_Click"/>
+                    </Grid>
+                    <TextBlock Text="  For habit tracking integration (lowercase letters, numbers, hyphens)" 
                                Foreground="#444444" FontSize="9" Margin="0,3,0,0"/>
+                    
+                    <!-- Token input (shown for existing Pixe.la users) -->
+                    <StackPanel x:Name="TokenInputPanel" Visibility="Collapsed" Margin="0,10,0,0">
+                        <TextBlock Text="│ Your Pixe.la Token" Foreground="#555555" FontSize="11" Margin="0,0,0,5"/>
+                        <PasswordBox x:Name="PixelaTokenInput" 
+                                     Background="#1A1A1A" Foreground="#FFFFFF"
+                                     BorderBrush="#333333" BorderThickness="1"
+                                     Padding="10,8" FontSize="13"/>
+                        <TextBlock Text="  Enter your existing Pixe.la token to connect" 
+                                   Foreground="#444444" FontSize="9" Margin="0,3,0,0"/>
+                    </StackPanel>
+                    
+                    <!-- Pixe.la Status -->
+                    <Border x:Name="PixelaStatusPanel" Visibility="Collapsed" 
+                            Background="#1A1A1A" BorderBrush="#333333" BorderThickness="1"
+                            Padding="10" Margin="0,10,0,0">
+                        <TextBlock x:Name="PixelaStatusText" Foreground="#AAAAAA" FontSize="11" TextWrapping="Wrap"/>
+                    </Border>
                 </StackPanel>
             </ScrollViewer>
             

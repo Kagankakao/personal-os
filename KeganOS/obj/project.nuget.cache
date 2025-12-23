@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "r5/1xpZLRMY=",
+  "dgSpecHash": "dL6GiuQNxHM=",
   "success": true,
   "projectFilePath": "C:\\Users\\ariba\\OneDrive\\Documenti\\Software Projects\\AI Projects\\personal-os\\personal-os\\KeganOS\\KeganOS.csproj",
   "expectedPackageFiles": [
@@ -46,6 +46,7 @@
     "C:\\Users\\ariba\\.nuget\\packages\\microsoft.extensions.primitives\\9.0.0\\microsoft.extensions.primitives.9.0.0.nupkg.sha512",
     "C:\\Users\\ariba\\.nuget\\packages\\microsoft.netcore.platforms\\2.1.2\\microsoft.netcore.platforms.2.1.2.nupkg.sha512",
     "C:\\Users\\ariba\\.nuget\\packages\\microsoft.netcore.targets\\1.1.0\\microsoft.netcore.targets.1.1.0.nupkg.sha512",
+    "C:\\Users\\ariba\\.nuget\\packages\\microsoft.web.webview2\\1.0.3650.58\\microsoft.web.webview2.1.0.3650.58.nupkg.sha512",
     "C:\\Users\\ariba\\.nuget\\packages\\microsoft.win32.registry\\4.5.0\\microsoft.win32.registry.4.5.0.nupkg.sha512",
     "C:\\Users\\ariba\\.nuget\\packages\\microsoft.win32.systemevents\\4.5.0\\microsoft.win32.systemevents.4.5.0.nupkg.sha512",
     "C:\\Users\\ariba\\.nuget\\packages\\netstandard.library\\2.0.3\\netstandard.library.2.0.3.nupkg.sha512",

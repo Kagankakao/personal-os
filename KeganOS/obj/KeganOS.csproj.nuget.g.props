@@ -7,7 +7,7 @@
     <NuGetPackageRoot Condition=" '$(NuGetPackageRoot)' == '' ">$(UserProfile)\.nuget\packages\</NuGetPackageRoot>
     <NuGetPackageFolders Condition=" '$(NuGetPackageFolders)' == '' ">C:\Users\ariba\.nuget\packages\;C:\Program Files\DevExpress 22.2\Components\Offline Packages;C:\Program Files (x86)\Microsoft Visual Studio\Shared\NuGetPackages</NuGetPackageFolders>
     <NuGetProjectStyle Condition=" '$(NuGetProjectStyle)' == '' ">PackageReference</NuGetProjectStyle>
-    <NuGetToolVersion Condition=" '$(NuGetToolVersion)' == '' ">6.14.0</NuGetToolVersion>
+    <NuGetToolVersion Condition=" '$(NuGetToolVersion)' == '' ">6.14.1</NuGetToolVersion>
   </PropertyGroup>
   <ItemGroup Condition=" '$(ExcludeRestorePackageImports)' != 'true' ">
     <SourceRoot Include="C:\Users\ariba\.nuget\packages\" />
@@ -19,6 +19,7 @@
     <Import Project="C:\Program Files\DevExpress 22.2\Components\Offline Packages\devexpress.data.desktop\22.2.3\build\netcoreapp3.0\DevExpress.Data.Desktop.props" Condition="Exists('C:\Program Files\DevExpress 22.2\Components\Offline Packages\devexpress.data.desktop\22.2.3\build\netcoreapp3.0\DevExpress.Data.Desktop.props')" />
   </ImportGroup>
   <PropertyGroup Condition=" '$(ExcludeRestorePackageImports)' != 'true' ">
+    <PkgMicrosoft_Web_WebView2 Condition=" '$(PkgMicrosoft_Web_WebView2)' == '' ">C:\Users\ariba\.nuget\packages\microsoft.web.webview2\1.0.3650.58</PkgMicrosoft_Web_WebView2>
     <PkgDevExpress_Data Condition=" '$(PkgDevExpress_Data)' == '' ">C:\Program Files\DevExpress 22.2\Components\Offline Packages\devexpress.data\22.2.3</PkgDevExpress_Data>
     <PkgDevExpress_Wpf_Core Condition=" '$(PkgDevExpress_Wpf_Core)' == '' ">C:\Program Files\DevExpress 22.2\Components\Offline Packages\devexpress.wpf.core\22.2.3</PkgDevExpress_Wpf_Core>
     <PkgDevExpress_Wpf_Controls Condition=" '$(PkgDevExpress_Wpf_Controls)' == '' ">C:\Program Files\DevExpress 22.2\Components\Offline Packages\devexpress.wpf.controls\22.2.3</PkgDevExpress_Wpf_Controls>

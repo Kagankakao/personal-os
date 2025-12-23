@@ -13,15 +13,19 @@ public partial class CreateProfileWindow : System.Windows.Window
 {
     private readonly ILogger _logger = Log.ForContext<CreateProfileWindow>();
     private readonly IUserService _userService;
+    private readonly IPixelaService _pixelaService;
     private string? _selectedJournalPath;
     private int _validEntriesCount;
+    private bool _pixelaUsernameAvailable = false;
+    private bool _isNewPixelaUser = false;
     
     public User? CreatedUser { get; private set; }
 
-    public CreateProfileWindow(IUserService userService)
+    public CreateProfileWindow(IUserService userService, IPixelaService pixelaService)
     {
         InitializeComponent();
         _userService = userService;
+        _pixelaService = pixelaService;
         _logger.Information("CreateProfileWindow initialized");
         
         // Focus on first input
@@ -144,6 +148,83 @@ public partial class CreateProfileWindow : System.Windows.Window
         }
     }
 
+    private void ShowPixelaStatus(string message, bool isSuccess)
+    {
+        PixelaStatusPanel.Visibility = System.Windows.Visibility.Visible;
+        PixelaStatusPanel.Background = new System.Windows.Media.SolidColorBrush(
+            isSuccess ? System.Windows.Media.Color.FromRgb(0x1A, 0x2A, 0x1A) : System.Windows.Media.Color.FromRgb(0x2A, 0x1A, 0x1A));
+        PixelaStatusPanel.BorderBrush = new System.Windows.Media.SolidColorBrush(
+            isSuccess ? System.Windows.Media.Color.FromRgb(0x2A, 0x4A, 0x2A) : System.Windows.Media.Color.FromRgb(0x4A, 0x2A, 0x2A));
+        PixelaStatusText.Foreground = new System.Windows.Media.SolidColorBrush(
+            isSuccess ? System.Windows.Media.Color.FromRgb(0x88, 0xCC, 0x88) : System.Windows.Media.Color.FromRgb(0xCC, 0x88, 0x88));
+        PixelaStatusText.Text = message;
+    }
+
+    private async void CheckUsernameButton_Click(object sender, System.Windows.RoutedEventArgs e)
+    {
+        var username = PixelaUsernameInput.Text.Trim().ToLower();
+        
+        if (string.IsNullOrEmpty(username))
+        {
+            ShowPixelaStatus("Enter a username first", false);
+            return;
+        }
+
+        // Validate format first
+        var (isValid, formatError) = await _pixelaService.CheckUsernameAvailabilityAsync(username);
+        if (!isValid)
+        {
+            ShowPixelaStatus($"✗ {formatError}", false);
+            TokenInputPanel.Visibility = System.Windows.Visibility.Collapsed;
+            _pixelaUsernameAvailable = false;
+            return;
+        }
+
+        CheckUsernameButton.IsEnabled = false;
+        CheckUsernameButton.Content = "[ ... ]";
+        
+        try
+        {
+            // Check if user exists on Pixe.la
+            using var httpClient = new System.Net.Http.HttpClient();
+            httpClient.Timeout = System.TimeSpan.FromSeconds(10);
+            
+            var response = await httpClient.GetAsync($"https://pixe.la/@{username}");
+            var userExists = response.IsSuccessStatusCode;
+            
+            if (userExists)
+            {
+                // Existing user - need their token
+                _pixelaUsernameAvailable = true;
+                _isNewPixelaUser = false;
+                TokenInputPanel.Visibility = System.Windows.Visibility.Visible;
+                ShowPixelaStatus($"✓ Username '{username}' exists. Enter your token below.", true);
+                _logger.Information("Pixe.la user '{Username}' exists, requesting token", username);
+            }
+            else
+            {
+                // New user - will auto-register
+                _pixelaUsernameAvailable = true;
+                _isNewPixelaUser = true;
+                TokenInputPanel.Visibility = System.Windows.Visibility.Collapsed;
+                ShowPixelaStatus($"✓ Username '{username}' is available! Will auto-register.", true);
+                _logger.Information("Pixe.la username '{Username}' is available", username);
+            }
+        }
+        catch (System.Exception ex)
+        {
+            _logger.Error(ex, "Failed to check Pixe.la username");
+            ShowPixelaStatus($"✗ Could not check username: {ex.Message}", false);
+            TokenInputPanel.Visibility = System.Windows.Visibility.Collapsed;
+            _pixelaUsernameAvailable = false;
+        }
+        finally
+        {
+            CheckUsernameButton.IsEnabled = true;
+            CheckUsernameButton.Content = "[ Check ]";
+        }
+    }
+
     private void CancelButton_Click(object sender, System.Windows.RoutedEventArgs e)
     {
         DialogResult = false;
@@ -154,6 +235,7 @@ public partial class CreateProfileWindow : System.Windows.Window
     {
         var displayName = DisplayNameInput.Text.Trim();
         var symbol = SymbolInput.Text.Trim();
+        var pixelaUsername = PixelaUsernameInput.Text.Trim().ToLower();
 
         // Validation
         if (string.IsNullOrEmpty(displayName))
@@ -162,6 +244,25 @@ public partial class CreateProfileWindow : System.Windows.Window
                 System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Warning);
             DisplayNameInput.Focus();
             return;
+        }
+
+        // Validate Pixe.la username if provided
+        if (!string.IsNullOrEmpty(pixelaUsername))
+        {
+            // Must click Check first
+            if (!_pixelaUsernameAvailable)
+            {
+                ShowPixelaStatus("✗ Please click [Check] to verify your username first", false);
+                return;
+            }
+            
+            // Existing user must provide token
+            if (!_isNewPixelaUser && string.IsNullOrEmpty(PixelaTokenInput.Password.Trim()))
+            {
+                ShowPixelaStatus("✗ Please enter your Pixe.la token", false);
+                PixelaTokenInput.Focus();
+                return;
+            }
         }
 
         // If no symbol provided, use display name
@@ -182,19 +283,65 @@ public partial class CreateProfileWindow : System.Windows.Window
             journalFile = displayName.Replace(" ", "_").ToLower() + ".txt";
         }
 
-        // Create user
+        // Token: use provided token for existing users, or auto-generate for new users
+        string? pixelaToken = null;
+        string? graphId = null;
+        if (!string.IsNullOrEmpty(pixelaUsername))
+        {
+            if (_isNewPixelaUser)
+            {
+                // New user - auto-generate token
+                pixelaToken = _pixelaService.GenerateToken(pixelaUsername);
+                graphId = "focus";
+            }
+            else
+            {
+                // Existing user - use their provided token
+                pixelaToken = PixelaTokenInput.Password.Trim();
+                graphId = "graph1"; // Default graph ID used by KEGOMODORO
+            }
+        }
+
+        // Create user object
         var user = new User
         {
             DisplayName = displayName,
             PersonalSymbol = symbol,
             JournalFileName = journalFile,
-            PixelaUsername = string.IsNullOrEmpty(PixelaUsernameInput.Text) ? null : PixelaUsernameInput.Text.Trim()
+            PixelaUsername = string.IsNullOrEmpty(pixelaUsername) ? null : pixelaUsername,
+            PixelaToken = pixelaToken,
+            PixelaGraphId = graphId
         };
 
         try
         {
             _logger.Information("Creating user: {Name} with symbol: {Symbol}, journal: {Journal}", 
                 displayName, symbol, journalFile);
+
+            // Register on Pixe.la if username provided (with retry loop for free version)
+            if (!string.IsNullOrEmpty(pixelaUsername) && !string.IsNullOrEmpty(pixelaToken))
+            {
+                _logger.Information("Registering Pixe.la user: {Username}", pixelaUsername);
+                ShowPixelaStatus("Connecting to Pixe.la (this may take a few seconds)...", true);
+                
+                var (success, error) = await _pixelaService.RegisterUserAsync(pixelaUsername, pixelaToken);
+                if (!success)
+                {
+                    ShowPixelaStatus($"✗ Pixe.la: {error}", false);
+                    return;
+                }
+
+                // Create default graph
+                ShowPixelaStatus("Creating focus graph...", true);
+                var graphCreated = await _pixelaService.CreateGraphAsync(user, "focus", "Focus Hours");
+                if (!graphCreated)
+                {
+                    _logger.Warning("Graph creation failed, but continuing");
+                }
+                
+                ShowPixelaStatus("✓ Pixe.la connected!", true);
+            }
+
             CreatedUser = await _userService.CreateUserAsync(user);
             DialogResult = true;
             Close();

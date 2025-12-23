@@ -23,12 +23,44 @@ public interface IPixelaService
     Task<IEnumerable<PixelaPixel>> GetPixelsAsync(User user, DateTime? from = null, DateTime? to = null);
 
     /// <summary>
-    /// Register a new user on Pixe.la
+    /// Generate a token from username (for auto-registration)
     /// </summary>
-    Task<bool> RegisterUserAsync(string username, string token);
+    string GenerateToken(string username);
+
+    /// <summary>
+    /// Validate username format
+    /// Returns: (isValid, errorMessage)
+    /// </summary>
+    Task<(bool isAvailable, string? error)> CheckUsernameAvailabilityAsync(string username);
+
+    /// <summary>
+    /// Register a new user on Pixe.la with retry loop (free version rate-limited)
+    /// Returns: (success, errorMessage)
+    /// </summary>
+    Task<(bool success, string? error)> RegisterUserAsync(string username, string token);
 
     /// <summary>
     /// Create a new graph for tracking hours
     /// </summary>
     Task<bool> CreateGraphAsync(User user, string graphId, string graphName);
+
+    /// <summary>
+    /// Enable PNG format for an existing graph
+    /// </summary>
+    Task<bool> EnablePngAsync(User user);
+
+    /// <summary>
+    /// Get quantity for a specific date
+    /// </summary>
+    Task<double> GetPixelByDateAsync(User user, DateTime date);
+
+    /// <summary>
+    /// Get raw SVG content of the graph
+    /// </summary>
+    Task<string> GetSvgAsync(User user, string? date = null, string? appearance = "dark");
+
+    /// <summary>
+    /// Get the date of the most recent non-zero pixel record
+    /// </summary>
+    Task<string?> GetLatestActiveDateAsync(User user);
 }

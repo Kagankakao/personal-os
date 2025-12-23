@@ -78,6 +78,10 @@
               "target": "Package",
               "version": "[9.0.0, )"
             },
+            "Microsoft.Web.WebView2": {
+              "target": "Package",
+              "version": "[1.0.3650.58, )"
+            },
             "Serilog": {
               "target": "Package",
               "version": "[4.1.0, )"
@@ -110,7 +114,7 @@
             "Microsoft.NETCore.App": {
               "privateAssets": "all"
             },
-            "Microsoft.WindowsDesktop.App.WPF": {
+            "Microsoft.WindowsDesktop.App": {
               "privateAssets": "none"
             }
           },

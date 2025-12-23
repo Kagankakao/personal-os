@@ -95,10 +95,10 @@ public class PixelaService : IPixelaService
 
         try
         {
-            var url = $"{BaseUrl}/{user.PixelaUsername}/graphs/{user.PixelaGraphId}/pixels";
+            var url = $"{BaseUrl}/{user.PixelaUsername}/graphs/{user.PixelaGraphId}/pixels?withBody=true";
             
             if (from.HasValue)
-                url += $"?from={from.Value:yyyyMMdd}";
+                url += $"&from={from.Value:yyyyMMdd}";
             if (to.HasValue)
                 url += $"&to={to.Value:yyyyMMdd}";
 
@@ -134,27 +134,99 @@ public class PixelaService : IPixelaService
         }
     }
 
-    public async Task<bool> RegisterUserAsync(string username, string token)
+    /// <summary>
+    /// Generate a token from username (like KEGOMODORO does)
+    /// </summary>
+    public string GenerateToken(string username)
+    {
+        // Similar to KEGOMODORO's approach - deterministic token from username
+        return $"{username}token{username.Length}secret";
+    }
+
+    public async Task<(bool isAvailable, string? error)> CheckUsernameAvailabilityAsync(string username)
+    {
+        _logger.Information("Checking Pixe.la username: {Username}", username);
+
+        if (string.IsNullOrWhiteSpace(username))
+            return (false, "Username is required");
+
+        if (username.Length < 1 || username.Length > 32)
+            return (false, "Username must be 1-32 characters");
+
+        // Pixe.la usernames must be lowercase letters, numbers, and hyphens
+        if (!System.Text.RegularExpressions.Regex.IsMatch(username, @"^[a-z][a-z0-9-]*$"))
+            return (false, "Username must start with a letter and contain only lowercase letters, numbers, and hyphens");
+
+        // Username format is valid
+        return (true, null);
+    }
+
+    /// <summary>
+    /// Register a new user on Pixe.la with retry loop (free version is rate-limited)
+    /// </summary>
+    public async Task<(bool success, string? error)> RegisterUserAsync(string username, string token)
     {
         _logger.Information("Registering Pixe.la user: {Username}", username);
 
-        try
-        {
-            var payload = new { token, username, agreeTermsOfService = "yes", notMinor = "yes" };
-            var json = JsonSerializer.Serialize(payload);
-            var content = new StringContent(json, Encoding.UTF8, "application/json");
+        const int maxRetries = 10;
+        const int retryDelayMs = 500;
+        var maxWaitTime = TimeSpan.FromSeconds(5);
+        var startTime = DateTime.Now;
 
-            var response = await _httpClient.PostAsync(BaseUrl, content);
-            var success = response.IsSuccessStatusCode;
-            
-            _logger.Information("User registration {Status}", success ? "succeeded" : "failed");
-            return success;
-        }
-        catch (Exception ex)
+        for (int attempt = 1; attempt <= maxRetries; attempt++)
         {
-            _logger.Error(ex, "Failed to register Pixe.la user");
-            return false;
+            try
+            {
+                var payload = new { token, username, agreeTermsOfService = "yes", notMinor = "yes" };
+                var json = JsonSerializer.Serialize(payload);
+                var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+                var response = await _httpClient.PostAsync(BaseUrl, content);
+                var responseBody = await response.Content.ReadAsStringAsync();
+                
+                if (response.IsSuccessStatusCode)
+                {
+                    _logger.Information("User registration succeeded on attempt {Attempt}", attempt);
+                    return (true, null);
+                }
+
+                // User already exists - that's OK, they can use their existing account
+                if (responseBody.Contains("already exist"))
+                {
+                    _logger.Information("User '{Username}' already exists, will use existing account", username);
+                    return (true, null); // Treat as success - user exists
+                }
+
+                // Free Pixe.la rate limit - retry (response length 341 as per KEGOMODORO)
+                if (responseBody.Length == 341 || response.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
+                {
+                    _logger.Warning("Pixe.la rate limited, attempt {Attempt}/{Max}, waiting...", attempt, maxRetries);
+                    
+                    if (DateTime.Now - startTime > maxWaitTime)
+                    {
+                        _logger.Warning("Max wait time exceeded");
+                        return (false, "Pixe.la is busy. Please try again later.");
+                    }
+                    
+                    await Task.Delay(retryDelayMs);
+                    continue;
+                }
+
+                _logger.Warning("Registration failed: {Status} - {Body}", response.StatusCode, responseBody);
+                return (false, $"Registration failed: {response.StatusCode}");
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, "Failed to register Pixe.la user, attempt {Attempt}", attempt);
+                
+                if (DateTime.Now - startTime > maxWaitTime)
+                    return (false, ex.Message);
+                
+                await Task.Delay(retryDelayMs);
+            }
         }
+
+        return (false, "Could not connect to Pixe.la after retries");
     }
 
     public async Task<bool> CreateGraphAsync(User user, string graphId, string graphName)
@@ -163,7 +235,7 @@ public class PixelaService : IPixelaService
 
         try
         {
-            var payload = new { id = graphId, name = graphName, unit = "hours", type = "float", color = "momiji" };
+            var payload = new { id = graphId, name = graphName, unit = "hours", type = "float", color = "momiji", isEnablePng = true };
             var json = JsonSerializer.Serialize(payload);
             
             var request = new HttpRequestMessage(HttpMethod.Post, $"{BaseUrl}/{user.PixelaUsername}/graphs");
@@ -180,6 +252,170 @@ public class PixelaService : IPixelaService
         {
             _logger.Error(ex, "Failed to create Pixe.la graph");
             return false;
+        }
+    }
+
+    public async Task<bool> EnablePngAsync(User user)
+    {
+        if (!IsConfigured(user)) return false;
+
+        _logger.Information("Enabling PNG for Pixe.la graph: {GraphId}", user.PixelaGraphId);
+
+        try
+        {
+            var payload = new { isEnablePng = true };
+            var json = JsonSerializer.Serialize(payload);
+            
+            var request = new HttpRequestMessage(HttpMethod.Put, $"{BaseUrl}/{user.PixelaUsername}/graphs/{user.PixelaGraphId}");
+            request.Headers.Add("X-USER-TOKEN", user.PixelaToken);
+            request.Content = new StringContent(json, Encoding.UTF8, "application/json");
+
+            var response = await _httpClient.SendAsync(request);
+            var success = response.IsSuccessStatusCode;
+            
+            if (!success)
+            {
+                var body = await response.Content.ReadAsStringAsync();
+                _logger.Warning("Failed to enable PNG: {Status} - {Body}", response.StatusCode, body);
+            }
+            
+            return success;
+        }
+        catch (Exception ex)
+        {
+            _logger.Error(ex, "Failed to enable Pixe.la PNG format");
+            return false;
+        }
+    }
+
+    public async Task<double> GetPixelByDateAsync(User user, DateTime date)
+    {
+        if (!IsConfigured(user)) return 0;
+
+        _logger.Information("Fetching pixel for {Date:yyyyMMdd}", date);
+
+        int retryCount = 0;
+        int maxRetries = 2;
+
+        while (retryCount <= maxRetries)
+        {
+            try
+            {
+                var url = $"{BaseUrl}/{user.PixelaUsername}/graphs/{user.PixelaGraphId}/{date:yyyyMMdd}";
+                var request = new HttpRequestMessage(HttpMethod.Get, url);
+                request.Headers.Add("X-USER-TOKEN", user.PixelaToken);
+
+                var response = await _httpClient.SendAsync(request);
+                
+                if (response.StatusCode == System.Net.HttpStatusCode.ServiceUnavailable || 
+                    (int)response.StatusCode == 503 || (int)response.StatusCode == 429)
+                {
+                    _logger.Warning("Pixe.la rate limit hit for pixel (Attempt {Attempt})", retryCount + 1);
+                    retryCount++;
+                    await Task.Delay(1000 * retryCount);
+                    continue;
+                }
+
+                if (!response.IsSuccessStatusCode) return 0;
+
+                var json = await response.Content.ReadAsStringAsync();
+                using var doc = JsonDocument.Parse(json);
+                if (doc.RootElement.TryGetProperty("quantity", out var qtyProp))
+                {
+                    var qtyStr = qtyProp.GetString();
+                    return double.TryParse(qtyStr, out var q) ? q : 0;
+                }
+                return 0;
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, "Failed to fetch pixel for date {Date} (Attempt {Attempt})", date, retryCount + 1);
+                retryCount++;
+                await Task.Delay(500);
+            }
+        }
+        return 0;
+    }
+
+    public async Task<string> GetSvgAsync(User user, string? date = null, string? appearance = "dark")
+    {
+        if (!IsConfigured(user)) return "";
+
+        _logger.Information("Fetching SVG for heatmap (appearance: {Appearance})", appearance);
+
+        int retryCount = 0;
+        int maxRetries = 2;
+
+        while (retryCount <= maxRetries)
+        {
+            try
+            {
+                var queryParams = new List<string>();
+                if (!string.IsNullOrEmpty(date)) queryParams.Add($"date={date}");
+                if (!string.IsNullOrEmpty(appearance)) queryParams.Add($"appearance={appearance}");
+                
+                var url = $"{BaseUrl}/{user.PixelaUsername}/graphs/{user.PixelaGraphId}";
+                if (queryParams.Count > 0)
+                {
+                    url += "?" + string.Join("&", queryParams);
+                }
+                
+                var request = new HttpRequestMessage(HttpMethod.Get, url);
+                request.Headers.Add("X-USER-TOKEN", user.PixelaToken);
+
+                var response = await _httpClient.SendAsync(request);
+
+                if (response.StatusCode == System.Net.HttpStatusCode.ServiceUnavailable || 
+                    (int)response.StatusCode == 503 || (int)response.StatusCode == 429)
+                {
+                    _logger.Warning("Pixe.la rate limit hit for SVG (Attempt {Attempt})", retryCount + 1);
+                    retryCount++;
+                    await Task.Delay(1500 * retryCount);
+                    continue;
+                }
+
+                if (!response.IsSuccessStatusCode) return "";
+
+                return await response.Content.ReadAsStringAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, "Failed to fetch SVG heatmap (Attempt {Attempt})", retryCount + 1);
+                retryCount++;
+                await Task.Delay(500);
+            }
+        }
+        return "";
+    }
+
+    public async Task<string?> GetLatestActiveDateAsync(User user)
+    {
+        if (!IsConfigured(user)) return null;
+
+        _logger.Information("Searching for latest non-zero active date");
+
+        try
+        {
+            // Fetch pixels for last 365 days and find the max date with quantity > 0
+            var pixels = await GetPixelsAsync(user, DateTime.Today.AddDays(-365), DateTime.Today);
+            var latestActive = pixels
+                .Where(p => p.Quantity > 0)
+                .OrderByDescending(p => p.Date)
+                .FirstOrDefault();
+
+            if (latestActive != null)
+            {
+                var dateStr = latestActive.Date.ToString("yyyyMMdd");
+                _logger.Information("Latest active date found: {Date}", dateStr);
+                return dateStr;
+            }
+
+            return null;
+        }
+        catch (Exception ex)
+        {
+            _logger.Error(ex, "Failed to find latest active date");
+            return null;
         }
     }
 

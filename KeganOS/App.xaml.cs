@@ -53,14 +53,15 @@ public partial class App : System.Windows.Application
 
             // Show profile selection first
             var userService = _host.Services.GetRequiredService<IUserService>();
-            var profileWindow = new ProfileSelectionWindow(userService);
+            var pixelaService = _host.Services.GetRequiredService<IPixelaService>();
+            var profileWindow = new ProfileSelectionWindow(userService, pixelaService);
             
             if (profileWindow.ShowDialog() == true && profileWindow.SelectedUser != null)
             {
                 // User selected, open main window with services
                 var kegomoDoroService = _host.Services.GetRequiredService<IKegomoDoroService>();
                 var journalService = _host.Services.GetRequiredService<IJournalService>();
-                var pixelaService = _host.Services.GetRequiredService<IPixelaService>();
+                // pixelaService already declared above
                 
                 var mainWindow = new MainWindow(kegomoDoroService, journalService, pixelaService);
                 mainWindow.SetCurrentUser(profileWindow.SelectedUser);
