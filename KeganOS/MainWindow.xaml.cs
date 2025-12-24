@@ -331,14 +331,25 @@ public partial class MainWindow : System.Windows.Window
     {
         _logger.Information("Starting KEGOMODORO...");
         
+        // Check if already running FIRST before doing anything
+        if (_kegomoDoroService.IsAnyInstanceRunning)
+        {
+            System.Windows.MessageBox.Show("KEGOMODORO is already running!\n\nCheck your taskbar for the timer window.", 
+                "Already Running", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
+            return;
+        }
+        
         // Show launching feedback
+        var originalContent = StartFocusButton.Content;
+        StartFocusButton.Content = "⏳ Launching...";
         StartFocusButton.IsEnabled = false;
         
         _kegomoDoroService.Launch();
         
         // Wait a moment for process to start
-        await System.Threading.Tasks.Task.Delay(500);
+        await System.Threading.Tasks.Task.Delay(1000);
         
+        StartFocusButton.Content = originalContent;
         StartFocusButton.IsEnabled = true;
         
         if (_kegomoDoroService.IsRunning)
@@ -349,7 +360,7 @@ public partial class MainWindow : System.Windows.Window
         else if (_kegomoDoroService.LastError == "KEGOMODORO is already running")
         {
             // Already running - show friendly message
-            System.Windows.MessageBox.Show("🍅 KEGOMODORO is already running!\n\nCheck your taskbar for the timer window.", 
+            System.Windows.MessageBox.Show("KEGOMODORO is already running!\n\nCheck your taskbar for the timer window.", 
                 "Already Running", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
         }
         else if (!string.IsNullOrEmpty(_kegomoDoroService.LastError))

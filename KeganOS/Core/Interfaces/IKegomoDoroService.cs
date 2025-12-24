@@ -18,6 +18,11 @@ public interface IKegomoDoroService
     bool IsRunning { get; }
     
     /// <summary>
+    /// Check if any KEGOMODORO instance is running (including externally launched ones)
+    /// </summary>
+    bool IsAnyInstanceRunning { get; }
+    
+    /// <summary>
     /// Last error message if launch failed
     /// </summary>
     string? LastError { get; }
