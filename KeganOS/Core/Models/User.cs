@@ -13,10 +13,14 @@ public class User
     public string DisplayName { get; set; } = "";
     
     /// <summary>
-    /// Personal symbol/identifier (e.g., "KAÆ[Æß#")
-    /// Displayed in the top-left of the dashboard
+    /// Personal symbol/identifier (e.g., "🦭" or custom emoji)
     /// </summary>
     public string PersonalSymbol { get; set; } = "";
+    
+    /// <summary>
+    /// Computed display symbol - returns 🦭 if PersonalSymbol is empty
+    /// </summary>
+    public string DisplaySymbol => string.IsNullOrEmpty(PersonalSymbol) ? "🦭" : PersonalSymbol;
     
     /// <summary>
     /// Path to avatar image (optional)

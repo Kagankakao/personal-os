@@ -65,7 +65,7 @@
                                     
                                     <StackPanel Grid.Column="1" Margin="15,0,0,0" VerticalAlignment="Center">
                                         <TextBlock Text="{Binding DisplayName}" Foreground="#FFFFFF" FontSize="14"/>
-                                        <TextBlock Text="{Binding PersonalSymbol}" Foreground="#555555" FontSize="11"/>
+                                        <TextBlock Text="{Binding DisplaySymbol}" Foreground="#555555" FontSize="11"/>
                                     </StackPanel>
                                     
                                     <TextBlock Grid.Column="2" Text="→" Foreground="#444444" 

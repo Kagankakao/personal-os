@@ -37,14 +37,24 @@ public partial class CreateProfileWindow : System.Windows.Window
         var dialog = new Microsoft.Win32.OpenFileDialog
         {
             Title = "Select KEGOMODORO Journal File",
-            Filter = "Text Files (*.txt)|*.txt|All Files (*.*)|*.*",
+            Filter = "Text Files (*.txt)|*.txt",
             InitialDirectory = GetKegomoDoroPath()
         };
 
         if (dialog.ShowDialog() == true)
         {
+            // Only accept .txt files
+            if (!dialog.FileName.EndsWith(".txt", StringComparison.OrdinalIgnoreCase))
+            {
+                _logger.Warning("Invalid journal file format selected: {Path}", dialog.FileName);
+                System.Windows.MessageBox.Show("Journal file must be a .txt file.", "Invalid Format",
+                    System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Warning);
+                return;
+            }
+            
             _selectedJournalPath = dialog.FileName;
             JournalFileInput.Text = Path.GetFileName(_selectedJournalPath);
+            _logger.Information("Journal file selected: {Path}", _selectedJournalPath);
             ValidateJournalFile(_selectedJournalPath);
         }
     }
@@ -265,10 +275,10 @@ public partial class CreateProfileWindow : System.Windows.Window
             }
         }
 
-        // If no symbol provided, use display name
+        // If no symbol provided, use 🦭 (seal emoji) as default
         if (string.IsNullOrEmpty(symbol))
         {
-            symbol = displayName;
+            symbol = "🦭";
         }
 
         // Determine journal file name

@@ -19,6 +19,7 @@
     <!-- Database -->
     <PackageReference Include="Microsoft.Data.Sqlite" Version="9.0.0" />
     <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.3650.58" />
+    <PackageReference Include="Mscc.GenerativeAI" Version="1.9.4" />
     
     <!-- Logging -->
     <PackageReference Include="Serilog" Version="4.1.0" />

@@ -82,6 +82,10 @@
               "target": "Package",
               "version": "[1.0.3650.58, )"
             },
+            "Mscc.GenerativeAI": {
+              "target": "Package",
+              "version": "[1.9.4, )"
+            },
             "Serilog": {
               "target": "Package",
               "version": "[4.1.0, )"

@@ -66,9 +66,11 @@ public partial class App : System.Windows.Application
                 // User selected, open main window with services
                 var kegomoDoroService = _host.Services.GetRequiredService<IKegomoDoroService>();
                 var journalService = _host.Services.GetRequiredService<IJournalService>();
+                var aiProvider = _host.Services.GetRequiredService<IAIProvider>();
+                var motivationalService = _host.Services.GetRequiredService<IMotivationalMessageService>();
                 // pixelaService already declared above
                 
-                var mainWindow = new MainWindow(kegomoDoroService, journalService, pixelaService);
+                var mainWindow = new MainWindow(kegomoDoroService, journalService, pixelaService, aiProvider, motivationalService, userService);
                 mainWindow.SetCurrentUser(profileWindow.SelectedUser);
                 
                 // Set as main window and switch shutdown mode
@@ -106,7 +108,11 @@ public partial class App : System.Windows.Application
         services.AddSingleton<IJournalService, JournalService>();
         services.AddSingleton<IPixelaService, PixelaService>();
         services.AddSingleton<IKegomoDoroService, KegomoDoroService>();
-        services.AddSingleton<IAIProvider>(sp => new Infrastructure.AI.GeminiProvider());
+        
+        // AI Services
+        services.AddSingleton<IAIProvider, GeminiProvider>();
+        services.AddSingleton<IMotivationalMessageService, MotivationalMessageService>();
+
 
         Log.Debug("Services configured successfully");
     }

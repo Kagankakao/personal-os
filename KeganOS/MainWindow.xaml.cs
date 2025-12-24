@@ -1,5 +1,6 @@
 ﻿using KeganOS.Core.Interfaces;
 using KeganOS.Core.Models;
+using KeganOS.Infrastructure.Services;
 using Serilog;
 using System;
 using System.IO;
@@ -19,16 +20,29 @@ public partial class MainWindow : System.Windows.Window
     private readonly IKegomoDoroService _kegomoDoroService;
     private readonly IJournalService _journalService;
     private readonly IPixelaService _pixelaService;
+    private readonly IAIProvider _aiProvider;
+    private readonly IMotivationalMessageService _motivationalService;
+    private readonly IUserService _userService;
     private User? _currentUser;
+    private List<ChatMessage> _chatHistory = [];
 
-    public MainWindow(IKegomoDoroService kegomoDoroService, IJournalService journalService, IPixelaService pixelaService)
+    public MainWindow(
+        IKegomoDoroService kegomoDoroService, 
+        IJournalService journalService, 
+        IPixelaService pixelaService,
+        IAIProvider aiProvider,
+        IMotivationalMessageService motivationalService,
+        IUserService userService)
     {
         InitializeComponent();
         _kegomoDoroService = kegomoDoroService;
         _journalService = journalService;
         _pixelaService = pixelaService;
+        _aiProvider = aiProvider;
+        _motivationalService = motivationalService;
+        _userService = userService;
         
-        _logger.Information("MainWindow initialized with services");
+        _logger.Information("MainWindow initialized with all services including AI");
         
         // Load KEGOMODORO images
         LoadKegomoDoroImages();
@@ -119,6 +133,40 @@ public partial class MainWindow : System.Windows.Window
     {
         Close();
     }
+
+    private void SettingsButton_Click(object sender, System.Windows.RoutedEventArgs e)
+    {
+        if (_currentUser == null)
+        {
+            _logger.Warning("Cannot open settings: no user logged in");
+            return;
+        }
+
+        _logger.Information("Opening settings for user {DisplayName}", _currentUser.DisplayName);
+        
+        try
+        {
+            var settingsWindow = new Views.SettingsWindow(_userService, _aiProvider)
+            {
+                Owner = this
+            };
+            settingsWindow.SetCurrentUser(_currentUser);
+            
+            if (settingsWindow.ShowDialog() == true)
+            {
+                // Refresh UI with updated settings
+                PersonalSymbol.Text = string.IsNullOrEmpty(_currentUser.PersonalSymbol) ? "🦭" : _currentUser.PersonalSymbol;
+                UserDisplayName.Text = _currentUser.DisplayName;
+                _logger.Information("Settings saved, UI refreshed");
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.Error(ex, "Failed to open settings window");
+            System.Windows.MessageBox.Show($"Failed to open settings: {ex.Message}", "Error",
+                System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+        }
+    }
     
     #endregion
 
@@ -131,7 +179,7 @@ public partial class MainWindow : System.Windows.Window
         _logger.Information("User set: {Name}", user.DisplayName);
         
         // Update UI with user info
-        PersonalSymbol.Text = string.IsNullOrEmpty(user.PersonalSymbol) ? user.DisplayName : user.PersonalSymbol;
+        PersonalSymbol.Text = string.IsNullOrEmpty(user.PersonalSymbol) ? "🦭" : user.PersonalSymbol;
         UserDisplayName.Text = user.DisplayName;
         
         // Load user-specific data
@@ -231,10 +279,39 @@ public partial class MainWindow : System.Windows.Window
             
             // Load Pixe.la heatmap if configured
             await LoadPixelaHeatmapAsync();
+            
+            // Load motivational message
+            await LoadMotivationalMessageAsync();
         }
         catch (System.Exception ex)
         {
             _logger.Error(ex, "Failed to load user data");
+        }
+    }
+
+    private async System.Threading.Tasks.Task LoadMotivationalMessageAsync()
+    {
+        if (_currentUser == null) return;
+
+        try
+        {
+            _logger.Debug("Loading motivational message...");
+            
+            // Configure AI provider with user's API key if available
+            if (!string.IsNullOrEmpty(_currentUser.GeminiApiKey) && _aiProvider is GeminiProvider gemini)
+            {
+                gemini.Configure(_currentUser.GeminiApiKey);
+            }
+
+            var message = await _motivationalService.GetMessageAsync(_currentUser);
+            MotivationalQuote.Text = message.Message;
+            
+            _logger.Information("Motivational message loaded: {Type}", message.Type);
+        }
+        catch (Exception ex)
+        {
+            _logger.Warning(ex, "Failed to load motivational message");
+            MotivationalQuote.Text = "\"Every expert was once a beginner.\"";
         }
     }
 
@@ -405,7 +482,7 @@ public partial class MainWindow : System.Windows.Window
         LoadUserDataAsync();
     }
 
-    private void AskAIButton_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    private async void AskAIButton_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
     {
         var question = AIChatInput.Text;
         if (string.IsNullOrWhiteSpace(question) || question.Contains("Ask me anything"))
@@ -414,12 +491,63 @@ public partial class MainWindow : System.Windows.Window
         }
 
         _logger.Information("AI question: {Question}", question);
-        
-        // TODO: Query via IAIProvider
-        System.Windows.MessageBox.Show("AI features coming in Phase 5!",
-            "AI Chat", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
-        
-        AIChatInput.Text = "Ask me anything about your journey...";
+
+        // Check if AI is configured
+        if (!_aiProvider.IsAvailable)
+        {
+            System.Windows.MessageBox.Show("AI is not configured.\n\nPlease add your Gemini API key in profile settings to use AI features.",
+                "AI Not Configured", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
+            return;
+        }
+
+        // Show loading state
+        var originalText = AIChatInput.Text;
+        AIChatInput.Text = "Thinking...";
+        AIChatInput.IsEnabled = false;
+
+        try
+        {
+            // Build context from user's journey
+            var context = "";
+            if (_currentUser != null)
+            {
+                var entries = await _journalService.ReadEntriesAsync(_currentUser);
+                var recentEntries = entries.OrderByDescending(e => e.Date).Take(5);
+                if (recentEntries.Any())
+                {
+                    context = $"Recent journal entries from {_currentUser.DisplayName}'s journey:\n" +
+                              string.Join("\n", recentEntries.Select(e => $"- {e.Date:MMM d}: {(e.NoteText.Length > 40 ? e.NoteText[..40] + "..." : e.NoteText)}"));
+                }
+            }
+
+            var prompt = string.IsNullOrEmpty(context) 
+                ? question 
+                : $"Context about the user's personal journey:\n{context}\n\nUser's question: {question}";
+
+            // Add to chat history
+            _chatHistory.Add(new ChatMessage("user", question));
+
+            // Get AI response
+            var response = await _aiProvider.GenerateResponseAsync(prompt, _chatHistory.TakeLast(6));
+            
+            // Add response to history
+            _chatHistory.Add(new ChatMessage("assistant", response));
+
+            // Show response
+            System.Windows.MessageBox.Show(response, "AI Response", 
+                System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
+        }
+        catch (Exception ex)
+        {
+            _logger.Error(ex, "Failed to get AI response");
+            System.Windows.MessageBox.Show($"Failed to get AI response: {ex.Message}", 
+                "Error", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Warning);
+        }
+        finally
+        {
+            AIChatInput.Text = "Ask me anything about your journey...";
+            AIChatInput.IsEnabled = true;
+        }
     }
 
     private void CustomizeButton_Click(object sender, System.Windows.RoutedEventArgs e)

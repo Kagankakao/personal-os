@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "wYc/7YMK++w=",
+  "dgSpecHash": "vv2qr3SNjQ8=",
   "success": true,
   "projectFilePath": "C:\\Users\\ariba\\OneDrive\\Documenti\\Software Projects\\AI Projects\\personal-os\\personal-os\\KeganOS\\KeganOS.csproj",
   "expectedPackageFiles": [
@@ -49,6 +49,7 @@
     "C:\\Users\\ariba\\.nuget\\packages\\microsoft.web.webview2\\1.0.3650.58\\microsoft.web.webview2.1.0.3650.58.nupkg.sha512",
     "C:\\Users\\ariba\\.nuget\\packages\\microsoft.win32.registry\\4.5.0\\microsoft.win32.registry.4.5.0.nupkg.sha512",
     "C:\\Users\\ariba\\.nuget\\packages\\microsoft.win32.systemevents\\4.5.0\\microsoft.win32.systemevents.4.5.0.nupkg.sha512",
+    "C:\\Users\\ariba\\.nuget\\packages\\mscc.generativeai\\1.9.4\\mscc.generativeai.1.9.4.nupkg.sha512",
     "C:\\Users\\ariba\\.nuget\\packages\\netstandard.library\\2.0.3\\netstandard.library.2.0.3.nupkg.sha512",
     "C:\\Users\\ariba\\.nuget\\packages\\serilog\\4.1.0\\serilog.4.1.0.nupkg.sha512",
     "C:\\Users\\ariba\\.nuget\\packages\\serilog.extensions.hosting\\8.0.0\\serilog.extensions.hosting.8.0.0.nupkg.sha512",
@@ -84,6 +85,7 @@
     "C:\\Users\\ariba\\.nuget\\packages\\system.servicemodel.primitives\\4.6.0\\system.servicemodel.primitives.4.6.0.nupkg.sha512",
     "C:\\Users\\ariba\\.nuget\\packages\\system.text.encoding\\4.3.0\\system.text.encoding.4.3.0.nupkg.sha512",
     "C:\\Users\\ariba\\.nuget\\packages\\system.text.encoding.codepages\\4.5.1\\system.text.encoding.codepages.4.5.1.nupkg.sha512",
+    "C:\\Users\\ariba\\.nuget\\packages\\system.text.json\\9.0.0\\system.text.json.9.0.0.nupkg.sha512",
     "C:\\Users\\ariba\\.nuget\\packages\\system.threading.tasks\\4.3.0\\system.threading.tasks.4.3.0.nupkg.sha512"
   ],
   "logs": []
