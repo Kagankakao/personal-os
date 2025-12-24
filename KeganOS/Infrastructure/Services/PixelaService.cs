@@ -11,11 +11,12 @@ namespace KeganOS.Infrastructure.Services;
 /// <summary>
 /// Service for Pixe.la habit tracking API integration
 /// </summary>
-public class PixelaService : IPixelaService
+public class PixelaService : IPixelaService, IDisposable
 {
     private readonly ILogger _logger = Log.ForContext<PixelaService>();
     private readonly HttpClient _httpClient;
     private const string BaseUrl = "https://pixe.la/v1/users";
+    private bool _disposed;
 
     public PixelaService()
     {
@@ -24,6 +25,17 @@ public class PixelaService : IPixelaService
             Timeout = TimeSpan.FromSeconds(30)
         };
         _logger.Debug("PixelaService initialized");
+    }
+
+    public void Dispose()
+    {
+        if (!_disposed)
+        {
+            _httpClient.Dispose();
+            _disposed = true;
+            _logger.Debug("PixelaService disposed");
+        }
+        GC.SuppressFinalize(this);
     }
 
     public bool IsConfigured(User user) =>
