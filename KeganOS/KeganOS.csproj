@@ -29,6 +29,7 @@
     <!-- DI -->
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.0" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.0" />
+    <PackageReference Include="System.Management" Version="10.0.1" />
   </ItemGroup>
 
 </Project>

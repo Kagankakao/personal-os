@@ -1,9 +1,12 @@
 ﻿using KeganOS.Core.Interfaces;
 using KeganOS.Core.Models;
 using Serilog;
+using System;
+using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Collections.Generic;
+using System.Windows.Media.Imaging;
 
 namespace KeganOS;
 
@@ -26,6 +29,60 @@ public partial class MainWindow : System.Windows.Window
         _pixelaService = pixelaService;
         
         _logger.Information("MainWindow initialized with services");
+        
+        // Load KEGOMODORO images
+        LoadKegomoDoroImages();
+    }
+
+    /// <summary>
+    /// Load images from KEGOMODORO dependencies folder
+    /// </summary>
+    private void LoadKegomoDoroImages()
+    {
+        try
+        {
+            var possiblePaths = new[]
+            {
+                Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "..", "..", "kegomodoro", "dependencies", "images")),
+                Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "..", "kegomodoro", "dependencies", "images")),
+                @"C:\Users\ariba\OneDrive\Documenti\Software Projects\AI Projects\personal-os\personal-os\kegomodoro\dependencies\images"
+            };
+
+            string? imagesPath = null;
+            foreach (var path in possiblePaths)
+            {
+                if (Directory.Exists(path))
+                {
+                    imagesPath = path;
+                    break;
+                }
+            }
+
+            if (imagesPath != null)
+            {
+                // Load fire image with cache disabled for live updates
+                var fireImagePath = Path.Combine(imagesPath, "main_image.png");
+                if (File.Exists(fireImagePath))
+                {
+                    var bitmap = new BitmapImage();
+                    bitmap.BeginInit();
+                    bitmap.CacheOption = BitmapCacheOption.OnLoad;
+                    bitmap.CreateOptions = BitmapCreateOptions.IgnoreImageCache;
+                    bitmap.UriSource = new Uri(fireImagePath);
+                    bitmap.EndInit();
+                    FireImage.Source = bitmap;
+                    _logger.Debug("Loaded fire image from {Path}", fireImagePath);
+                }
+            }
+            else
+            {
+                _logger.Warning("KEGOMODORO images folder not found");
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.Error(ex, "Failed to load KEGOMODORO images");
+        }
     }
 
     #region Title Bar Controls
@@ -289,6 +346,12 @@ public partial class MainWindow : System.Windows.Window
             // Success - don't show message, just let it run
             _logger.Information("KEGOMODORO is running");
         }
+        else if (_kegomoDoroService.LastError == "KEGOMODORO is already running")
+        {
+            // Already running - show friendly message
+            System.Windows.MessageBox.Show("🍅 KEGOMODORO is already running!\n\nCheck your taskbar for the timer window.", 
+                "Already Running", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
+        }
         else if (!string.IsNullOrEmpty(_kegomoDoroService.LastError))
         {
             // Show specific error
@@ -354,11 +417,25 @@ public partial class MainWindow : System.Windows.Window
         
         var settingsWindow = new Views.KegomoDoroSettingsWindow();
         settingsWindow.Owner = this;
+        
+        // Set callback to reload fire image when changed
+        settingsWindow.OnImageChanged = () =>
+        {
+            _logger.Information("Fire image changed - reloading...");
+            LoadKegomoDoroImages();
+        };
+        
         settingsWindow.ShowDialog();
         
         if (settingsWindow.SettingsChanged)
         {
             _logger.Information("KEGOMODORO settings changed - user should restart timer");
+        }
+        
+        // Also reload if image was changed (in case callback didn't fire)
+        if (settingsWindow.ImageChanged)
+        {
+            LoadKegomoDoroImages();
         }
     }
 }

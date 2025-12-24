@@ -20,8 +20,48 @@ from time import sleep
 from keyboard import is_pressed
 from PIL import Image, ImageTk
 from pathlib import Path
-# ---------------------------- CONSTANTS AND SOME VARIABLES ------------------------------- #
+import atexit
+import sys
+
+# ---------------------------- LOCK FILE FOR SINGLE INSTANCE ------------------------------- #
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
+LOCK_FILE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".kegomodoro.lock")
+
+def check_single_instance():
+    """Check if another instance is already running"""
+    if os.path.exists(LOCK_FILE_PATH):
+        # Check if the process is actually running
+        try:
+            with open(LOCK_FILE_PATH, 'r') as f:
+                pid = int(f.read().strip())
+            # Check if process exists using os.kill with signal 0 (doesn't kill, just checks)
+            os.kill(pid, 0)
+            # If we get here, process exists - show warning and exit
+            tkinter.messagebox.showwarning("KEGOMODORO", "KEGOMODORO is already running!")
+            sys.exit(0)
+        except (ValueError, OSError, ProcessLookupError):
+            # Process doesn't exist or lock file is invalid - it's a stale lock file
+            pass
+        except Exception:
+            pass
+    
+    # Create lock file with our PID
+    with open(LOCK_FILE_PATH, 'w') as f:
+        f.write(str(os.getpid()))
+
+def cleanup_lock_file():
+    """Remove lock file on exit"""
+    try:
+        if os.path.exists(LOCK_FILE_PATH):
+            os.remove(LOCK_FILE_PATH)
+    except:
+        pass
+
+# Check for single instance and register cleanup
+check_single_instance()
+atexit.register(cleanup_lock_file)
+
+# ---------------------------- CONSTANTS AND SOME VARIABLES ------------------------------- #
 BLACK = "#000000"
 WHITE = "#feffff"
 DEEP_GOLD_COLOR = "#EFB036"
@@ -578,6 +618,7 @@ def on_closing():
     if not pomodoro_mode_activate:
         with open(TIME_CSV_PATH, mode='a') as file:
             file.write(f"{hours},{minute},{second}\n")
+    cleanup_lock_file()  # Clean up lock file before exit
     root.destroy()
 # ---------------------------- UI SETUP ------------------------------- #
 root = Tk()

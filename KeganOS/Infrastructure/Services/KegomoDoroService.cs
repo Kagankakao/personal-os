@@ -59,10 +59,50 @@ public class KegomoDoroService : IKegomoDoroService
 
     public bool IsRunning => _process != null && !_process.HasExited;
     
+    /// <summary>
+    /// Check if any KEGOMODORO process is running (even ones started externally)
+    /// Uses lock file mechanism - KEGOMODORO creates .kegomodoro.lock when running
+    /// </summary>
+    public bool IsAnyInstanceRunning
+    {
+        get
+        {
+            // Check our tracked process first
+            if (IsRunning) return true;
+            
+            // Check for lock file created by KEGOMODORO
+            try
+            {
+                var lockFilePath = Path.Combine(_kegomoDoroPath, ".kegomodoro.lock");
+                if (File.Exists(lockFilePath))
+                {
+                    _logger.Debug("Found KEGOMODORO lock file at {Path}", lockFilePath);
+                    return true;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.Debug(ex, "Error checking for KEGOMODORO lock file");
+            }
+            
+            return false;
+        }
+    }
+    
     public string? LastError => _lastError;
+
+    private string LockFilePath => Path.Combine(_kegomoDoroPath, ".kegomodoro.lock");
 
     public void Launch()
     {
+        // Prevent multiple instances - check for ANY kegomodoro process
+        if (IsAnyInstanceRunning)
+        {
+            _lastError = "KEGOMODORO is already running";
+            _logger.Warning("KEGOMODORO is already running, not launching another instance");
+            return;
+        }
+
         _logger.Information("Launching KEGOMODORO...");
         _lastError = null;
         
@@ -70,16 +110,22 @@ public class KegomoDoroService : IKegomoDoroService
         {
             var mainPyPath = Path.Combine(_kegomoDoroPath, "main.py");
             
-            // Debug: Show what path we're using
-            System.Diagnostics.Debug.WriteLine($"KEGOMODORO path: {_kegomoDoroPath}");
-            System.Diagnostics.Debug.WriteLine($"main.py path: {mainPyPath}");
-            System.Diagnostics.Debug.WriteLine($"main.py exists: {File.Exists(mainPyPath)}");
-            
             if (!File.Exists(mainPyPath))
             {
                 _lastError = $"main.py not found at:\n{mainPyPath}";
                 _logger.Error("KEGOMODORO main.py not found at {Path}", mainPyPath);
                 return;
+            }
+
+            // Create lock file IMMEDIATELY to prevent race condition with multiple clicks
+            try
+            {
+                File.WriteAllText(LockFilePath, "launching");
+                _logger.Debug("Created lock file at {Path}", LockFilePath);
+            }
+            catch (Exception ex)
+            {
+                _logger.Warning(ex, "Failed to create lock file");
             }
 
             _logger.Information("Launching from: {Path}", mainPyPath);
