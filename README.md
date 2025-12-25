@@ -1,8 +1,7 @@
 # 🖥️ KeganOS - Personal Productivity Dashboard
 
 <p align="center">
-  <img width="622" height="767" alt="image" src="https://github.com/user-attachments/assets/7bd3c782-635c-4313-aade-ca79a4404edd" />
-
+  <img width="636" height="795" alt="image" src="https://github.com/user-attachments/assets/480a9f67-2afe-4bc7-bd6d-54d7a3d0e623" />
 </p>
 
 > **A dark-themed productivity command center** that integrates with KEGOMODORO Pomodoro timer and Pixe.la habit tracking to help you stay focused and visualize your progress.
