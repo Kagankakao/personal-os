@@ -18,18 +18,125 @@ public partial class CreateProfileWindow : System.Windows.Window
     private int _validEntriesCount;
     private bool _pixelaUsernameAvailable = false;
     private bool _isNewPixelaUser = false;
+    private User? _editingUser = null;
+    private string? _selectedAvatarPath;
     
+    private readonly IBackupService _backupService;
+
     public User? CreatedUser { get; private set; }
 
-    public CreateProfileWindow(IUserService userService, IPixelaService pixelaService)
+    public CreateProfileWindow(IUserService userService, IPixelaService pixelaService, IBackupService backupService)
+        : this(userService, pixelaService, backupService, null) { }
+
+    public CreateProfileWindow(IUserService userService, IPixelaService pixelaService, IBackupService backupService, User? editingUser)
     {
         InitializeComponent();
         _userService = userService;
         _pixelaService = pixelaService;
-        _logger.Information("CreateProfileWindow initialized");
+        _backupService = backupService;
+        _editingUser = editingUser;
+        
+        if (_editingUser != null)
+        {
+            _logger.Information("CreateProfileWindow initialized in EDIT mode for {DisplayName}", _editingUser.DisplayName);
+            Title = "Edit Profile";
+            LoadEditingUser();
+        }
+        else
+        {
+            _logger.Information("CreateProfileWindow initialized in CREATE mode");
+        }
         
         // Focus on first input
         Loaded += (s, e) => DisplayNameInput.Focus();
+    }
+
+    private void LoadEditingUser()
+    {
+        if (_editingUser == null) return;
+        
+        DisplayNameInput.Text = _editingUser.DisplayName;
+        SymbolInput.Text = _editingUser.PersonalSymbol;
+        JournalFileInput.Text = _editingUser.JournalFileName;
+        _selectedJournalPath = null; // Keep existing unless changed
+        
+        // Load existing avatar
+        if (_editingUser.HasAvatar)
+        {
+            _selectedAvatarPath = _editingUser.AvatarPath;
+            LoadAvatarPreview(_selectedAvatarPath);
+        }
+        
+        if (!string.IsNullOrEmpty(_editingUser.PixelaUsername))
+        {
+            PixelaUsernameInput.Text = _editingUser.PixelaUsername;
+            PixelaTokenInput.Password = _editingUser.PixelaToken ?? "";
+            _pixelaUsernameAvailable = true;
+            _isNewPixelaUser = false;
+        }
+    }
+
+    private void AvatarBrowseButton_Click(object sender, System.Windows.RoutedEventArgs e)
+    {
+        var dialog = new Microsoft.Win32.OpenFileDialog
+        {
+            Title = "Select Avatar Image",
+            Filter = "Image Files (*.png;*.jpg;*.jpeg;*.gif)|*.png;*.jpg;*.jpeg;*.gif"
+        };
+
+        if (dialog.ShowDialog() == true)
+        {
+            _selectedAvatarPath = dialog.FileName;
+            _logger.Information("Avatar selected: {Path}", _selectedAvatarPath);
+            LoadAvatarPreview(_selectedAvatarPath);
+        }
+    }
+
+    private void LoadAvatarPreview(string imagePath)
+    {
+        try
+        {
+            var bitmap = new System.Windows.Media.Imaging.BitmapImage();
+            bitmap.BeginInit();
+            bitmap.UriSource = new Uri(imagePath);
+            bitmap.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
+            bitmap.EndInit();
+            
+            AvatarImageBrush.ImageSource = bitmap;
+            AvatarPreview.Visibility = System.Windows.Visibility.Visible;
+            AvatarPlaceholder.Visibility = System.Windows.Visibility.Collapsed;
+        }
+        catch (Exception ex)
+        {
+            _logger.Error(ex, "Failed to load avatar preview");
+        }
+    }
+
+    private string SaveAvatarToAppData(string sourcePath, string userName)
+    {
+        try
+        {
+            var avatarsDir = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "KeganOS", "avatars");
+            
+            Directory.CreateDirectory(avatarsDir);
+            
+            var extension = Path.GetExtension(sourcePath);
+            var safeUserName = string.Join("_", userName.Split(Path.GetInvalidFileNameChars()));
+            var destFileName = $"{safeUserName}_{DateTime.Now:yyyyMMddHHmmss}{extension}";
+            var destPath = Path.Combine(avatarsDir, destFileName);
+            
+            File.Copy(sourcePath, destPath, overwrite: true);
+            _logger.Information("Avatar saved: {Path}", destPath);
+            
+            return destPath;
+        }
+        catch (Exception ex)
+        {
+            _logger.Error(ex, "Failed to save avatar");
+            return "";
+        }
     }
 
     private void BrowseButton_Click(object sender, System.Windows.RoutedEventArgs e)
@@ -312,54 +419,102 @@ public partial class CreateProfileWindow : System.Windows.Window
             }
         }
 
-        // Create user object
-        var user = new User
+        // Create or update user object
+        User user;
+        if (_editingUser != null)
         {
-            DisplayName = displayName,
-            PersonalSymbol = symbol,
-            JournalFileName = journalFile,
-            PixelaUsername = string.IsNullOrEmpty(pixelaUsername) ? null : pixelaUsername,
-            PixelaToken = pixelaToken,
-            PixelaGraphId = graphId
-        };
+            // Edit mode - update existing user
+            user = _editingUser;
+            user.DisplayName = displayName;
+            user.PersonalSymbol = symbol;
+            if (!string.IsNullOrEmpty(_selectedJournalPath))
+            {
+                user.JournalFileName = journalFile;
+            }
+            if (!string.IsNullOrEmpty(pixelaUsername))
+            {
+                user.PixelaUsername = pixelaUsername;
+                user.PixelaToken = pixelaToken;
+                user.PixelaGraphId = graphId;
+            }
+            // Handle avatar update
+            if (!string.IsNullOrEmpty(_selectedAvatarPath) && _selectedAvatarPath != user.AvatarPath)
+            {
+                // Backup existing avatar if present and different
+                if (!string.IsNullOrEmpty(_editingUser.AvatarPath) && File.Exists(_editingUser.AvatarPath) && _editingUser.AvatarPath != _selectedAvatarPath)
+                {
+                    await _backupService.BackupImageAsync(_editingUser, _editingUser.AvatarPath);
+                    _logger.Information("Previous avatar backed up before replacement");
+                }
+                
+                var avatarPath = SaveAvatarToAppData(_selectedAvatarPath, displayName);
+                _editingUser.AvatarPath = avatarPath;
+            }
+        }
+        else
+        {
+            // Create mode - new user
+            user = new User
+            {
+                DisplayName = displayName,
+                PersonalSymbol = symbol,
+                JournalFileName = journalFile,
+                PixelaUsername = string.IsNullOrEmpty(pixelaUsername) ? null : pixelaUsername,
+                PixelaToken = pixelaToken,
+                PixelaGraphId = graphId,
+                AvatarPath = !string.IsNullOrEmpty(_selectedAvatarPath) 
+                    ? SaveAvatarToAppData(_selectedAvatarPath, displayName) 
+                    : ""
+            };
+        }
 
         try
         {
-            _logger.Information("Creating user: {Name} with symbol: {Symbol}, journal: {Journal}", 
-                displayName, symbol, journalFile);
-
-            // Register on Pixe.la if username provided (with retry loop for free version)
-            if (!string.IsNullOrEmpty(pixelaUsername) && !string.IsNullOrEmpty(pixelaToken))
+            if (_editingUser != null)
             {
-                _logger.Information("Registering Pixe.la user: {Username}", pixelaUsername);
-                ShowPixelaStatus("Connecting to Pixe.la (this may take a few seconds)...", true);
-                
-                var (success, error) = await _pixelaService.RegisterUserAsync(pixelaUsername, pixelaToken);
-                if (!success)
-                {
-                    ShowPixelaStatus($"✗ Pixe.la: {error}", false);
-                    return;
-                }
-
-                // Create default graph
-                ShowPixelaStatus("Creating focus graph...", true);
-                var graphCreated = await _pixelaService.CreateGraphAsync(user, "focus", "Focus Hours");
-                if (!graphCreated)
-                {
-                    _logger.Warning("Graph creation failed, but continuing");
-                }
-                
-                ShowPixelaStatus("✓ Pixe.la connected!", true);
+                _logger.Information("Updating user: {Name} with symbol: {Symbol}", displayName, symbol);
+                await _userService.UpdateUserAsync(user);
+                CreatedUser = user;
             }
+            else
+            {
+                _logger.Information("Creating user: {Name} with symbol: {Symbol}, journal: {Journal}", 
+                    displayName, symbol, journalFile);
 
-            CreatedUser = await _userService.CreateUserAsync(user);
+                // Register on Pixe.la if username provided (with retry loop for free version)
+                if (!string.IsNullOrEmpty(pixelaUsername) && !string.IsNullOrEmpty(pixelaToken))
+                {
+                    _logger.Information("Registering Pixe.la user: {Username}", pixelaUsername);
+                    ShowPixelaStatus("Connecting to Pixe.la (this may take a few seconds)...", true);
+                    
+                    var (success, error) = await _pixelaService.RegisterUserAsync(pixelaUsername, pixelaToken);
+                    if (!success)
+                    {
+                        ShowPixelaStatus($"✗ Pixe.la: {error}", false);
+                        return;
+                    }
+
+                    // Create default graph
+                    ShowPixelaStatus("Creating focus graph...", true);
+                    var graphCreated = await _pixelaService.CreateGraphAsync(user, "focus", "Focus Hours");
+                    if (!graphCreated)
+                    {
+                        _logger.Warning("Graph creation failed, but continuing");
+                    }
+                    
+                    ShowPixelaStatus("✓ Pixe.la connected!", true);
+                }
+
+                CreatedUser = await _userService.CreateUserAsync(user);
+            }
+            
             DialogResult = true;
             Close();
         }
         catch (System.Exception ex)
         {
-            _logger.Error(ex, "Failed to create user");
-            System.Windows.MessageBox.Show($"Failed to create profile: {ex.Message}", "Error",
+            _logger.Error(ex, _editingUser != null ? "Failed to update user" : "Failed to create user");
+            System.Windows.MessageBox.Show($"Failed to {(_editingUser != null ? "update" : "create")} profile: {ex.Message}", "Error",
                 System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
         }
     }

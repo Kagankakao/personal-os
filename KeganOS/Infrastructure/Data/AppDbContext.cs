@@ -43,6 +43,9 @@ public class AppDbContext
                 PixelaToken TEXT,
                 PixelaGraphId TEXT,
                 GeminiApiKey TEXT,
+                TotalHours REAL DEFAULT 0,
+                XP INTEGER DEFAULT 0,
+                UnlockedAchievements TEXT,
                 CreatedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
                 LastLoginAt DATETIME DEFAULT CURRENT_TIMESTAMP
             );
@@ -77,9 +80,34 @@ public class AppDbContext
             -- Create indexes for better performance
             CREATE INDEX IF NOT EXISTS idx_journal_user ON JournalEntries(UserId);
             CREATE INDEX IF NOT EXISTS idx_journal_date ON JournalEntries(Date);
+
+
         ";
         
         command.ExecuteNonQuery();
+        
+        // Migration: Ensure new columns exist for existing databases
+        try 
+        {
+            var migrateCmd = connection.CreateCommand();
+            migrateCmd.CommandText = "ALTER TABLE Users ADD COLUMN TotalHours REAL DEFAULT 0;";
+            migrateCmd.ExecuteNonQuery();
+        } catch { /* Column likely exists */ }
+        
+        try 
+        {
+            var migrateCmd = connection.CreateCommand();
+            migrateCmd.CommandText = "ALTER TABLE Users ADD COLUMN XP INTEGER DEFAULT 0;";
+            migrateCmd.ExecuteNonQuery();
+        } catch { /* Column likely exists */ }
+        
+        try 
+        {
+            var migrateCmd = connection.CreateCommand();
+            migrateCmd.CommandText = "ALTER TABLE Users ADD COLUMN UnlockedAchievements TEXT;";
+            migrateCmd.ExecuteNonQuery();
+        } catch { /* Column likely exists */ }
+
         _initialized = true;
         _logger.Information("Database initialized successfully");
     }

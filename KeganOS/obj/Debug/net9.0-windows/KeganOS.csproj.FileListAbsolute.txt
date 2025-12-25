@@ -113,3 +113,13 @@ C:\Users\ariba\OneDrive\Documenti\Software Projects\AI Projects\personal-os\pers
 C:\Users\ariba\OneDrive\Documenti\Software Projects\AI Projects\personal-os\personal-os\KeganOS\obj\Debug\net9.0-windows\KeganOS.pdb
 C:\Users\ariba\OneDrive\Documenti\Software Projects\AI Projects\personal-os\personal-os\KeganOS\obj\Debug\net9.0-windows\KeganOS.genruntimeconfig.cache
 C:\Users\ariba\OneDrive\Documenti\Software Projects\AI Projects\personal-os\personal-os\KeganOS\obj\Debug\net9.0-windows\ref\KeganOS.dll
+C:\Users\ariba\OneDrive\Documenti\Software Projects\AI Projects\personal-os\personal-os\KeganOS\obj\Debug\net9.0-windows\Views\AddManualTimeWindow.baml
+C:\Users\ariba\OneDrive\Documenti\Software Projects\AI Projects\personal-os\personal-os\KeganOS\obj\Debug\net9.0-windows\Views\AddManualTimeWindow.g.cs
+C:\Users\ariba\OneDrive\Documenti\Software Projects\AI Projects\personal-os\personal-os\KeganOS\obj\Debug\net9.0-windows\Views\ThemeGalleryWindow.baml
+C:\Users\ariba\OneDrive\Documenti\Software Projects\AI Projects\personal-os\personal-os\KeganOS\obj\Debug\net9.0-windows\Views\ThemeGalleryWindow.g.cs
+C:\Users\ariba\OneDrive\Documenti\Software Projects\AI Projects\personal-os\personal-os\KeganOS\obj\Debug\net9.0-windows\Views\AchievementsWindow.baml
+C:\Users\ariba\OneDrive\Documenti\Software Projects\AI Projects\personal-os\personal-os\KeganOS\obj\Debug\net9.0-windows\Views\Components\ToastNotification.baml
+C:\Users\ariba\OneDrive\Documenti\Software Projects\AI Projects\personal-os\personal-os\KeganOS\obj\Debug\net9.0-windows\Views\AchievementsWindow.g.cs
+C:\Users\ariba\OneDrive\Documenti\Software Projects\AI Projects\personal-os\personal-os\KeganOS\obj\Debug\net9.0-windows\Views\Components\ToastNotification.g.cs
+C:\Users\ariba\OneDrive\Documenti\Software Projects\AI Projects\personal-os\personal-os\KeganOS\obj\Debug\net9.0-windows\Views\WeeklyReportWindow.baml
+C:\Users\ariba\OneDrive\Documenti\Software Projects\AI Projects\personal-os\personal-os\KeganOS\obj\Debug\net9.0-windows\Views\WeeklyReportWindow.g.cs

@@ -99,7 +99,7 @@ public class UserService : IUserService
 
     public async Task UpdateUserAsync(User user)
     {
-        _logger.Information("Updating user {Id}: {Name}", user.Id, user.DisplayName);
+        _logger.Information("Updating user {Id}: {Name} (XP={XP}, Hours={Hours})", user.Id, user.DisplayName, user.XP, user.TotalHours);
 
         using var conn = _db.GetConnection();
         var cmd = conn.CreateCommand();
@@ -113,6 +113,9 @@ public class UserService : IUserService
                 PixelaToken = @pxToken,
                 PixelaGraphId = @pxGraph,
                 GeminiApiKey = @gemini,
+                TotalHours = @totalHours,
+                XP = @xp,
+                UnlockedAchievements = @achievements,
                 LastLoginAt = CURRENT_TIMESTAMP
             WHERE Id = @id";
 
@@ -125,6 +128,9 @@ public class UserService : IUserService
         cmd.Parameters.AddWithValue("@pxToken", user.PixelaToken ?? (object)DBNull.Value);
         cmd.Parameters.AddWithValue("@pxGraph", user.PixelaGraphId ?? (object)DBNull.Value);
         cmd.Parameters.AddWithValue("@gemini", user.GeminiApiKey ?? (object)DBNull.Value);
+        cmd.Parameters.AddWithValue("@totalHours", user.TotalHours);
+        cmd.Parameters.AddWithValue("@xp", user.XP);
+        cmd.Parameters.AddWithValue("@achievements", user.UnlockedAchievementsJson ?? "");
 
         await cmd.ExecuteNonQueryAsync();
     }
@@ -204,6 +210,35 @@ public class UserService : IUserService
 
     private static User MapUser(SqliteDataReader reader)
     {
+        // Try to get TotalHours, default to 0 if column doesn't exist (migration)
+        double totalHours = 0;
+        long xp = 0;
+        string unlockedAchievements = "";
+        
+        try
+        {
+            var ordinal = reader.GetOrdinal("TotalHours");
+            if (!reader.IsDBNull(ordinal))
+                totalHours = reader.GetDouble(ordinal);
+        }
+        catch { /* Column may not exist in old DB */ }
+        
+        try
+        {
+            var ordinal = reader.GetOrdinal("XP");
+            if (!reader.IsDBNull(ordinal))
+                xp = reader.GetInt64(ordinal);
+        }
+        catch { /* Column may not exist in old DB */ }
+        
+        try
+        {
+            var ordinal = reader.GetOrdinal("UnlockedAchievements");
+            if (!reader.IsDBNull(ordinal))
+                unlockedAchievements = reader.GetString(ordinal);
+        }
+        catch { /* Column may not exist in old DB */ }
+        
         return new User
         {
             Id = reader.GetInt32(reader.GetOrdinal("Id")),
@@ -215,6 +250,9 @@ public class UserService : IUserService
             PixelaToken = reader.IsDBNull(reader.GetOrdinal("PixelaToken")) ? null : reader.GetString(reader.GetOrdinal("PixelaToken")),
             PixelaGraphId = reader.IsDBNull(reader.GetOrdinal("PixelaGraphId")) ? null : reader.GetString(reader.GetOrdinal("PixelaGraphId")),
             GeminiApiKey = reader.IsDBNull(reader.GetOrdinal("GeminiApiKey")) ? null : reader.GetString(reader.GetOrdinal("GeminiApiKey")),
+            TotalHours = totalHours,
+            XP = xp,
+            UnlockedAchievementsJson = unlockedAchievements,
             CreatedAt = reader.GetDateTime(reader.GetOrdinal("CreatedAt")),
             LastLoginAt = reader.GetDateTime(reader.GetOrdinal("LastLoginAt"))
         };

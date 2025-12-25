@@ -10,11 +10,11 @@ none
 false
 TRACE;DEBUG;NET;NET9_0;NETCOREAPP;WINDOWS;WINDOWS7_0;NET5_0_OR_GREATER;NET6_0_OR_GREATER;NET7_0_OR_GREATER;NET8_0_OR_GREATER;NET9_0_OR_GREATER;NETCOREAPP3_0_OR_GREATER;NETCOREAPP3_1_OR_GREATER;WİNDOWS7_0_OR_GREATER
 C:\Users\ariba\OneDrive\Documenti\Software Projects\AI Projects\personal-os\personal-os\KeganOS\App.xaml
-5-1650304152
+101956900586
 3-47997122
-251919848440
+40-1767820381
 2641104920621
-MainWindow.xaml;Views\CreateProfileWindow.xaml;Views\KegomoDoroSettingsWindow.xaml;Views\ProfileSelectionWindow.xaml;Views\SettingsWindow.xaml;
+MainWindow.xaml;Views\AchievementsWindow.xaml;Views\AddManualTimeWindow.xaml;Views\Components\ToastNotification.xaml;Views\CreateProfileWindow.xaml;Views\KegomoDoroSettingsWindow.xaml;Views\ProfileSelectionWindow.xaml;Views\SettingsWindow.xaml;Views\ThemeGalleryWindow.xaml;Views\WeeklyReportWindow.xaml;
 
 False
 

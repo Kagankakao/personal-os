@@ -3,8 +3,10 @@ using System.Windows.Input;
 using KeganOS.Core.Models;
 using KeganOS.Core.Interfaces;
 using Serilog;
-using System.Diagnostics;
 using System.IO;
+using System.Text.Json;
+using Microsoft.Extensions.DependencyInjection;
+using System.Diagnostics;
 
 namespace KeganOS.Views;
 
@@ -17,13 +19,15 @@ public partial class SettingsWindow : Window
     private User? _currentUser;
     private readonly IUserService _userService;
     private readonly IAIProvider _aiProvider;
+    private readonly IBackupService? _backupService;
     private bool _showApiKey = false;
 
-    public SettingsWindow(IUserService userService, IAIProvider aiProvider)
+    public SettingsWindow(IUserService userService, IAIProvider aiProvider, IBackupService? backupService = null)
     {
         InitializeComponent();
         _userService = userService;
         _aiProvider = aiProvider;
+        _backupService = backupService;
         _logger.Information("Settings window opened");
     }
 
@@ -70,21 +74,55 @@ public partial class SettingsWindow : Window
         Close();
     }
 
-    private void ChangeAvatarButton_Click(object sender, RoutedEventArgs e)
+    private async void ChangeAvatarButton_Click(object sender, RoutedEventArgs e)
     {
+        if (_currentUser == null) return;
+        
         _logger.Debug("Change avatar clicked");
         
         var dialog = new Microsoft.Win32.OpenFileDialog
         {
             Title = "Select Avatar Image",
-            Filter = "Image files (*.png;*.jpg;*.gif)|*.png;*.jpg;*.gif"
+            Filter = "Image files (*.png;*.jpg;*.jpeg;*.gif)|*.png;*.jpg;*.jpeg;*.gif"
         };
 
         if (dialog.ShowDialog() == true)
         {
-            _logger.Information("Avatar selected: {Path}", dialog.FileName);
-            System.Windows.MessageBox.Show("Avatar updated!", "Success", 
-                MessageBoxButton.OK, MessageBoxImage.Information);
+            try
+            {
+                // Backup existing avatar if available
+                if (_backupService != null && !string.IsNullOrEmpty(_currentUser.AvatarPath) && File.Exists(_currentUser.AvatarPath))
+                {
+                    await _backupService.BackupImageAsync(_currentUser, _currentUser.AvatarPath);
+                    _logger.Information("Previous avatar backed up");
+                }
+
+                // Save avatar to AppData
+                var avatarsDir = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                    "KeganOS", "avatars");
+                
+                Directory.CreateDirectory(avatarsDir);
+                
+                var extension = Path.GetExtension(dialog.FileName);
+                var safeUserName = string.Join("_", _currentUser.DisplayName.Split(Path.GetInvalidFileNameChars()));
+                var destFileName = $"{safeUserName}_{DateTime.Now:yyyyMMddHHmmss}{extension}";
+                var destPath = Path.Combine(avatarsDir, destFileName);
+                
+                File.Copy(dialog.FileName, destPath, overwrite: true);
+                
+                _currentUser.AvatarPath = destPath;
+                _logger.Information("Avatar changed for {User}: {Path}", _currentUser.DisplayName, destPath);
+                
+                System.Windows.MessageBox.Show("Avatar updated! Save to apply changes.", "Success", 
+                    MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, "Failed to save avatar");
+                System.Windows.MessageBox.Show($"Failed to save avatar: {ex.Message}", "Error", 
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
     }
 
@@ -175,15 +213,118 @@ public partial class SettingsWindow : Window
     private void BackupNowButton_Click(object sender, RoutedEventArgs e)
     {
         _logger.Information("Manual backup requested");
-        System.Windows.MessageBox.Show("Backup created successfully!", "Backup", 
-            MessageBoxButton.OK, MessageBoxImage.Information);
+        
+        try
+        {
+            var backupDir = BackupLocationTextBox.Text;
+            if (string.IsNullOrEmpty(backupDir))
+            {
+                backupDir = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                    "KeganOS", "backups");
+            }
+            
+            Directory.CreateDirectory(backupDir);
+            
+            // Backup database file
+            var dbPath = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "KeganOS", "keganos.db");
+            
+            if (File.Exists(dbPath))
+            {
+                var backupFileName = $"keganos_backup_{DateTime.Now:yyyyMMdd_HHmmss}.db";
+                var backupPath = Path.Combine(backupDir, backupFileName);
+                File.Copy(dbPath, backupPath, overwrite: true);
+                
+                _logger.Information("Backup created at {Path}", backupPath);
+                System.Windows.MessageBox.Show($"Backup created successfully!\n\n{backupPath}", "Backup Complete", 
+                    MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            else
+            {
+                System.Windows.MessageBox.Show("No database found to backup.", "Backup", 
+                    MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.Error(ex, "Failed to create backup");
+            System.Windows.MessageBox.Show($"Backup failed: {ex.Message}", "Error", 
+                MessageBoxButton.OK, MessageBoxImage.Error);
+        }
     }
 
-    private void RestoreButton_Click(object sender, RoutedEventArgs e)
+    private async void RestoreButton_Click(object sender, RoutedEventArgs e)
     {
+        if (_currentUser == null)
+        {
+            System.Windows.MessageBox.Show("No user selected.", "Error",
+                MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        if (_backupService == null)
+        {
+            _logger.Warning("Backup service not available");
+            System.Windows.MessageBox.Show("Backup service not available.", "Error",
+                MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
         _logger.Information("Restore from backup requested");
-        System.Windows.MessageBox.Show("Restore functionality coming soon!", "Restore", 
-            MessageBoxButton.OK, MessageBoxImage.Information);
+
+        try
+        {
+            var backups = await _backupService.GetBackupsAsync(_currentUser);
+            var backupList = backups.ToList();
+
+            if (backupList.Count == 0)
+            {
+                System.Windows.MessageBox.Show("No backups found.", "Restore",
+                    MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            // Show backup selection
+            var options = string.Join("\n", backupList.Select((b, i) => 
+                $"{i + 1}. {b.Date:yyyy-MM-dd HH:mm} ({b.Type})"));
+
+            var input = Microsoft.VisualBasic.Interaction.InputBox(
+                $"Available backups:\n{options}\n\nEnter backup number to restore:",
+                "Select Backup", "1");
+
+            if (int.TryParse(input, out var selection) && selection >= 1 && selection <= backupList.Count)
+            {
+                var selectedBackup = backupList[selection - 1];
+                
+                var confirm = System.Windows.MessageBox.Show(
+                    $"Restore from {selectedBackup.Date:yyyy-MM-dd HH:mm}?\n\nThis will replace your current journal.",
+                    "Confirm Restore", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+
+                if (confirm == MessageBoxResult.Yes)
+                {
+                    var result = await _backupService.RestoreBackupAsync(_currentUser, selectedBackup.Date);
+                    if (result)
+                    {
+                        _logger.Information("Restored journal from {Date}", selectedBackup.Date);
+                        System.Windows.MessageBox.Show("Restore completed successfully!", "Restore",
+                            MessageBoxButton.OK, MessageBoxImage.Information);
+                    }
+                    else
+                    {
+                        System.Windows.MessageBox.Show("Restore failed. Check logs for details.", "Error",
+                            MessageBoxButton.OK, MessageBoxImage.Error);
+                    }
+                }
+            }
+        }
+        catch (System.Exception ex)
+        {
+            _logger.Error(ex, "Failed to restore from backup");
+            System.Windows.MessageBox.Show($"Restore failed: {ex.Message}", "Error",
+                MessageBoxButton.OK, MessageBoxImage.Error);
+        }
     }
 
     private void ExportDataButton_Click(object sender, RoutedEventArgs e)
@@ -254,6 +395,19 @@ public partial class SettingsWindow : Window
             _logger.Error(ex, "Failed to save settings");
             System.Windows.MessageBox.Show($"Failed to save settings: {ex.Message}", "Error", 
                 MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+    private void OpenThemesButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (System.Windows.Application.Current is App app)
+        {
+            var themeService = app.Services.GetService(typeof(IThemeService)) as IThemeService;
+            if (themeService != null)
+            {
+                var gallery = new ThemeGalleryWindow(themeService);
+                gallery.Owner = this;
+                gallery.ShowDialog();
+            }
         }
     }
 }

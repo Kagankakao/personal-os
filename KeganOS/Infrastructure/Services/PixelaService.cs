@@ -313,7 +313,7 @@ public class PixelaService : IPixelaService, IDisposable
         {
             try
             {
-                var url = $"{BaseUrl}/{user.PixelaUsername}/graphs/{user.PixelaGraphId}/{date:yyyyMMdd}";
+                var url = $"{BaseUrl}/users/{user.PixelaUsername}/graphs/{user.PixelaGraphId}/{date:yyyyMMdd}";
                 var request = new HttpRequestMessage(HttpMethod.Get, url);
                 request.Headers.Add("X-USER-TOKEN", user.PixelaToken);
 
@@ -429,6 +429,67 @@ public class PixelaService : IPixelaService, IDisposable
             _logger.Error(ex, "Failed to find latest active date");
             return null;
         }
+    }
+
+    /// <summary>
+    /// Post or update a pixel value for a specific date
+    /// PUT /v1/users/{username}/graphs/{graphID}/{yyyyMMdd}
+    /// </summary>
+    public async Task<bool> PostPixelAsync(User user, DateTime date, double quantity)
+    {
+        if (!IsConfigured(user)) return false;
+
+        var dateStr = date.ToString("yyyyMMdd");
+        var url = $"{BaseUrl}/users/{user.PixelaUsername}/graphs/{user.PixelaGraphId}/{dateStr}";
+        
+        _logger.Information("Posting pixel: {Quantity}h on {Date} to {Url}", quantity, dateStr, url);
+
+        try
+        {
+            var payload = new { quantity = quantity.ToString("F2") };
+            var content = new StringContent(
+                JsonSerializer.Serialize(payload),
+                Encoding.UTF8,
+                "application/json");
+
+            var request = new HttpRequestMessage(HttpMethod.Put, url);
+            request.Headers.Add("X-USER-TOKEN", user.PixelaToken);
+            request.Content = content;
+
+            var response = await _httpClient.SendAsync(request);
+            var responseBody = await response.Content.ReadAsStringAsync();
+
+            if (response.IsSuccessStatusCode)
+            {
+                _logger.Information("Pixel posted successfully: {Date} = {Quantity}h", dateStr, quantity);
+                return true;
+            }
+            else
+            {
+                _logger.Warning("Failed to post pixel: {Status} - {Body}", response.StatusCode, responseBody);
+                return false;
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.Error(ex, "Error posting pixel to Pixe.la");
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Increment pixel value for a specific date (adds to existing value)
+    /// PUT /v1/users/{username}/graphs/{graphID}/{yyyyMMdd}/increment
+    /// </summary>
+    public async Task<bool> IncrementPixelAsync(User user, DateTime date, double quantity)
+    {
+        if (!IsConfigured(user)) return false;
+
+        // First get current value, then add to it
+        var currentValue = await GetPixelByDateAsync(user, date);
+        var newValue = currentValue + quantity;
+
+        return await PostPixelAsync(user, date, newValue);
     }
 
     // DTOs for JSON deserialization

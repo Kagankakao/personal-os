@@ -15,6 +15,11 @@ public partial class App : System.Windows.Application
 {
     private IHost? _host;
 
+    /// <summary>
+    /// Expose services for views that can't easily use constructor injection
+    /// </summary>
+    public IServiceProvider Services => _host?.Services!;
+
     protected override void OnStartup(System.Windows.StartupEventArgs e)
     {
         base.OnStartup(e);
@@ -59,7 +64,8 @@ public partial class App : System.Windows.Application
             // Show profile selection first
             var userService = _host.Services.GetRequiredService<IUserService>();
             var pixelaService = _host.Services.GetRequiredService<IPixelaService>();
-            var profileWindow = new ProfileSelectionWindow(userService, pixelaService);
+            var backupService = _host.Services.GetRequiredService<IBackupService>();
+            var profileWindow = new ProfileSelectionWindow(userService, pixelaService, backupService);
             
             if (profileWindow.ShowDialog() == true && profileWindow.SelectedUser != null)
             {
@@ -69,8 +75,10 @@ public partial class App : System.Windows.Application
                 var aiProvider = _host.Services.GetRequiredService<IAIProvider>();
                 var motivationalService = _host.Services.GetRequiredService<IMotivationalMessageService>();
                 // pixelaService already declared above
+                var achievementService = _host.Services.GetRequiredService<IAchievementService>();
+                var analyticsService = _host.Services.GetRequiredService<IAnalyticsService>();
                 
-                var mainWindow = new MainWindow(kegomoDoroService, journalService, pixelaService, aiProvider, motivationalService, userService);
+                var mainWindow = new MainWindow(kegomoDoroService, journalService, pixelaService, aiProvider, motivationalService, userService, backupService, achievementService, analyticsService);
                 mainWindow.SetCurrentUser(profileWindow.SelectedUser);
                 
                 // Set as main window and switch shutdown mode
@@ -108,6 +116,10 @@ public partial class App : System.Windows.Application
         services.AddSingleton<IJournalService, JournalService>();
         services.AddSingleton<IPixelaService, PixelaService>();
         services.AddSingleton<IKegomoDoroService, KegomoDoroService>();
+        services.AddSingleton<IBackupService, BackupService>();
+        services.AddSingleton<IThemeService, ThemeService>();
+        services.AddSingleton<IAchievementService, AchievementService>();
+        services.AddSingleton<IAnalyticsService, AnalyticsService>();
         
         // AI Services
         services.AddSingleton<IAIProvider, GeminiProvider>();

@@ -22,17 +22,30 @@ public partial class MainWindow : System.Windows.Window
     private readonly IPixelaService _pixelaService;
     private readonly IAIProvider _aiProvider;
     private readonly IMotivationalMessageService _motivationalService;
+
     private readonly IUserService _userService;
+    private readonly IBackupService _backupService;
+    private readonly IAchievementService _achievementService;
+    private readonly IAnalyticsService _analyticsService;
     private User? _currentUser;
     private List<ChatMessage> _chatHistory = [];
+    
+    // Ticker animation
+    private List<string> _tickerQuotes = [];
+    private int _tickerIndex = 0;
+    private System.Windows.Media.Animation.Storyboard? _tickerStoryboard;
 
     public MainWindow(
         IKegomoDoroService kegomoDoroService, 
         IJournalService journalService, 
         IPixelaService pixelaService,
+
         IAIProvider aiProvider,
         IMotivationalMessageService motivationalService,
-        IUserService userService)
+        IUserService userService,
+        IBackupService backupService,
+        IAchievementService achievementService,
+        IAnalyticsService analyticsService)
     {
         InitializeComponent();
         _kegomoDoroService = kegomoDoroService;
@@ -41,11 +54,49 @@ public partial class MainWindow : System.Windows.Window
         _aiProvider = aiProvider;
         _motivationalService = motivationalService;
         _userService = userService;
+        _backupService = backupService;
+        _achievementService = achievementService;
+        _analyticsService = analyticsService;
+        
+        // Subscribe to achievements
+        _achievementService.OnAchievementUnlocked += OnAchievementUnlocked;
         
         _logger.Information("MainWindow initialized with all services including AI");
         
         // Load KEGOMODORO images
         LoadKegomoDoroImages();
+    }
+
+    private void OnAchievementUnlocked(object? sender, Achievement achievement)
+    {
+        Dispatcher.Invoke(() =>
+        {
+            try
+            {
+                var toast = new Views.Components.ToastNotification();
+                toast.HorizontalAlignment = System.Windows.HorizontalAlignment.Right;
+                toast.VerticalAlignment = System.Windows.VerticalAlignment.Bottom;
+                toast.Margin = new System.Windows.Thickness(0, 0, 20, 50);
+                System.Windows.Controls.Grid.SetRow(toast, 1);
+                
+                // Wire up click to open achievements
+                toast.OnToastClicked += (s, e) =>
+                {
+                    var achievementsWindow = new Views.AchievementsWindow(_currentUser, _achievementService);
+                    achievementsWindow.Owner = this;
+                    achievementsWindow.ShowDialog();
+                };
+                
+                RootGrid.Children.Add(toast);
+                toast.Show(achievement.Name, achievement.Icon, achievement.XpReward);
+                
+                _logger.Information("Displayed toast for achievement: {Name}", achievement.Name);
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, "Failed to show achievement toast");
+            }
+        });
     }
 
     /// <summary>
@@ -167,6 +218,47 @@ public partial class MainWindow : System.Windows.Window
                 System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
         }
     }
+
+    private void AddTimeButton_Click(object sender, System.Windows.RoutedEventArgs e)
+    {
+        if (_currentUser == null)
+        {
+            _logger.Warning("Cannot add time: no user logged in");
+            return;
+        }
+
+        _logger.Information("Opening Add Manual Time dialog");
+        
+        try
+        {
+            var addTimeWindow = new Views.AddManualTimeWindow(_pixelaService, _achievementService, _currentUser)
+            {
+                Owner = this
+            };
+            
+            if (addTimeWindow.ShowDialog() == true)
+            {
+                // Refresh user data after adding time
+                LoadUserDataAsync();
+                _logger.Information("Manual time added, refreshing data");
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.Error(ex, "Failed to open Add Time dialog");
+            System.Windows.MessageBox.Show($"Failed to open Add Time: {ex.Message}", "Error",
+                System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+        }
+    }
+
+    private void Stats_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        if (_currentUser == null) return;
+        
+        var reportWindow = new Views.WeeklyReportWindow(_currentUser, _analyticsService);
+        reportWindow.Owner = this;
+        reportWindow.ShowDialog();
+    }
     
     #endregion
 
@@ -280,8 +372,8 @@ public partial class MainWindow : System.Windows.Window
             // Load Pixe.la heatmap if configured
             await LoadPixelaHeatmapAsync();
             
-            // Load motivational message
-            await LoadMotivationalMessageAsync();
+            // Load ticker quotes
+            await LoadTickerQuotesAsync();
         }
         catch (System.Exception ex)
         {
@@ -289,13 +381,13 @@ public partial class MainWindow : System.Windows.Window
         }
     }
 
-    private async System.Threading.Tasks.Task LoadMotivationalMessageAsync()
+    private async System.Threading.Tasks.Task LoadTickerQuotesAsync()
     {
         if (_currentUser == null) return;
 
         try
         {
-            _logger.Debug("Loading motivational message...");
+            _logger.Debug("Loading ticker quotes from journal...");
             
             // Configure AI provider with user's API key if available
             if (!string.IsNullOrEmpty(_currentUser.GeminiApiKey) && _aiProvider is GeminiProvider gemini)
@@ -303,16 +395,109 @@ public partial class MainWindow : System.Windows.Window
                 gemini.Configure(_currentUser.GeminiApiKey);
             }
 
-            var message = await _motivationalService.GetMessageAsync(_currentUser);
-            MotivationalQuote.Text = message.Message;
+            // Load quotes from journal service
+            _tickerQuotes = await ExtractJournalQuotesAsync();
             
-            _logger.Information("Motivational message loaded: {Type}", message.Type);
+            if (_tickerQuotes.Count == 0)
+            {
+                // Fallback to default quotes
+                _tickerQuotes =
+                [
+                    "💪 Discipline is freedom in its purest form.",
+                    "🎯 Focus on progress, not perfection.",
+                    "⏰ Every minute counts. Make them matter.",
+                    "🌟 Small steps lead to big achievements.",
+                    "🔥 Consistency beats intensity."
+                ];
+            }
+            
+            _tickerIndex = 0;
+            _logger.Information("Loaded {Count} ticker quotes", _tickerQuotes.Count);
+            
+            StartTickerAnimation();
         }
         catch (Exception ex)
         {
-            _logger.Warning(ex, "Failed to load motivational message");
-            MotivationalQuote.Text = "\"Every expert was once a beginner.\"";
+            _logger.Warning(ex, "Failed to load ticker quotes");
+            TickerText.Text = "📜 \"Every expert was once a beginner.\"";
         }
+    }
+
+    private async System.Threading.Tasks.Task<List<string>> ExtractJournalQuotesAsync()
+    {
+        var quotes = new List<string>();
+        
+        try
+        {
+            var entries = await _journalService.ReadEntriesAsync(_currentUser!);
+            var recentEntries = entries.OrderByDescending(e => e.Date).Take(30);
+            
+            foreach (var entry in recentEntries)
+            {
+                if (string.IsNullOrEmpty(entry.NoteText)) continue;
+                
+                // Split into sentences/lines
+                var lines = entry.NoteText.Split(['\n', '.', '!', '?'], StringSplitOptions.RemoveEmptyEntries);
+                
+                foreach (var line in lines)
+                {
+                    var trimmed = line.Trim();
+                    
+                    // Filter: 20-100 chars, starts with letter, no URLs/dates
+                    if (trimmed.Length >= 20 && trimmed.Length <= 100 &&
+                        char.IsLetter(trimmed[0]) &&
+                        !trimmed.Contains("http") &&
+                        !Regex.IsMatch(trimmed, @"^\d{1,2}[/.-]\d{1,2}"))
+                    {
+                        quotes.Add($"📝 \"{trimmed}\"");
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.Warning(ex, "Error extracting journal quotes");
+        }
+        
+        return quotes.Distinct().Take(20).ToList();
+    }
+
+    private void StartTickerAnimation()
+    {
+        if (_tickerQuotes.Count == 0) return;
+        
+        // Set current quote
+        TickerText.Text = _tickerQuotes[_tickerIndex];
+        _logger.Debug("Ticker displaying quote #{Index}", _tickerIndex + 1);
+        
+        // Measure text width
+        TickerText.Measure(new System.Windows.Size(double.PositiveInfinity, double.PositiveInfinity));
+        var textWidth = TickerText.DesiredSize.Width;
+        var canvasWidth = TickerCanvas.ActualWidth > 0 ? TickerCanvas.ActualWidth : 500;
+        
+        // Create animation: start from right edge, move to left beyond visible area
+        var animation = new System.Windows.Media.Animation.DoubleAnimation
+        {
+            From = canvasWidth,
+            To = -textWidth - 50,
+            Duration = System.TimeSpan.FromSeconds(10)
+        };
+        
+        animation.Completed += (s, e) =>
+        {
+            // Move to next quote
+            _tickerIndex = (_tickerIndex + 1) % _tickerQuotes.Count;
+            StartTickerAnimation();
+        };
+        
+        _tickerStoryboard?.Stop();
+        _tickerStoryboard = new System.Windows.Media.Animation.Storyboard();
+        _tickerStoryboard.Children.Add(animation);
+        System.Windows.Media.Animation.Storyboard.SetTarget(animation, TickerText);
+        System.Windows.Media.Animation.Storyboard.SetTargetProperty(animation, 
+            new System.Windows.PropertyPath("(UIElement.RenderTransform).(TranslateTransform.X)"));
+        
+        _tickerStoryboard.Begin();
     }
 
     private async System.Threading.Tasks.Task LoadPixelaHeatmapAsync()
@@ -460,6 +645,15 @@ public partial class MainWindow : System.Windows.Window
         
         _logger.Information("Opening journal in Notepad...");
         _journalService.OpenInNotepad(_currentUser);
+    }
+
+    private void AchievementsButton_Click(object sender, System.Windows.RoutedEventArgs e)
+    {
+        if (_currentUser == null) return;
+        
+        var window = new Views.AchievementsWindow(_currentUser, _achievementService);
+        window.Owner = this;
+        window.ShowDialog();
     }
 
     private async void SaveJournalButton_Click(object sender, System.Windows.RoutedEventArgs e)

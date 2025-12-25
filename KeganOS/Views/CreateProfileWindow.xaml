@@ -43,9 +43,35 @@
                              BorderBrush="#333333" BorderThickness="1"
                              Padding="10,8" FontSize="13"
                              MaxLength="20"/>
-                    <TextBlock Text="  A unique identifier shown in the top-left corner" 
+                    <TextBlock Text="  A unique identifier or emoji (default: 🦭)" 
                                Foreground="#444444" FontSize="9" Margin="0,3,0,0"/>
                     
+                    <!-- Avatar -->
+                    <TextBlock Text="│ Avatar (optional)" Foreground="#888888" FontSize="11" Margin="0,20,0,5"/>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid Width="50" Height="50" Margin="0,0,10,0">
+                            <Ellipse Width="50" Height="50" Fill="#333333"/>
+                            <TextBlock x:Name="AvatarPlaceholder" Text="👤" FontSize="28" 
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <Ellipse x:Name="AvatarPreview" Width="50" Height="50" Visibility="Collapsed">
+                                <Ellipse.Fill>
+                                    <ImageBrush x:Name="AvatarImageBrush" Stretch="UniformToFill"/>
+                                </Ellipse.Fill>
+                            </Ellipse>
+                        </Grid>
+                        <Button Grid.Column="1" x:Name="AvatarBrowseButton" Content="Choose Image..."
+                                Background="#1A1A1A" Foreground="#AAAAAA"
+                                BorderBrush="#333333" BorderThickness="1"
+                                Padding="15,8" FontSize="11" Cursor="Hand"
+                                HorizontalAlignment="Left" VerticalAlignment="Center"
+                                Click="AvatarBrowseButton_Click"/>
+                    </Grid>
+                    <TextBlock Text="  Upload a .png, .jpg, or .gif image" 
+                               Foreground="#444444" FontSize="9" Margin="0,3,0,0"/>
                     <!-- Journal File -->
                     <TextBlock Text="│ KEGOMODORO Journal File" Foreground="#888888" FontSize="11" Margin="0,20,0,5"/>
                     <Grid>

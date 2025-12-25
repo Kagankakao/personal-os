@@ -3,25 +3,78 @@ import subprocess
 import csv
 import tkinter.messagebox
 import math
-import pandas as pd
 import datetime as dt
-import requests
 import datetime
 import time
-import pygame
 import threading
 from tkinter import *
 import tkinter as tk
 from tkinter import simpledialog
 from tkinter.simpledialog import askstring
 from tkinter.messagebox import showinfo, askyesno
-from pyautogui import position
 from time import sleep
-from keyboard import is_pressed
-from PIL import Image, ImageTk
 from pathlib import Path
 import atexit
 import sys
+
+# Lazy-loaded heavy modules (for faster startup)
+pd = None
+pygame = None
+pyautogui = None
+keyboard = None
+requests = None
+Image = None
+ImageTk = None
+
+def _lazy_import_pandas():
+    """Lazy import pandas when first needed"""
+    global pd
+    if pd is None:
+        import pandas
+        pd = pandas
+    return pd
+
+def _lazy_import_pygame():
+    """Lazy import pygame when first needed"""
+    global pygame
+    if pygame is None:
+        import pygame as _pygame
+        _pygame.mixer.init()
+        pygame = _pygame
+    return pygame
+
+def _lazy_import_pyautogui():
+    """Lazy import pyautogui when first needed"""
+    global pyautogui
+    if pyautogui is None:
+        import pyautogui as _pyautogui
+        pyautogui = _pyautogui
+    return pyautogui
+
+def _lazy_import_keyboard():
+    """Lazy import keyboard when first needed"""
+    global keyboard
+    if keyboard is None:
+        import keyboard as _keyboard
+        keyboard = _keyboard
+    return keyboard
+
+def _lazy_import_requests():
+    """Lazy import requests when first needed"""
+    global requests
+    if requests is None:
+        import requests as _requests
+        requests = _requests
+    return requests
+
+def _lazy_import_pil():
+    """Lazy import PIL when first needed"""
+    global Image, ImageTk
+    if Image is None:
+        from PIL import Image as _Image, ImageTk as _ImageTk
+        Image = _Image
+        ImageTk = _ImageTk
+    return Image, ImageTk
 
 # ---------------------------- LOCK FILE FOR SINGLE INSTANCE ------------------------------- #
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
@@ -107,14 +160,38 @@ FLOATING_IMAGE_PATH = f"{IMAGES}/behelit.png"
 LOGO_IMAGE_PATH = f"{IMAGES}/signature.png"
 MAIN_IMAGE_PATH = f"{IMAGES}/main_image.png"
 
-# Load to audio file
-pygame.mixer.init()
-NEW_WORK_SOUND = pygame.mixer.Sound(NEW_WORK_SOUND_PATH)
-WORK_SOUND = pygame.mixer.Sound(WORK_SOUND_PATH)
-BREAK_SOUND = pygame.mixer.Sound(BREAK_SOUND_PATH)
-LONG_BREAK_SOUND = pygame.mixer.Sound(LONG_BREAK_SOUND_PATH)
-# Audio volume
-BREAK_SOUND.set_volume(0.5)
+# Sound objects (lazy loaded)
+_sounds_initialized = False
+NEW_WORK_SOUND = None
+WORK_SOUND = None
+BREAK_SOUND = None
+LONG_BREAK_SOUND = None
+
+def _init_sounds():
+    """Initialize pygame and load sounds (called lazily on first use)"""
+    global _sounds_initialized, NEW_WORK_SOUND, WORK_SOUND, BREAK_SOUND, LONG_BREAK_SOUND
+    if _sounds_initialized:
+        return
+    
+    _pygame = _lazy_import_pygame()
+    NEW_WORK_SOUND = _pygame.mixer.Sound(NEW_WORK_SOUND_PATH)
+    WORK_SOUND = _pygame.mixer.Sound(WORK_SOUND_PATH)
+    BREAK_SOUND = _pygame.mixer.Sound(BREAK_SOUND_PATH)
+    LONG_BREAK_SOUND = _pygame.mixer.Sound(LONG_BREAK_SOUND_PATH)
+    BREAK_SOUND.set_volume(0.5)
+    _sounds_initialized = True
+
+def play_sound(sound_name):
+    """Play a sound by name (lazy loads sounds on first call)"""
+    _init_sounds()
+    if sound_name == "new_work":
+        NEW_WORK_SOUND.play()
+    elif sound_name == "work":
+        WORK_SOUND.play()
+    elif sound_name == "break":
+        BREAK_SOUND.play()
+    elif sound_name == "long_break":
+        LONG_BREAK_SOUND.play()
 #TODO: CHANGE THE SAVE NOTE ICON
 # ----------------------------- TIMER VARIABLES ------------------------------- #
 now = str(datetime.datetime.now())
@@ -152,6 +229,25 @@ try:
         SHORT_BREAK_MIN = int(config["SHORT_BREAK_MIN"])
         LONG_BREAK_MIN = int(config["LONG_BREAK_MIN"])
         NOTEPAD_MODE = int(config["NOTEPAD_MODE"].lower() in ["true", "1", "yes", "correct"])
+
+        # Theme Integration: Override constants if theme columns exist
+        if "THEME_TEXT" in config:
+            BLACK = config["THEME_TEXT"]
+            WHITE = config["THEME_BG"]
+            ORANGE = config["THEME_ACCENT"]
+            TOMATO_COLOR = config["THEME_ACCENT"]
+
+            # Update dependent constants
+            BUTTON_BACKGROUND_COLOR = BLACK
+            BUTTON_FOREGROUND_COLOR = WHITE
+            SWITCH_BUTTON_DARK_BG_COLOR = BLACK
+            SWITCH_BUTTON_DARK_FG_COLOR = WHITE
+            SWITCH_BUTTON_LIGHT_BG_COLOR = WHITE
+            SWITCH_BUTTON_LIGHT_FG_COLOR = BLACK
+            RADIO_FOREGROUND_COLOR = BLACK
+            
+            print(f"Theme loaded: Text={BLACK}, Bg={WHITE}, Accent={ORANGE}")
+
 except Exception as e:
     # Fallback to defaults if reading fails
     WORK_MIN = 25
@@ -625,8 +721,10 @@ root = Tk()
 root.title("KEGOMODORO")
 root.config(padx=100, pady=50, bg=DARK_RED)
 root.resizable(False, False)
-ico = Image.open(APP_ICON_PATH) 
-photo = ImageTk.PhotoImage(ico)
+# Lazy load PIL for icon
+_Image, _ImageTk = _lazy_import_pil()
+ico = _Image.open(APP_ICON_PATH) 
+photo = _ImageTk.PhotoImage(ico)
 root.wm_iconphoto(False, photo)
 root.geometry("+700+300") #? Adjusts the starting location of the window
 

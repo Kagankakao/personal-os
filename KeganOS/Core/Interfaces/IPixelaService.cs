@@ -63,4 +63,16 @@ public interface IPixelaService
     /// Get the date of the most recent non-zero pixel record
     /// </summary>
     Task<string?> GetLatestActiveDateAsync(User user);
+
+    /// <summary>
+    /// Post or update a pixel value for a specific date
+    /// Uses PUT /v1/users/{username}/graphs/{graphID}/{yyyyMMdd}
+    /// </summary>
+    Task<bool> PostPixelAsync(User user, DateTime date, double quantity);
+
+    /// <summary>
+    /// Increment pixel value for a specific date
+    /// Uses PUT /v1/users/{username}/graphs/{graphID}/{yyyyMMdd}/increment
+    /// </summary>
+    Task<bool> IncrementPixelAsync(User user, DateTime date, double quantity);
 }
