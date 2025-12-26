@@ -122,12 +122,6 @@
                         <TextBlock Text="👤" FontSize="14" Margin="0,0,5,0"/>
                         <TextBlock Text="Kegan" Foreground="#CCCCCC" FontSize="14" VerticalAlignment="Center"
                                    x:Name="UserDisplayName"/>
-                        <Button x:Name="AddTimeButton" Content="➕" Foreground="#6BFF6B" FontSize="14" 
-                                Background="Transparent" BorderThickness="0" Cursor="Hand" Margin="8,0,0,0"
-                                Click="AddTimeButton_Click" ToolTip="Add Manual Time"/>
-                        <Button x:Name="AchievementsButton" Content="🏆" Foreground="#FFD700" FontSize="14" 
-                                Background="Transparent" BorderThickness="0" Cursor="Hand" Margin="8,0,0,0"
-                                Click="AchievementsButton_Click" ToolTip="Achievements"/>
                         <Button x:Name="SettingsButton" Content="⚙" Foreground="#666666" FontSize="14" 
                                 Background="Transparent" BorderThickness="0" Cursor="Hand" Margin="8,0,0,0"
                                 Click="SettingsButton_Click" ToolTip="Settings"/>
@@ -166,7 +160,7 @@
                             </StackPanel>
                             
                             <!-- Timer Display -->
-                            <StackPanel HorizontalAlignment="Center" Margin="0,5,0,15">
+                            <StackPanel HorizontalAlignment="Center" Margin="0,5,0,10">
                                 <Image x:Name="FireImage" Width="60" Height="60" Stretch="Uniform"
                                        HorizontalAlignment="Center" Opacity="0.9"/>
                                 <TextBlock Text="25:00" Foreground="#FFFFFF" FontSize="28" FontWeight="Bold" 
@@ -175,43 +169,94 @@
                             </StackPanel>
                             
                             <!-- Buttons -->
-                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,15">
                                 <Button Style="{StaticResource BracketButton}" 
-                                        Content="▶ Start Focus" Foreground="#87CEEB"
+                                        Content="▶ Start" Foreground="#87CEEB"
                                         x:Name="StartFocusButton" Click="StartFocusButton_Click"/>
                                 <Button Style="{StaticResource BracketButton}" 
-                                        Content="⚙ Customize" Margin="15,0,0,0"
+                                        Content="⚙ Customize" Margin="10,0,0,0"
                                         x:Name="CustomizeButton" Click="CustomizeButton_Click"/>
                             </StackPanel>
+
+                            <!-- Add Manual Time -->
+                            <Rectangle Height="1" Fill="#333333" Margin="10,0,10,12"/>
+                            <Button Style="{StaticResource BracketButton}" 
+                                    Content="⏱️ Add Manual Time" Foreground="#666666" 
+                                    HorizontalAlignment="Center" FontSize="11"
+                                    Click="AddManualTime_Click"/>
                         </StackPanel>
                     </Border>
                     
                     <!-- Your Stats -->
-                    <Border Grid.Column="2" Style="{StaticResource AsciiBox}" 
-                            MouseLeftButtonDown="Stats_Click" Cursor="Hand" Background="Transparent">
+                    <Border Grid.Column="2" x:Name="StatsBox" Style="{StaticResource AsciiBox}" 
+                            Cursor="Arrow" Background="Transparent">
                         <StackPanel>
                             <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
                                 <TextBlock Text="📊" FontSize="12"/>
                                 <TextBlock Text=" Your Stats" Foreground="#888888" FontWeight="Bold"/>
                             </StackPanel>
                             
-                            <Grid Margin="0,5,0,3">
-                                <TextBlock Text="Today:" Foreground="#666666"/>
-                                <TextBlock Text="0 hrs" HorizontalAlignment="Right" Foreground="#AAAAAA" x:Name="TodayHours"/>
+                            <StackPanel x:Name="TimeStatsRegion" Background="Transparent" MouseLeftButtonDown="TimeStats_Click" Cursor="Hand">
+                                <Grid Margin="0,5,0,3">
+                                    <TextBlock Text="Today:" Foreground="#666666"/>
+                                    <TextBlock Text="0 hrs" HorizontalAlignment="Right" Foreground="#88CC88" x:Name="TodayHours"/>
+                                </Grid>
+                                <Grid Margin="0,3">
+                                    <TextBlock Text="Week:" Foreground="#666666"/>
+                                    <TextBlock Text="0 hrs" HorizontalAlignment="Right" Foreground="#88CC88" x:Name="WeekHours"/>
+                                </Grid>
+                                <Grid Margin="0,3,0,10">
+                                    <TextBlock Text="Total:" Foreground="#666666"/>
+                                    <TextBlock Text="0 hrs" HorizontalAlignment="Right" Foreground="#88CC88" FontWeight="Bold" x:Name="TotalHours"/>
+                                </Grid>
+                            </StackPanel>
+
+                            <!-- XP & Level -->
+                            <Border x:Name="LevelRegion" Background="Transparent" Padding="8" CornerRadius="3" 
+                                    MouseLeftButtonDown="LevelStats_Click" Cursor="Hand" Margin="0,5,0,10"
+                                    BorderBrush="#333333" BorderThickness="1">
+                                <Border.Style>
+                                    <Style TargetType="Border">
+                                        <Style.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter Property="Background" Value="#15FFFFFF"/>
+                                            </Trigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Border.Style>
+                                <StackPanel>
+                                    <Grid Margin="0,0,0,5">
+                                        <TextBlock x:Name="UserLevelText" Text="🏆 Level 12 • 2,350 XP" Foreground="#FFFFFF" FontSize="12" FontWeight="Bold"/>
+                                    </Grid>
+                                    <!-- ASCII Progress Bar (using ░ as requested) -->
+                                    <TextBlock x:Name="UserXpBar" Text="░░░░░░░░░░░░░░░░...." Foreground="#88CC88" FontSize="14" Margin="0,3,0,0"/>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Streak Stats -->
+                            <Grid Margin="0,5,0,2">
+                                <TextBlock Text="🔥 Streak:" Foreground="#666666" FontSize="11"/>
+                                <TextBlock x:Name="CurrentStreakText" Text="7 days" HorizontalAlignment="Right" Foreground="#FFB347" FontSize="11"/>
                             </Grid>
-                            <Grid Margin="0,3">
-                                <TextBlock Text="Week:" Foreground="#666666"/>
-                                <TextBlock Text="0 hrs" HorizontalAlignment="Right" Foreground="#AAAAAA" x:Name="WeekHours"/>
-                            </Grid>
-                            <Grid Margin="0,3,0,10">
-                                <TextBlock Text="Total:" Foreground="#666666"/>
-                                <TextBlock Text="0 hrs" HorizontalAlignment="Right" Foreground="#FFFFFF" FontWeight="Bold" x:Name="TotalHours"/>
+                            <Grid Margin="0,0,0,10">
+                                <TextBlock Text="🏅 Best:" Foreground="#666666" FontSize="11"/>
+                                <TextBlock x:Name="BestStreakText" Text="23 days" HorizontalAlignment="Right" Foreground="#AAAAAA" FontSize="11"/>
                             </Grid>
                             
                             
                             <!-- Pixe.la Heatmap (WebView2 for modern Edge rendering) -->
-                            <Border BorderBrush="#333333" BorderThickness="1" Margin="0,5,0,0" 
-                                    Background="#0A0A0A" Padding="0" CornerRadius="3">
+                            <Border x:Name="HeatmapBorder" BorderBrush="#333333" BorderThickness="1" Margin="0,5,0,0" 
+                                    Background="#0A0A0A" Padding="0" CornerRadius="3" Cursor="Hand">
+                                <Border.Style>
+                                    <Style TargetType="Border">
+                                        <Style.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter Property="BorderBrush" Value="#555555"/>
+                                                <Setter Property="Background" Value="#121212"/>
+                                            </Trigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Border.Style>
                                 <wv2:WebView2 x:Name="PixelaHeatmapWebView" Height="80"
                                               DefaultBackgroundColor="Transparent"/>
                             </Border>
@@ -220,14 +265,16 @@
                                        Margin="0,5,0,0"/>
 
                             <!-- Quick Palette -->
-                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,8,0,0">
-                                <Button x:Name="ColorGreen" Tag="shibafu" Background="#70cc14" Width="14" Height="14" Margin="2,0" BorderThickness="0" Click="PaletteColor_Click" Cursor="Hand" ToolTip="Green"/>
-                                <Button x:Name="ColorRed" Tag="momiji" Background="#f3591e" Width="14" Height="14" Margin="2,0" BorderThickness="0" Click="PaletteColor_Click" Cursor="Hand" ToolTip="Red"/>
-                                <Button x:Name="ColorBlue" Tag="sora" Background="#00aced" Width="14" Height="14" Margin="2,0" BorderThickness="0" Click="PaletteColor_Click" Cursor="Hand" ToolTip="Blue"/>
-                                <Button x:Name="ColorYellow" Tag="ichou" Background="#e4b41b" Width="14" Height="14" Margin="2,0" BorderThickness="0" Click="PaletteColor_Click" Cursor="Hand" ToolTip="Yellow"/>
-                                <Button x:Name="ColorPurple" Tag="ajisai" Background="#7246df" Width="14" Height="14" Margin="2,0" BorderThickness="0" Click="PaletteColor_Click" Cursor="Hand" ToolTip="Purple"/>
-                                <Button x:Name="ColorBlack" Tag="kuro" Background="#222222" Width="14" Height="14" Margin="2,0" BorderThickness="1" BorderBrush="#444444" Click="PaletteColor_Click" Cursor="Hand" ToolTip="Black"/>
-                            </StackPanel>
+                            <Border BorderBrush="#333333" BorderThickness="1" Margin="0,8,0,0" Padding="8,6" CornerRadius="3">
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                    <Button x:Name="ColorGreen" Tag="shibafu" Background="#70cc14" Width="20" Height="20" Margin="3,0" BorderThickness="0" Click="PaletteColor_Click" Cursor="Hand" ToolTip="Green"/>
+                                    <Button x:Name="ColorRed" Tag="momiji" Background="#f3591e" Width="20" Height="20" Margin="3,0" BorderThickness="0" Click="PaletteColor_Click" Cursor="Hand" ToolTip="Red"/>
+                                    <Button x:Name="ColorBlue" Tag="sora" Background="#00aced" Width="20" Height="20" Margin="3,0" BorderThickness="0" Click="PaletteColor_Click" Cursor="Hand" ToolTip="Blue"/>
+                                    <Button x:Name="ColorYellow" Tag="ichou" Background="#e4b41b" Width="20" Height="20" Margin="3,0" BorderThickness="0" Click="PaletteColor_Click" Cursor="Hand" ToolTip="Yellow"/>
+                                    <Button x:Name="ColorPurple" Tag="ajisai" Background="#7246df" Width="20" Height="20" Margin="3,0" BorderThickness="0" Click="PaletteColor_Click" Cursor="Hand" ToolTip="Purple"/>
+                                    <Button x:Name="ColorBlack" Tag="kuro" Background="#222222" Width="20" Height="20" Margin="3,0" BorderThickness="1" BorderBrush="#444444" Click="PaletteColor_Click" Cursor="Hand" ToolTip="Black"/>
+                                </StackPanel>
+                            </Border>
                         </StackPanel>
                     </Border>
                 </Grid>
@@ -254,12 +301,12 @@
                                  GotFocus="JournalInput_GotFocus"
                                  LostFocus="JournalInput_LostFocus"/>
                         
-                        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
+                        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,15,0,0">
                             <Button Style="{StaticResource BracketButton}" 
-                                    Content="Save to Journal" Foreground="#AAAAAA"
+                                    Content="💾 Save to Journal" Foreground="#AAAAAA"
                                     x:Name="SaveJournalButton" Click="SaveJournalButton_Click"/>
                             <Button Style="{StaticResource BracketButton}" 
-                                    Content="📁 Open File" Foreground="#FFB347" Margin="15,0,0,0"
+                                    Content="📂 Open File" Foreground="#FFB347" Margin="20,0,0,0"
                                     x:Name="OpenNotepadButton" Click="OpenNotepadButton_Click"/>
                         </StackPanel>
                     </Grid>
@@ -267,28 +314,33 @@
             </Grid>
             
             <!-- ═══ FLOATING ASK PROMETHEUS BUTTON ═══ -->
-            <Border x:Name="AskPrometheusButton" 
+            <Button x:Name="AskPrometheusButton" 
                     Grid.Row="1"
-                    HorizontalAlignment="Right" 
+                    HorizontalAlignment="Left" 
                     VerticalAlignment="Bottom"
-                    Margin="0,0,25,25"
-                    Background="#1A1A1A"
-                    BorderBrush="#444444"
-                    BorderThickness="1"
-                    CornerRadius="8"
-                    Padding="12,8"
-                    Cursor="Hand"
-                    MouseDown="AskPrometheusButton_Click"
+                    Margin="20,0,0,20" Padding="12,8"
+                    Click="AskPrometheusButton_Click" Cursor="Hand"
                     Panel.ZIndex="100">
-                <Border.Effect>
-                    <DropShadowEffect Color="Black" BlurRadius="10" ShadowDepth="3" Opacity="0.5"/>
-                </Border.Effect>
-                <StackPanel Orientation="Horizontal">
-                    <!-- Placeholder for logo - will be replaced with Image when provided -->
-                    <TextBlock Text="🔥" FontSize="18" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                    <TextBlock Text="Ask Prometheus" Foreground="#CCCCCC" FontSize="12" VerticalAlignment="Center"/>
-                </StackPanel>
-            </Border>
+                <Button.Template>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="PrometheusBorder"
+                                Background="#1A1A1A" 
+                                BorderBrush="#444444" BorderThickness="1"
+                                CornerRadius="4" Padding="10,6">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="🔥" FontSize="14" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                                <TextBlock Text="Ask Prometheus" Foreground="#CCCCCC" FontSize="12" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="PrometheusBorder" Property="Background" Value="#252525"/>
+                                <Setter TargetName="PrometheusBorder" Property="BorderBrush" Value="#666666"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Button.Template>
+            </Button>
             
             <!-- Full-screen Celebration Overlay -->
             <comp:CelebrationOverlay x:Name="MajorCelebrationOverlay" Visibility="Collapsed" Grid.RowSpan="2"/>

@@ -15,24 +15,25 @@
         </Storyboard>
     </UserControl.Resources>
     
-    <Border Background="#222222" BorderBrush="#FFD700" BorderThickness="1" CornerRadius="8" Padding="15,10"
+    <Border Background="#151515" BorderBrush="#FFCC00" BorderThickness="1" Padding="15,10"
             Cursor="Hand" MouseLeftButtonDown="Toast_Click">
-        <Border.Effect>
-            <DropShadowEffect BlurRadius="15" ShadowDepth="4" Opacity="0.4"/>
-        </Border.Effect>
-        <Grid>
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="*"/>
-            </Grid.ColumnDefinitions>
-            
-            <TextBlock x:Name="IconText" Text="🏆" FontSize="32" VerticalAlignment="Center" Margin="0,0,15,0"/>
-            
-            <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                <TextBlock Text="ACHIEVEMENT UNLOCKED!" Foreground="#FFD700" FontSize="10" FontWeight="Bold" Margin="0,0,0,2"/>
-                <TextBlock x:Name="TitleText" Text="Master of Time" Foreground="White" FontSize="14" FontWeight="Bold" TextWrapping="Wrap"/>
-                <TextBlock x:Name="XpText" Text="+1000 XP" Foreground="#888888" FontSize="11" Margin="0,2,0,0"/>
-            </StackPanel>
-        </Grid>
+        <StackPanel>
+            <Grid Margin="0,0,0,5">
+                <TextBlock Text="[!] ACHIEVEMENT UNLOCKED" Foreground="#FFCC00" FontSize="10" FontWeight="Bold"/>
+                <TextBlock Text="✖" Foreground="#444444" FontSize="10" HorizontalAlignment="Right" VerticalAlignment="Top"/>
+            </Grid>
+            <Rectangle Height="1" Fill="#333333" Margin="0,0,0,10"/>
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock x:Name="IconText" Text="🏆" FontSize="24" VerticalAlignment="Center" Margin="0,0,15,0"/>
+                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                    <TextBlock x:Name="TitleText" Text="Master of Time" Foreground="#FFFFFF" FontSize="13" FontWeight="Bold" TextWrapping="Wrap"/>
+                    <TextBlock x:Name="XpText" Text="+1000 XP" Foreground="#88CC88" FontSize="10" FontWeight="Bold" Margin="0,2,0,0"/>
+                </StackPanel>
+            </Grid>
+        </StackPanel>
     </Border>
 </UserControl>

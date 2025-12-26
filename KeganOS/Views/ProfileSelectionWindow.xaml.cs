@@ -179,13 +179,11 @@ public partial class ProfileSelectionWindow : System.Windows.Window
 
                 _logger.Information("Delete profile requested for user {DisplayName}", user.DisplayName);
 
-                // Show confirmation dialog - user must type profile name
-                var confirmName = Microsoft.VisualBasic.Interaction.InputBox(
-                    $"To delete '{user.DisplayName}', type the profile name exactly to confirm:",
-                    "Delete Profile",
-                    "");
-
-                if (confirmName == user.DisplayName)
+                // Show custom confirmation dialog
+                var confirmWindow = new DeleteConfirmationWindow(user.DisplayName);
+                confirmWindow.Owner = this;
+                
+                if (confirmWindow.ShowDialog() == true)
                 {
                     // Backup user data before deletion
                     var backupPath = BackupUserData(user);
@@ -207,13 +205,6 @@ public partial class ProfileSelectionWindow : System.Windows.Window
                         System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
                     
                     LoadProfiles();
-                }
-                else if (!string.IsNullOrEmpty(confirmName))
-                {
-                    _logger.Warning("Delete cancelled - name mismatch: expected {Expected}, got {Actual}", 
-                        user.DisplayName, confirmName);
-                    System.Windows.MessageBox.Show("Profile name did not match. Deletion cancelled.", "Cancelled",
-                        System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Warning);
                 }
             }
             catch (System.Exception ex)

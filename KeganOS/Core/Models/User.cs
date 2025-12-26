@@ -33,6 +33,12 @@ public class User
     public bool HasAvatar => !string.IsNullOrEmpty(AvatarPath) && System.IO.File.Exists(AvatarPath);
     
     /// <summary>
+    /// Check if user has NO avatar image
+    /// </summary>
+    public bool HasNoAvatar => !HasAvatar;
+
+    
+    /// <summary>
     /// The journal text file name in KEGOMODORO (e.g., "diary.txt")
     /// </summary>
     public string JournalFileName { get; set; } = "diary.txt";
@@ -116,6 +122,23 @@ public class User
     /// Display string for level (e.g., "Lv.5")
     /// </summary>
     public string DisplayLevel => $"Lv.{Level}";
+    
+    /// <summary>
+    /// Dynamic tier color for the current level
+    /// </summary>
+    public string DisplayLevelColor
+    {
+        get
+        {
+            if (Level >= 1000) return "#010b19"; // Deep Space
+            if (Level >= 500) return "#8B0000";  // Bloody Red
+            if (Level >= 250) return "#E67E22";  // Vivid Orange
+            if (Level >= 100) return "#F1C40F";  // Goldenrod
+            if (Level >= 50) return "#9B59B6";   // Amethyst Purple
+            if (Level >= 10) return "#5DADE2";   // Steel Blue
+            return "#88CC88";                    // Fresh Green
+        }
+    }
     
     /// <summary>
     /// Progress to next level (0 to 1)

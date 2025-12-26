@@ -22,17 +22,34 @@ public partial class AchievementsWindow : Window
 
     private void LoadData()
     {
-        // Bind Level info
-        LevelBadgeText.Text = _user.Level.ToString();
-        LevelTitleText.Text = $"Level {_user.Level}";
-        XpProgressBar.Value = _user.LevelProgress * 100;
+        // Bind Level info dynamically
+        LevelText.Text = $"Level {_user.Level}";
         XpText.Text = $"{_user.XpInCurrentLevel} / {_user.XpRequiredForLevel} XP";
+        
+        long remaining = _user.XpRequiredForLevel - _user.XpInCurrentLevel;
+        XpRemainingText.Text = $"You are ascending. Only {remaining} XP remaining for the next level.";
 
-        // Bind Achievements - sorted ascending by XP reward
-        var achievements = _achievementService.GetAchievements(_user)
+        // Dynamic ASCII Progress Bar
+        int totalDots = 25;
+        int filledDots = (int)(_user.LevelProgress * totalDots);
+        AsciiProgressBar.Text = new string('░', filledDots) + new string('.', totalDots - filledDots);
+        
+        PopulateAchievements();
+    }
+
+    private void PopulateAchievements()
+    {
+        var allAchievements = _achievementService.GetAchievements(_user).ToList();
+        
+        UnlockedAchievementsList.ItemsSource = allAchievements
+            .Where(a => a.IsUnlocked)
+            .OrderByDescending(a => a.XpReward)
+            .ToList();
+            
+        LockedAchievementsList.ItemsSource = allAchievements
+            .Where(a => !a.IsUnlocked)
             .OrderBy(a => a.XpReward)
             .ToList();
-        AchievementsList.ItemsSource = achievements;
     }
 
     private void TitleBar_MouseDown(object sender, MouseButtonEventArgs e)

@@ -93,7 +93,7 @@ public partial class AddManualTimeWindow : Window
 
             _logger.Information("Manual time added: {Duration} on {Date}", duration, date.ToShortDateString());
             
-            System.Windows.MessageBox.Show($"Added {duration:hh\\:mm\\:ss} on {date:dd MMM yyyy}", "Time Added",
+            System.Windows.MessageBox.Show($"Added {duration:hh\\:mm\\:ss} on {date:dd/MM/yyyy}", "Time Added",
                 MessageBoxButton.OK, MessageBoxImage.Information);
 
             DialogResult = true;

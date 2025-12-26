@@ -12,6 +12,7 @@
     
     <Window.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVisibility"/>
+        <local:StringToBrushConverter x:Key="StringToBrush" xmlns:local="clr-namespace:KeganOS.Converters"/>
         
         <Style x:Key="ProfileCard" TargetType="Border">
             <Setter Property="Background" Value="#1A1A1A"/>
@@ -44,9 +45,10 @@
             </Grid>
             
             <!-- Header -->
-            <StackPanel Grid.Row="1" Margin="30,20,30,20">
-                <TextBlock Text="Welcome back." Foreground="#FFFFFF" FontSize="24"/>
-                <TextBlock Text="Select your profile to continue." Foreground="#666666" FontSize="12" Margin="0,5,0,0"/>
+            <StackPanel Grid.Row="1" Margin="30,30,30,20">
+                <TextBlock Text="Welcome back." Foreground="#FFFFFF" FontSize="20" HorizontalAlignment="Center"/>
+                <TextBlock Text="Select your profile to continue." Foreground="#666666" FontSize="11" 
+                           Margin="0,5,0,0" HorizontalAlignment="Center"/>
             </StackPanel>
             
             <!-- Profile List -->
@@ -54,7 +56,8 @@
                 <ItemsControl x:Name="ProfileList">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
-                            <Border Style="{StaticResource ProfileCard}" 
+                            <Border x:Name="ProfileBorder" 
+                                    Style="{StaticResource ProfileCard}" 
                                     MouseDown="ProfileCard_Click" Tag="{Binding Id}">
                                 <Grid>
                                     <Grid.ColumnDefinitions>
@@ -64,26 +67,34 @@
                                     </Grid.ColumnDefinitions>
                                     
                                     <!-- Avatar or default icon -->
-                                    <Grid Width="40" Height="40" VerticalAlignment="Center">
-                                        <Ellipse Width="40" Height="40" Fill="#333333"/>
-                                        <TextBlock Text="👤" FontSize="24" 
-                                                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                        <Ellipse Width="40" Height="40" 
-                                                 Visibility="{Binding HasAvatar, Converter={StaticResource BoolToVisibility}}">
-                                            <Ellipse.Fill>
-                                                <ImageBrush ImageSource="{Binding AvatarPath}" Stretch="UniformToFill"/>
-                                            </Ellipse.Fill>
-                                        </Ellipse>
-                                    </Grid>
+                                    <Border Width="48" Height="48" VerticalAlignment="Center" 
+                                            BorderBrush="#555555" BorderThickness="2" CornerRadius="24" 
+                                            Background="#1A1A1A">
+                                        <Border.Effect>
+                                            <DropShadowEffect BlurRadius="15" ShadowDepth="0" Opacity="0.5" Color="#88CC88"/>
+                                        </Border.Effect>
+                                        <Grid>
+                                            <TextBlock Text="👤" FontSize="20" 
+                                                       HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                       Opacity="0.6"
+                                                       Visibility="{Binding HasNoAvatar, Converter={StaticResource BoolToVisibility}}"/>
+                                            <Ellipse Width="44" Height="44"
+                                                     Visibility="{Binding HasAvatar, Converter={StaticResource BoolToVisibility}}">
+                                                <Ellipse.Fill>
+                                                    <ImageBrush ImageSource="{Binding AvatarPath}" Stretch="UniformToFill"/>
+                                                </Ellipse.Fill>
+                                            </Ellipse>
+                                        </Grid>
+                                    </Border>
                                     
                                     <StackPanel Grid.Column="1" Margin="15,0,0,0" VerticalAlignment="Center">
-                                        <TextBlock Text="{Binding DisplayName}" Foreground="#FFFFFF" FontSize="14"/>
-                                        <StackPanel Orientation="Horizontal">
-                                            <TextBlock Text="{Binding DisplaySymbol}" Foreground="#555555" FontSize="11"/>
+                                        <TextBlock Text="{Binding DisplayName}" Foreground="#CCCCCC" FontSize="14" FontWeight="Bold"/>
+                                        <StackPanel Orientation="Horizontal" Margin="0,3,0,0">
+                                            <TextBlock Text="{Binding DisplayLevel, Mode=OneWay}" 
+                                                       Foreground="{Binding DisplayLevelColor, Converter={StaticResource StringToBrush}}" 
+                                                       FontSize="11" FontWeight="SemiBold"/>
                                             <TextBlock Text=" • " Foreground="#444444" FontSize="11"/>
-                                            <TextBlock Text="{Binding DisplayLevel}" Foreground="#6B9FFF" FontSize="11"/>
-                                            <TextBlock Text=" • " Foreground="#444444" FontSize="11"/>
-                                            <TextBlock Text="{Binding DisplayHours}" Foreground="#6BFF6B" FontSize="11"/>
+                                            <TextBlock Text="{Binding DisplayHours, Mode=OneWay}" Foreground="#88CC88" FontSize="11"/>
                                         </StackPanel>
                                     </StackPanel>
                                     
@@ -96,8 +107,8 @@
                                                 Background="Transparent" BorderThickness="0"
                                                 Foreground="#888888" FontSize="14" Cursor="Hand"
                                                 Padding="5,2" Margin="0,0,10,0" ToolTip="Delete profile"/>
-                                        <TextBlock Text="→" Foreground="#444444" 
-                                               FontSize="18" VerticalAlignment="Center"/>
+                                        <TextBlock Text=">" Foreground="#444444" 
+                                               FontSize="16" VerticalAlignment="Center"/>
                                     </StackPanel>
                                 </Grid>
                             </Border>
@@ -107,13 +118,11 @@
             </ScrollViewer>
             
             <!-- Create New Profile -->
-            <Border Grid.Row="3" Margin="30,10,30,10" Padding="15" 
+            <Border Grid.Row="3" Margin="30,20,30,10" Padding="15" 
                     Background="Transparent" BorderBrush="#333333" BorderThickness="1" 
                     Cursor="Hand" MouseDown="CreateProfile_Click">
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                    <TextBlock Text="+" Foreground="#555555" FontSize="18" Margin="0,0,10,0"/>
-                    <TextBlock Text="Create New Profile" Foreground="#555555" FontSize="13" VerticalAlignment="Center"/>
-                </StackPanel>
+                <TextBlock Text="[ + Create New Profile ]" Foreground="#888888" 
+                           FontSize="12" HorizontalAlignment="Center"/>
             </Border>
             
             <!-- Footer -->

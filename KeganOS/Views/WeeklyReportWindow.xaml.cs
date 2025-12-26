@@ -41,7 +41,7 @@ public partial class WeeklyReportWindow : Window
         {
             // Update Date Range
             var end = _currentWeekStart.AddDays(6);
-            DateRangeText.Text = $"Week of {_currentWeekStart:MMM d} - {end:MMM d, yyyy}";
+            DateRangeText.Text = $"{_currentWeekStart:MMM d} - {end:MMM d, yyyy}";
 
             // Get Data
             var data = await _analyticsService.GetWeeklyDataAsync(_currentUser, _currentWeekStart);
@@ -52,17 +52,16 @@ public partial class WeeklyReportWindow : Window
             // Update Stats
             double total = data.Values.Sum();
             double avg = total / 7.0;
-            TotalHoursText.Text = $"Total: {total:F1} hrs";
-            AvgHoursText.Text = $"Avg: {avg:F1}/day";
+            TotalHoursText.Text = $"{total:F1} hrs";
+            AvgHoursText.Text = $"{avg:F1}/day";
 
             // Get Real Streak
             var streak = await _analyticsService.CalculateCurrentStreakAsync(_currentUser);
-            StreakText.Text = $"Streak: {streak} days";
+            StreakText.Text = $"{streak} days";
             
             // Reset Insights
             NotesInsightText.Text = "Loading insights...";
             FocusInsightText.Text = "Select tab to generate...";
-            LifeInsightText.Text = "Select tab to generate...";
             
             // Generate initial insight (Notes)
             GenerateInsight("Notes");
@@ -78,27 +77,49 @@ public partial class WeeklyReportWindow : Window
         ChartGrid.Children.Clear();
         
         double maxVal = data.Values.DefaultIfEmpty(0).Max();
-        if (maxVal == 0) maxVal = 1; // Avoid division by zero
+        if (maxVal < 10) maxVal = 10; // Standardize scale somewhat
 
         var days = new[] { DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Wednesday, DayOfWeek.Thursday, DayOfWeek.Friday, DayOfWeek.Saturday, DayOfWeek.Sunday };
         
         for (int i = 0; i < 7; i++)
         {
             double val = data[days[i]];
-            double heightPercentage = val / maxVal;
             
-            var bar = new Border
+            // Calculate how many ASCII blocks to show (max 6 blocks)
+            int blocks = (int)Math.Min(6, (val / maxVal) * 6);
+            if (val > 0 && blocks == 0) blocks = 1; // Show at least one block if there's any time
+
+            var stack = new StackPanel
             {
-                Background = new SolidColorBrush(val > 0 ? (val >= 4 ? Color.FromRgb(255, 255, 255) : Color.FromRgb(100, 100, 100)) : Color.FromRgb(30, 30, 30)),
-                CornerRadius = new CornerRadius(4, 4, 0, 0),
-                Margin = new Thickness(8, 0, 8, 0),
-                Height = Math.Max(2, 150 * heightPercentage), // Min height 2 for visibility
                 VerticalAlignment = VerticalAlignment.Bottom,
-                ToolTip = $"{val:F1} hrs"
+                HorizontalAlignment = System.Windows.HorizontalAlignment.Center,
+                Margin = new Thickness(0, 0, 0, 5)
             };
 
-            Grid.SetColumn(bar, i);
-            ChartGrid.Children.Add(bar);
+            // Value label on top
+            stack.Children.Add(new TextBlock 
+            { 
+                Text = val > 0 ? $"{val:F1}" : "", 
+                Foreground = Brushes.DimGray, 
+                FontSize = 8, 
+                HorizontalAlignment = System.Windows.HorizontalAlignment.Center,
+                Margin = new Thickness(0,0,0,2)
+            });
+
+            for (int b = 0; b < blocks; b++)
+            {
+                stack.Children.Insert(1, new TextBlock 
+                { 
+                    Text = "████", 
+                    Foreground = val >= 4 ? Brushes.White : Brushes.Gray,
+                    FontSize = 12,
+                    HorizontalAlignment = System.Windows.HorizontalAlignment.Center,
+                    Margin = new Thickness(0,1,0,0)
+                });
+            }
+
+            Grid.SetColumn(stack, i);
+            ChartGrid.Children.Add(stack);
         }
     }
 
@@ -108,14 +129,13 @@ public partial class WeeklyReportWindow : Window
         {
             "Notes" => NotesInsightText,
             "Focus" => FocusInsightText,
-            "Life" => LifeInsightText,
             _ => NotesInsightText
         };
 
         if (targetBlock.Text != "Loading insights..." && targetBlock.Text != "Select tab to generate...") 
             return; // Already loaded
 
-        targetBlock.Text = "Thinking...";
+        targetBlock.Text = "Consulting Prometheus...";
 
         var insight = await _analyticsService.GenerateInsightAsync(_currentUser, _currentWeekStart, type);
         targetBlock.Text = insight;
@@ -127,10 +147,18 @@ public partial class WeeklyReportWindow : Window
         {
             if (item.Header == null) return;
             string header = item.Header.ToString()!.Trim();
-            if (header.Contains("Notes")) GenerateInsight("Notes");
+            if (header.Contains("Theme")) GenerateInsight("Notes");
             else if (header.Contains("Focus")) GenerateInsight("Focus");
-            else if (header.Contains("Life")) GenerateInsight("Life");
         }
+    }
+
+    private void ConsultPrometheus_Click(object sender, RoutedEventArgs e)
+    {
+        // Force refresh or open chat?
+        // For now, let's refresh insights
+        NotesInsightText.Text = "Loading insights...";
+        FocusInsightText.Text = "Select tab to generate...";
+        GenerateInsight("Notes");
     }
 
     private void PrevWeek_Click(object sender, RoutedEventArgs e)
@@ -173,9 +201,6 @@ public partial class WeeklyReportWindow : Window
                 sb.AppendLine();
                 sb.AppendLine("FOCUS:");
                 sb.AppendLine(FocusInsightText.Text);
-                sb.AppendLine();
-                sb.AppendLine("LIFE:");
-                sb.AppendLine(LifeInsightText.Text);
                 sb.AppendLine();
                 sb.AppendLine("Report generated by KeganOS");
 

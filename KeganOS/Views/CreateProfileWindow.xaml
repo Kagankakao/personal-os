@@ -103,40 +103,60 @@
                     </Border>
                     
                     <!-- Pixe.la (Optional) -->
-                    <TextBlock Text="│ Pixe.la Username (optional)" Foreground="#555555" FontSize="11" Margin="0,20,0,5"/>
-                    <Grid>
+                    <TextBlock Text="═══ Pixe.la Account (Optional) ══════════════" Foreground="#555555" FontSize="11" Margin="0,30,0,10"/>
+                    
+                    <Grid Margin="0,0,0,10">
                         <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
-                        <TextBox x:Name="PixelaUsernameInput" 
+                        <TextBlock Text="👤 Username:" VerticalAlignment="Center" Foreground="#888888" FontSize="11" Margin="0,0,10,0" Width="80"/>
+                        <TextBox Grid.Column="1" x:Name="PixelaUsernameInput" 
                                  Background="#1A1A1A" Foreground="#FFFFFF"
                                  BorderBrush="#333333" BorderThickness="1"
-                                 Padding="10,8" FontSize="13"/>
-                        <Button Grid.Column="1" Content="[ Check ]" 
+                                 Padding="8" FontSize="12"/>
+                        <Button Grid.Column="2" Content="[Check ✓]" 
                                 Background="Transparent" Foreground="#87CEEB"
-                                BorderThickness="0" Padding="10,8" Cursor="Hand"
-                                x:Name="CheckUsernameButton"
+                                BorderThickness="0" Padding="10,0" Cursor="Hand"
+                                x:Name="CheckUsernameButton" FontSize="11"
                                 Click="CheckUsernameButton_Click"/>
                     </Grid>
-                    <TextBlock Text="  For habit tracking integration (lowercase letters, numbers, hyphens)" 
-                               Foreground="#444444" FontSize="9" Margin="0,3,0,0"/>
-                    
-                    <!-- Token input (shown for existing Pixe.la users) -->
-                    <StackPanel x:Name="TokenInputPanel" Visibility="Collapsed" Margin="0,10,0,0">
-                        <TextBlock Text="│ Your Pixe.la Token" Foreground="#555555" FontSize="11" Margin="0,0,0,5"/>
-                        <PasswordBox x:Name="PixelaTokenInput" 
+
+                    <Grid x:Name="TokenInputPanel" Margin="0,0,0,10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="🔑 Token:" VerticalAlignment="Center" Foreground="#888888" FontSize="11" Margin="0,0,10,0" Width="80"/>
+                        <PasswordBox Grid.Column="1" x:Name="PixelaTokenInput" 
                                      Background="#1A1A1A" Foreground="#FFFFFF"
                                      BorderBrush="#333333" BorderThickness="1"
-                                     Padding="10,8" FontSize="13"/>
-                        <TextBlock Text="  Enter your existing Pixe.la token to connect" 
-                                   Foreground="#444444" FontSize="9" Margin="0,3,0,0"/>
+                                     Padding="8" FontSize="12"/>
+                    </Grid>
+
+                    <Grid Margin="0,0,0,10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="📊 Graph ID:" VerticalAlignment="Center" Foreground="#888888" FontSize="11" Margin="0,0,10,0" Width="80"/>
+                        <TextBox Grid.Column="1" x:Name="PixelaGraphIdInput" 
+                                 Background="#1A1A1A" Foreground="#FFFFFF"
+                                 BorderBrush="#333333" BorderThickness="1"
+                                 Padding="8" FontSize="12"/>
+                    </Grid>
+
+                    <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
+                        <TextBlock Text="💡 New to Pixe.la? " Foreground="#444444" FontSize="10"/>
+                        <TextBlock Text="[Create Account ↗]" Foreground="#87CEEB" FontSize="10" Cursor="Hand" 
+                                   MouseDown="CreatePixelaAccount_Click"/>
                     </StackPanel>
                     
                     <!-- Pixe.la Status -->
                     <Border x:Name="PixelaStatusPanel" Visibility="Collapsed" 
                             Background="#1A1A1A" BorderBrush="#333333" BorderThickness="1"
-                            Padding="10" Margin="0,10,0,0">
+                            Padding="10" Margin="0,15,0,0">
                         <TextBlock x:Name="PixelaStatusText" Foreground="#AAAAAA" FontSize="11" TextWrapping="Wrap"/>
                     </Border>
                 </StackPanel>
@@ -148,7 +168,7 @@
                         Background="Transparent" Foreground="#666666"
                         BorderThickness="0" Padding="15,8" Cursor="Hand"
                         Click="CancelButton_Click"/>
-                <Button Content="[ Create ]" 
+                <Button x:Name="SaveButton" Content="[ Create ]" 
                         Background="Transparent" Foreground="#87CEEB"
                         BorderThickness="0" Padding="15,8" Cursor="Hand"
                         Click="CreateButton_Click"/>

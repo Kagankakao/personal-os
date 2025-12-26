@@ -281,13 +281,24 @@ public partial class MainWindow : System.Windows.Window
         }
     }
 
-    private void Stats_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    private void TimeStats_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
     {
         if (_currentUser == null) return;
         
+        _logger.Information("Opening Weekly Report from Time Stats region");
         var reportWindow = new Views.WeeklyReportWindow(_currentUser, _analyticsService);
         reportWindow.Owner = this;
         reportWindow.ShowDialog();
+    }
+
+    private void LevelStats_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        if (_currentUser == null) return;
+        
+        _logger.Information("Opening Achievements from Level Stats region");
+        var window = new Views.AchievementsWindow(_currentUser, _achievementService);
+        window.Owner = this;
+        window.ShowDialog();
     }
     
     #endregion
@@ -399,6 +410,28 @@ public partial class MainWindow : System.Windows.Window
                     (int)weekQty, (int)todayQty);
             }
             
+            // Population new Stats fields - show XP within current level for consistency with Achievements
+            UserLevelText.Text = $"🏆 Level {_currentUser.Level} • {_currentUser.XpInCurrentLevel}/{_currentUser.XpRequiredForLevel} XP";
+            
+            // Set Dynamic Level Color
+            var levelColor = GetLevelTierColor(_currentUser.Level);
+            UserLevelText.Foreground = new System.Windows.Media.SolidColorBrush(
+                (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(levelColor));
+            
+            
+            // Note: Removed LevelRegion.Background/BorderBrush overrides to preserve XAML hover effects
+
+            // Generate ASCII progress bar with ░ (no dots or arrows)
+            int totalBars = 20;
+            int filledBars = (int)(_currentUser.LevelProgress * totalBars);
+            string bar = new string('░', filledBars) + new string(' ', totalBars - filledBars);
+            UserXpBar.Text = bar;
+            UserXpBar.Foreground = UserLevelText.Foreground; // Match progress bar to level color
+
+            // Streaks (placeholder logic - would ideally come from a StreakService)
+            CurrentStreakText.Text = "7 days"; 
+            BestStreakText.Text = "23 days";
+
             // Load Pixe.la heatmap if configured
             await LoadPixelaHeatmapAsync();
             
@@ -570,7 +603,7 @@ public partial class MainWindow : System.Windows.Window
         body {{ 
             margin: 0; 
             padding: 0; 
-            background: #0A0A0A; 
+            background: #000000; 
             overflow: hidden; 
             display: flex; 
             justify-content: center; 
@@ -805,7 +838,7 @@ public partial class MainWindow : System.Windows.Window
         LoadUserDataAsync();
     }
 
-    private async void AskPrometheusButton_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    private async void AskPrometheusButton_Click(object sender, System.Windows.RoutedEventArgs e)
     {
         _logger.Information("Ask Prometheus button clicked");
 
@@ -907,5 +940,22 @@ public partial class MainWindow : System.Windows.Window
         {
             LoadKegomoDoroImages();
         }
+    }
+
+    private void AddManualTime_Click(object sender, System.Windows.RoutedEventArgs e)
+    {
+        // Reuse the existing AddTimeButton_Click logic
+        AddTimeButton_Click(sender, e);
+    }
+
+    private string GetLevelTierColor(int level)
+    {
+        if (level >= 1000) return "#010b19"; // Deep Space
+        if (level >= 500) return "#8B0000";  // Bloody Red
+        if (level >= 250) return "#E67E22";  // Vivid Orange
+        if (level >= 100) return "#F1C40F";  // Goldenrod
+        if (level >= 50) return "#9B59B6";   // Amethyst Purple
+        if (level >= 10) return "#5DADE2";   // Steel Blue
+        return "#88CC88";                   // Fresh Green
     }
 }

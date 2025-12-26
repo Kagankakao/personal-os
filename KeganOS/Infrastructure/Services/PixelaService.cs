@@ -314,7 +314,7 @@ public class PixelaService : IPixelaService, IDisposable
 
         try
         {
-            var payload = new { id = graphId, name = graphName, unit = "hours", type = "float", color = "momiji", isEnablePng = true };
+            var payload = new { id = graphId, name = graphName, unit = "hours", type = "float", color = "kuro", isEnablePng = true };
             var json = JsonSerializer.Serialize(payload);
             
             var request = new HttpRequestMessage(HttpMethod.Post, $"{BaseUrl}/{user.PixelaUsername}/graphs");

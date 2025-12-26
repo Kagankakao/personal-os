@@ -262,4 +262,25 @@ public partial class KegomoDoroSettingsWindow : System.Windows.Window
     private void CancelButton_Click(object sender, System.Windows.RoutedEventArgs e) => Close();
 
     private void SaveButton_Click(object sender, System.Windows.RoutedEventArgs e) => SaveSettings();
+
+    private void OpenThemeGallery_Click(object sender, System.Windows.RoutedEventArgs e)
+    {
+        _logger.Information("Opening Theme Gallery from KEGOMODORO settings...");
+        
+        // Get the theme service from App's service provider
+        var app = (App)System.Windows.Application.Current;
+        var themeService = app.Services.GetService(typeof(KeganOS.Core.Interfaces.IThemeService)) as KeganOS.Core.Interfaces.IThemeService;
+        
+        if (themeService != null)
+        {
+            var gallery = new ThemeGalleryWindow(themeService);
+            gallery.Owner = this;
+            gallery.ShowDialog();
+        }
+        else
+        {
+            System.Windows.MessageBox.Show("Theme service not available.", "Error",
+                System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Warning);
+        }
+    }
 }

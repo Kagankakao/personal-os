@@ -48,111 +48,127 @@
             </Grid.RowDefinitions>
 
             <!-- 1. Header -->
-            <Grid Grid.Row="0" Margin="20" MouseDown="TitleBar_MouseDown">
+            <Grid Grid.Row="0" Margin="30,20,30,10" MouseDown="TitleBar_MouseDown">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
                 
-                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                    <TextBlock Text="📊 Weekly Report" Foreground="#FFFFFF" FontSize="16" FontWeight="Bold"/>
-                </StackPanel>
+                <TextBlock Text="📊 Weekly Report" Foreground="#FFFFFF" FontSize="14" FontWeight="Bold" VerticalAlignment="Center"/>
 
                 <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center">
-                    <Button Content="◀" Click="PrevWeek_Click" Style="{StaticResource {x:Static ToolBar.ButtonStyleKey}}" Background="Transparent" Foreground="#888888" FontSize="16" Cursor="Hand" Margin="0,0,10,0"/>
-                    <TextBlock x:Name="DateRangeText" Text="Week of Dec 18-24, 2024" Foreground="#FFFFFF" FontSize="14" VerticalAlignment="Center"/>
-                    <Button Content="▶" Click="NextWeek_Click" Style="{StaticResource {x:Static ToolBar.ButtonStyleKey}}" Background="Transparent" Foreground="#888888" FontSize="16" Cursor="Hand" Margin="10,0,0,0"/>
+                    <Button Content="[◀]" Click="PrevWeek_Click" Background="Transparent" Foreground="#666666" FontSize="12" Cursor="Hand" BorderThickness="0"/>
+                    <TextBlock x:Name="DateRangeText" Text="Dec 18 - Dec 24, 2024" Foreground="#888888" FontSize="12" VerticalAlignment="Center" Margin="15,0"/>
+                    <Button Content="[▶]" Click="NextWeek_Click" Background="Transparent" Foreground="#666666" FontSize="12" Cursor="Hand" BorderThickness="0"/>
                 </StackPanel>
 
-                <Button Grid.Column="2" Content="✕" Click="CloseButton_Click" Background="Transparent" Foreground="#666666" BorderThickness="0" Cursor="Hand" FontSize="14"/>
+                <Button Grid.Column="2" Content="✕" Click="CloseButton_Click" Background="Transparent" Foreground="#444444" BorderThickness="0" Cursor="Hand" FontSize="12"/>
             </Grid>
 
-            <!-- 2. Chart Section -->
-            <Border Grid.Row="1" Background="#111111" Margin="20,0" CornerRadius="8" Padding="20">
-                <Grid Height="150">
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="*"/>
-                        <RowDefinition Height="Auto"/>
-                    </Grid.RowDefinitions>
+            <!-- 2. ASCII Chart Section -->
+            <StackPanel Grid.Row="1" Margin="30,10,30,20">
+                <Grid Height="140">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="40"/> <!-- Y-axis label space -->
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
                     
-                    <!-- Bars Container -->
-                    <Grid x:Name="ChartGrid" Grid.Row="0" VerticalAlignment="Bottom">
+                    <!-- Y-axis scale -->
+                    <Grid Grid.Column="0" HorizontalAlignment="Right" Margin="0,0,10,0">
+                        <TextBlock Text="10h" Foreground="#333333" FontSize="9" VerticalAlignment="Top"/>
+                        <TextBlock Text="5h" Foreground="#333333" FontSize="9" VerticalAlignment="Center"/>
+                        <TextBlock Text="0h" Foreground="#333333" FontSize="9" VerticalAlignment="Bottom" Margin="0,0,0,5"/>
+                    </Grid>
+
+                    <!-- The ASCII Bars Container -->
+                    <Grid x:Name="ChartGrid" Grid.Column="1" VerticalAlignment="Bottom">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/> <ColumnDefinition Width="*"/> <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="*"/> <ColumnDefinition Width="*"/> <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
-                        
-                        <!-- Columns will be populated dynamically -->
+                        <!-- Injected in code-behind: StackPanels of ASCII blocks -->
                     </Grid>
-                    
-                    <!-- Labels -->
-                    <Grid Grid.Row="1" Margin="0,10,0,0">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/> <ColumnDefinition Width="*"/> <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="*"/> <ColumnDefinition Width="*"/> <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
-                        <TextBlock Text="M" Grid.Column="0" Foreground="#666666" HorizontalAlignment="Center"/>
-                        <TextBlock Text="T" Grid.Column="1" Foreground="#666666" HorizontalAlignment="Center"/>
-                        <TextBlock Text="W" Grid.Column="2" Foreground="#666666" HorizontalAlignment="Center"/>
-                        <TextBlock Text="T" Grid.Column="3" Foreground="#666666" HorizontalAlignment="Center"/>
-                        <TextBlock Text="F" Grid.Column="4" Foreground="#666666" HorizontalAlignment="Center"/>
-                        <TextBlock Text="S" Grid.Column="5" Foreground="#666666" HorizontalAlignment="Center"/>
-                        <TextBlock Text="S" Grid.Column="6" Foreground="#666666" HorizontalAlignment="Center"/>
-                    </Grid>
+                </Grid>
+                
+                <!-- X-axis Labels -->
+                <Grid Margin="40,5,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/> <ColumnDefinition Width="*"/> <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/> <ColumnDefinition Width="*"/> <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="MON" Grid.Column="0" Foreground="#555555" HorizontalAlignment="Center" FontSize="9"/>
+                    <TextBlock Text="TUE" Grid.Column="1" Foreground="#555555" HorizontalAlignment="Center" FontSize="9"/>
+                    <TextBlock Text="WED" Grid.Column="2" Foreground="#555555" HorizontalAlignment="Center" FontSize="9"/>
+                    <TextBlock Text="THU" Grid.Column="3" Foreground="#555555" HorizontalAlignment="Center" FontSize="9"/>
+                    <TextBlock Text="FRI" Grid.Column="4" Foreground="#555555" HorizontalAlignment="Center" FontSize="9"/>
+                    <TextBlock Text="SAT" Grid.Column="5" Foreground="#555555" HorizontalAlignment="Center" FontSize="9"/>
+                    <TextBlock Text="SUN" Grid.Column="6" Foreground="#555555" HorizontalAlignment="Center" FontSize="9"/>
+                </Grid>
+            </StackPanel>
+
+            <!-- 3. Stats Strip -->
+            <Border Grid.Row="2" BorderBrush="#222222" BorderThickness="0,1" Margin="30,0" Padding="0,15">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0" HorizontalAlignment="Center">
+                        <TextBlock Text="TOTAL HOURS" Foreground="#444444" FontSize="9" HorizontalAlignment="Center"/>
+                        <TextBlock x:Name="TotalHoursText" Text="16.4 hrs" Foreground="#FFFFFF" FontSize="14" FontWeight="Bold" HorizontalAlignment="Center"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" HorizontalAlignment="Center">
+                        <TextBlock Text="DAILY AVG" Foreground="#444444" FontSize="9" HorizontalAlignment="Center"/>
+                        <TextBlock x:Name="AvgHoursText" Text="2.3 hrs" Foreground="#FFFFFF" FontSize="14" FontWeight="Bold" HorizontalAlignment="Center"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="2" HorizontalAlignment="Center">
+                        <TextBlock Text="ACTIVE DAYS" Foreground="#444444" FontSize="9" HorizontalAlignment="Center"/>
+                        <TextBlock x:Name="StreakText" Text="5 days" Foreground="#88CC88" FontSize="14" FontWeight="Bold" HorizontalAlignment="Center"/>
+                    </StackPanel>
                 </Grid>
             </Border>
 
-            <!-- 3. Stats Strip -->
-            <Grid Grid.Row="2" Margin="20,15">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="*"/>
-                </Grid.ColumnDefinitions>
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Grid.Column="1">
-                    <TextBlock x:Name="TotalHoursText" Text="Total: 16 hrs" Foreground="#FFFFFF" Margin="0,0,20,0"/>
-                    <TextBlock x:Name="AvgHoursText" Text="Avg: 2.3/day" Foreground="#888888" Margin="0,0,20,0"/>
-                    <TextBlock x:Name="StreakText" Text="Streak: 5 days" Foreground="#FFD700"/>
-                </StackPanel>
-            </Grid>
-
-            <!-- 4. AI Insight -->
-            <Grid Grid.Row="3" Margin="20,0,20,20">
+            <!-- 4. Prometheus Insight Section -->
+            <Grid Grid.Row="3" Margin="30,20,30,20">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
                 
-                <TextBlock Text="═══ AI Insight ════════════════════════════════════" Foreground="#333333" Margin="0,0,0,10"/>
+                <Grid Margin="0,0,0,15">
+                    <TextBlock Text="══ Prometheus Insight ══════════════" Foreground="#333333" FontSize="10" VerticalAlignment="Center"/>
+                    <Button x:Name="ConsultPrometheusButton" Content="🔥 Consult Prometheus" HorizontalAlignment="Right"
+                            Background="Transparent" Foreground="#87CEEB" BorderThickness="0" 
+                            Cursor="Hand" FontSize="10" Click="ConsultPrometheus_Click"/>
+                </Grid>
                 
-                <TabControl Grid.Row="1" Background="Transparent" BorderThickness="0" SelectionChanged="TabControl_SelectionChanged">
-                    <TabItem Header=" 📝 Notes ">
-                        <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="0,10,0,0">
-                            <TextBlock x:Name="NotesInsightText" Text="Loading insights..." Foreground="#CCCCCC" TextWrapping="Wrap" LineHeight="20"/>
+                <TabControl Grid.Row="1" Background="#0D0D0D" BorderThickness="0" SelectionChanged="TabControl_SelectionChanged">
+                    <TabItem Header=" [ Weekly Theme ] ">
+                        <ScrollViewer Margin="0,15,0,0">
+                            <TextBlock x:Name="NotesInsightText" Text="Focusing heavily on development tasks this week. Your concentration peaked on Wednesday during the deep-work session." 
+                                       Foreground="#888888" TextWrapping="Wrap" LineHeight="18" FontSize="11"/>
                         </ScrollViewer>
                     </TabItem>
-                    <TabItem Header=" 💼 Focus ">
-                        <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="0,10,0,0">
-                            <TextBlock x:Name="FocusInsightText" Text="Select tab to generate..." Foreground="#CCCCCC" TextWrapping="Wrap" LineHeight="20"/>
-                        </ScrollViewer>
-                    </TabItem>
-                    <TabItem Header=" 🌟 Life ">
-                        <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="0,10,0,0">
-                            <TextBlock x:Name="LifeInsightText" Text="Select tab to generate..." Foreground="#CCCCCC" TextWrapping="Wrap" LineHeight="20"/>
+                    <TabItem Header=" [ Critical Focus ] ">
+                        <ScrollViewer Margin="0,15,0,0">
+                            <TextBlock x:Name="FocusInsightText" Text="Prometheus suggests checking your late-night sessions; they seem to be less efficient than your morning blocks." 
+                                       Foreground="#888888" TextWrapping="Wrap" LineHeight="18" FontSize="11"/>
                         </ScrollViewer>
                     </TabItem>
                 </TabControl>
             </Grid>
 
             <!-- 5. Footer -->
-            <Border Grid.Row="4" Background="#111111" Padding="15">
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                    <Button Content="Export PDF" Click="Export_Click" Background="Transparent" Foreground="#888888" BorderBrush="#333333" BorderThickness="1" Padding="15,5" Margin="0,0,10,0"/>
-                    <Button Content="Share" Click="Share_Click" Background="#FFFFFF" Foreground="#000000" FontWeight="Bold" BorderThickness="0" Padding="20,5"/>
-                </StackPanel>
+            <Border Grid.Row="4" Background="#0D0D0D" BorderBrush="#222222" BorderThickness="0,1,0,0" Padding="30,15">
+                <Grid>
+                    <Button Content="[ Export Data ]" Click="Export_Click" Background="Transparent" Foreground="#444444" BorderThickness="0" Cursor="Hand" FontSize="10" HorizontalAlignment="Left"/>
+                    <Button Content="Close Report" Click="CloseButton_Click" Background="#1A1A1A" Foreground="#CCCCCC" BorderBrush="#333333" BorderThickness="1" 
+                            Padding="20,8" HorizontalAlignment="Right" Cursor="Hand" FontSize="11"/>
+                </Grid>
             </Border>
         </Grid>
     </Border>

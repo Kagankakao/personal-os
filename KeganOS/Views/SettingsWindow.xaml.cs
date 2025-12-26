@@ -447,4 +447,20 @@ public partial class SettingsWindow : Window
             }
         }
     }
+    private async void LogOutButton_Click(object sender, System.Windows.RoutedEventArgs e)
+    {
+        var result = System.Windows.MessageBox.Show("Are you sure you want to log out?", "Log Out",
+            System.Windows.MessageBoxButton.YesNo, System.Windows.MessageBoxImage.Question);
+            
+        if (result == System.Windows.MessageBoxResult.Yes)
+        {
+            _logger.Information("User logging out. Clearing session and restarting application...");
+            
+            // Clear the last active user so profile selection shows on restart
+            await _userService.SetLastActiveUserIdAsync(null);
+            
+            System.Windows.Forms.Application.Restart();
+            System.Windows.Application.Current.Shutdown();
+        }
+    }
 }

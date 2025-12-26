@@ -17,7 +17,6 @@ C:\Users\ariba\OneDrive\Documenti\Software Projects\AI Projects\personal-os\pers
 C:\Users\ariba\OneDrive\Documenti\Software Projects\AI Projects\personal-os\personal-os\KeganOS\obj\Debug\net9.0-windows\KeganOS.AssemblyInfoInputs.cache
 C:\Users\ariba\OneDrive\Documenti\Software Projects\AI Projects\personal-os\personal-os\KeganOS\obj\Debug\net9.0-windows\KeganOS.AssemblyInfo.cs
 C:\Users\ariba\OneDrive\Documenti\Software Projects\AI Projects\personal-os\personal-os\KeganOS\obj\Debug\net9.0-windows\KeganOS.csproj.CoreCompileInputs.cache
-C:\Users\ariba\OneDrive\Documenti\Software Projects\AI Projects\personal-os\personal-os\KeganOS\obj\Debug\net9.0-windows\KeganOS.sourcelink.json
 C:\Users\ariba\OneDrive\Documenti\Software Projects\AI Projects\personal-os\personal-os\KeganOS\bin\Debug\net9.0-windows\runtimes\win-x86\native\WebView2Loader.dll
 C:\Users\ariba\OneDrive\Documenti\Software Projects\AI Projects\personal-os\personal-os\KeganOS\bin\Debug\net9.0-windows\runtimes\win-x64\native\WebView2Loader.dll
 C:\Users\ariba\OneDrive\Documenti\Software Projects\AI Projects\personal-os\personal-os\KeganOS\bin\Debug\net9.0-windows\runtimes\win-arm64\native\WebView2Loader.dll
@@ -131,3 +130,5 @@ C:\Users\ariba\OneDrive\Documenti\Software Projects\AI Projects\personal-os\pers
 C:\Users\ariba\OneDrive\Documenti\Software Projects\AI Projects\personal-os\personal-os\KeganOS\obj\Debug\net9.0-windows\Views\PixelEditWindow.g.cs
 C:\Users\ariba\OneDrive\Documenti\Software Projects\AI Projects\personal-os\personal-os\KeganOS\obj\Debug\net9.0-windows\Views\TextInputDialog.baml
 C:\Users\ariba\OneDrive\Documenti\Software Projects\AI Projects\personal-os\personal-os\KeganOS\obj\Debug\net9.0-windows\Views\TextInputDialog.g.cs
+C:\Users\ariba\OneDrive\Documenti\Software Projects\AI Projects\personal-os\personal-os\KeganOS\obj\Debug\net9.0-windows\Views\DeleteConfirmationWindow.baml
+C:\Users\ariba\OneDrive\Documenti\Software Projects\AI Projects\personal-os\personal-os\KeganOS\obj\Debug\net9.0-windows\Views\DeleteConfirmationWindow.g.cs

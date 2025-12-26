@@ -71,6 +71,7 @@ public partial class CreateProfileWindow : System.Windows.Window
         {
             PixelaUsernameInput.Text = _editingUser.PixelaUsername;
             PixelaTokenInput.Password = _editingUser.PixelaToken ?? "";
+            PixelaGraphIdInput.Text = _editingUser.PixelaGraphId ?? "";
             _pixelaUsernameAvailable = true;
             _isNewPixelaUser = false;
         }
@@ -342,6 +343,22 @@ public partial class CreateProfileWindow : System.Windows.Window
         }
     }
 
+    private void CreatePixelaAccount_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        try
+        {
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = "https://pixe.la/",
+                UseShellExecute = true
+            });
+        }
+        catch (System.Exception ex)
+        {
+            _logger.Error(ex, "Failed to open Pixe.la website");
+        }
+    }
+
     private void CancelButton_Click(object sender, System.Windows.RoutedEventArgs e)
     {
         DialogResult = false;
@@ -402,20 +419,21 @@ public partial class CreateProfileWindow : System.Windows.Window
 
         // Token: use provided token for existing users, or auto-generate for new users
         string? pixelaToken = null;
-        string? graphId = null;
+        string? graphId = PixelaGraphIdInput.Text.Trim();
+        
         if (!string.IsNullOrEmpty(pixelaUsername))
         {
             if (_isNewPixelaUser)
             {
                 // New user - auto-generate token
                 pixelaToken = _pixelaService.GenerateToken(pixelaUsername);
-                graphId = "focus";
+                if (string.IsNullOrEmpty(graphId)) graphId = "focus";
             }
             else
             {
                 // Existing user - use their provided token
                 pixelaToken = PixelaTokenInput.Password.Trim();
-                graphId = "graph1"; // Default graph ID used by KEGOMODORO
+                if (string.IsNullOrEmpty(graphId)) graphId = "graph1";
             }
         }
 
@@ -495,8 +513,8 @@ public partial class CreateProfileWindow : System.Windows.Window
                     }
 
                     // Create default graph
-                    ShowPixelaStatus("Creating focus graph...", true);
-                    var graphCreated = await _pixelaService.CreateGraphAsync(user, "focus", "Focus Hours");
+                    ShowPixelaStatus($"Creating {graphId} graph...", true);
+                    var graphCreated = await _pixelaService.CreateGraphAsync(user, graphId, "Focus Hours");
                     if (!graphCreated)
                     {
                         _logger.Warning("Graph creation failed, but continuing");

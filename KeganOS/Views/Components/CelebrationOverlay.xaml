@@ -4,41 +4,37 @@
              Visibility="Collapsed"
              Background="#CC000000">
     <Grid>
+        <Border Background="#F20D0D0D"/>
+        
         <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-            <!-- Glow Effect -->
-            <Border Width="300" Height="300" CornerRadius="150" Background="#33FFFFFF">
-                <Border.Effect>
-                    <DropShadowEffect Color="Gold" BlurRadius="100" ShadowDepth="0" Opacity="0.5"/>
-                </Border.Effect>
-                
-                <!-- Badge Icon -->
-                <TextBlock x:Name="BadgeIcon" Text="🏆" FontSize="120" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-            </Border>
+            <!-- ASCII Art Header -->
+            <TextBlock Text="      _____ _      ______ ____  _____       _______ _____ ____  _   _ &#10;     / ____| |    |  ____|  _ \|  __ \   /\|__   __|_   _/ __ \| \ | |&#10;    | |    | |    | |__  | |_) | |__) | /  \  | |    | || |  | |  \| |&#10;    | |    | |    |  __| |  _ &lt;|  _  / / /\ \ | |    | || |  | | . ` |&#10;    | |____| |____| |____| |_) | | \ \/ ____ \| |   _| || |__| | |\  |&#10;     \_____|______|______|____/|_|  \_\/_/    \_\_|  |_____\____/|_| \_|" 
+                       Foreground="#FFCC00" FontSize="10" FontFamily="Consolas" HorizontalAlignment="Center" Margin="0,0,0,40"/>
+
+            <TextBlock x:Name="TitleText" Text="MAJOR MILESTONE REACHED" Foreground="#FFFFFF" FontSize="18" FontWeight="Bold" 
+                       HorizontalAlignment="Center" Margin="0,0,0,5"/>
+            <Rectangle Height="1" Width="300" Fill="#333333" Margin="0,0,0,40"/>
             
-            <TextBlock x:Name="TitleText" Text="MILESTONE REACHED!" Foreground="Gold" FontSize="32" FontWeight="Bold" 
-                       HorizontalAlignment="Center" Margin="0,30,0,10">
-                <TextBlock.Effect>
-                    <DropShadowEffect BlurRadius="10" Color="Black" ShadowDepth="2"/>
-                </TextBlock.Effect>
-            </TextBlock>
+            <!-- Badge Icon -->
+            <TextBlock x:Name="BadgeIcon" Text="🏆" FontSize="80" HorizontalAlignment="Center" Margin="0,0,0,20"/>
             
-            <TextBlock x:Name="AchievementName" Text="Double Digits: Level 10" Foreground="White" FontSize="20" 
-                       HorizontalAlignment="Center" Margin="0,0,0,20"/>
+            <TextBlock x:Name="AchievementName" Text="Double Digits: Level 10" Foreground="#FFFFFF" FontSize="20" 
+                       HorizontalAlignment="Center" Margin="0,0,0,10" FontWeight="Bold"/>
             
-            <TextBlock x:Name="RewardText" Text="+500 XP" Foreground="#6BFF6B" FontSize="16" 
+            <TextBlock x:Name="RewardText" Text="+500 XP" Foreground="#88CC88" FontSize="16" 
                        HorizontalAlignment="Center" FontWeight="Bold"/>
 
-            <Button Content="AWESOME!" Width="150" Height="40" Margin="0,40,0,0" 
-                    Background="#333333" Foreground="White" BorderBrush="Gold" BorderThickness="1"
-                    Click="CloseButton_Click" Cursor="Hand">
-                <Button.Resources>
-                    <Style TargetType="Border">
-                        <Setter Property="CornerRadius" Value="20"/>
-                    </Style>
-                </Button.Resources>
+            <Button Content="[ CONTINUE ASCENSION ]" Width="200" Height="50" Margin="0,60,0,0" 
+                    Background="Transparent" Foreground="#666666" BorderThickness="0"
+                    Click="CloseButton_Click" Cursor="Hand" FontSize="12">
+                <Button.Template>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Button.Template>
             </Button>
         </StackPanel>
-        
-        <!-- Animations will be triggered in code-behind -->
     </Grid>
 </UserControl>

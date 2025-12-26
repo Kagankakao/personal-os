@@ -210,6 +210,39 @@ public class UserService : IUserService
         await cmd.ExecuteNonQueryAsync();
     }
 
+    public async Task SetLastActiveUserIdAsync(int? userId)
+    {
+        _logger.Information("Setting last active user ID to: {Id}", userId);
+        using var conn = _db.GetConnection();
+        var cmd = conn.CreateCommand();
+        
+        if (userId.HasValue)
+        {
+            cmd.CommandText = "UPDATE Users SET LastLoginAt = CURRENT_TIMESTAMP WHERE Id = @id";
+            cmd.Parameters.AddWithValue("@id", userId.Value);
+            await cmd.ExecuteNonQueryAsync();
+        }
+        else
+        {
+            // Clear all LastLoginAt to force profile selection on next startup
+            cmd.CommandText = "UPDATE Users SET LastLoginAt = NULL";
+            await cmd.ExecuteNonQueryAsync();
+            _logger.Information("Cleared LastLoginAt for all users (logged out)");
+        }
+    }
+
+    public async Task<int?> GetLastActiveUserIdAsync()
+    {
+        _logger.Debug("Retrieving last active user ID...");
+        using var conn = _db.GetConnection();
+        var cmd = conn.CreateCommand();
+        // Only return users who have logged in (LastLoginAt is NOT NULL)
+        cmd.CommandText = "SELECT Id FROM Users WHERE LastLoginAt IS NOT NULL ORDER BY LastLoginAt DESC LIMIT 1";
+        
+        var result = await cmd.ExecuteScalarAsync();
+        return result != null && result != DBNull.Value ? (int?)(long)result : null;
+    }
+
     private static User MapUser(SqliteDataReader reader)
     {
         // Try to get TotalHours, default to 0 if column doesn't exist (migration)
@@ -250,6 +283,16 @@ public class UserService : IUserService
         }
         catch { /* Column may not exist in old DB */ }
         
+        // Handle nullable LastLoginAt
+        DateTime? lastLoginAt = null;
+        try
+        {
+            var loginOrdinal = reader.GetOrdinal("LastLoginAt");
+            if (!reader.IsDBNull(loginOrdinal))
+                lastLoginAt = reader.GetDateTime(loginOrdinal);
+        }
+        catch { /* Column may not exist in old DB */ }
+        
         return new User
         {
             Id = reader.GetInt32(reader.GetOrdinal("Id")),
@@ -266,7 +309,7 @@ public class UserService : IUserService
             UnlockedAchievementsJson = unlockedAchievements,
             SavedColors = savedColors,
             CreatedAt = reader.GetDateTime(reader.GetOrdinal("CreatedAt")),
-            LastLoginAt = reader.GetDateTime(reader.GetOrdinal("LastLoginAt"))
+            LastLoginAt = lastLoginAt ?? DateTime.MinValue
         };
     }
 }

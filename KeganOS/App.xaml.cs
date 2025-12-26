@@ -1,4 +1,5 @@
 using KeganOS.Core.Interfaces;
+using KeganOS.Core.Models;
 using KeganOS.Infrastructure.Data;
 using KeganOS.Infrastructure.Services;
 using KeganOS.Views;
@@ -61,32 +62,53 @@ public partial class App : System.Windows.Application
             db.Initialize();
             Log.Information("Database initialized");
 
-            // Show profile selection first
             var userService = _host.Services.GetRequiredService<IUserService>();
             var pixelaService = _host.Services.GetRequiredService<IPixelaService>();
             var backupService = _host.Services.GetRequiredService<IBackupService>();
-            var profileWindow = new ProfileSelectionWindow(userService, pixelaService, backupService);
+
+            // Session Persistence: Try to auto-login last active user
+            // We use a non-async path or Task.Run for now to avoid blocking, 
+            // but for startup logic, we can use GetAwaiter().GetResult() synchronously if necessary
+            // since we ARE the startup thread.
             
-            if (profileWindow.ShowDialog() == true && profileWindow.SelectedUser != null)
+            User? selectedUser = userService.GetLastActiveUserIdAsync().GetAwaiter().GetResult() is int lastUserId 
+                ? userService.GetUserByIdAsync(lastUserId).GetAwaiter().GetResult() 
+                : null;
+
+            if (selectedUser != null)
             {
-                // User selected, open main window with services
+                Log.Information("Session persistence: Auto-logging in user {Name}", selectedUser.DisplayName);
+            }
+            else
+            {
+                // Show profile selection if no auto-login target
+                var profileWindow = new ProfileSelectionWindow(userService, pixelaService, backupService);
+                if (profileWindow.ShowDialog() == true && profileWindow.SelectedUser != null)
+                {
+                    selectedUser = profileWindow.SelectedUser;
+                    userService.SetLastActiveUserIdAsync(selectedUser.Id).Wait();
+                }
+            }
+            
+            if (selectedUser != null)
+            {
+                // User selected (manually or auto), open main window with services
                 var kegomoDoroService = _host.Services.GetRequiredService<IKegomoDoroService>();
                 var journalService = _host.Services.GetRequiredService<IJournalService>();
                 var aiProvider = _host.Services.GetRequiredService<IAIProvider>();
                 var motivationalService = _host.Services.GetRequiredService<IMotivationalMessageService>();
-                // pixelaService already declared above
                 var achievementService = _host.Services.GetRequiredService<IAchievementService>();
                 var analyticsService = _host.Services.GetRequiredService<IAnalyticsService>();
                 
                 var mainWindow = new MainWindow(kegomoDoroService, journalService, pixelaService, aiProvider, motivationalService, userService, backupService, achievementService, analyticsService);
-                mainWindow.SetCurrentUser(profileWindow.SelectedUser);
+                mainWindow.SetCurrentUser(selectedUser!);
                 
                 // Set as main window and switch shutdown mode
                 MainWindow = mainWindow;
                 ShutdownMode = System.Windows.ShutdownMode.OnMainWindowClose;
                 
                 mainWindow.Show();
-                Log.Information("Main window displayed for user: {User}", profileWindow.SelectedUser.DisplayName);
+                Log.Information("Main window displayed for user: {User}", selectedUser.DisplayName);
             }
             else
             {

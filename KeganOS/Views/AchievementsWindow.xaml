@@ -32,102 +32,63 @@
             </Grid>
 
             <!-- User Stats Summary -->
-            <Border Grid.Row="1" Background="#1A1A1A" Margin="20,0,20,15" CornerRadius="8" Padding="15">
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="*"/>
-                    </Grid.ColumnDefinitions>
-                    
-                    <Border Width="60" Height="60" CornerRadius="30" Background="#333333" Margin="0,0,15,0">
-                         <TextBlock x:Name="LevelBadgeText" Text="5" Foreground="#FFD700" FontSize="24" FontWeight="Bold" 
-                                    HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                    </Border>
-                    
-                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                        <TextBlock x:Name="LevelTitleText" Text="Level 5" Foreground="White" FontSize="16" FontWeight="Bold"/>
-                        <ProgressBar x:Name="XpProgressBar" Height="4" Background="#333333" Foreground="#FFD700" BorderThickness="0" Margin="0,5,0,5"/>
-                        <TextBlock x:Name="XpText" Text="450 / 600 XP" Foreground="#888888" FontSize="12"/>
-                    </StackPanel>
+            <StackPanel Grid.Row="1" Margin="30,10,30,20">
+                <Grid Margin="0,0,0,8">
+                    <TextBlock x:Name="LevelText" Text="Level 0" Foreground="#FFFFFF" FontSize="16" FontWeight="Bold"/>
+                    <TextBlock x:Name="XpText" Text="0 / 0 XP" Foreground="#666666" FontSize="12" HorizontalAlignment="Right" VerticalAlignment="Bottom"/>
                 </Grid>
-            </Border>
+                <Grid Height="24">
+                    <TextBlock x:Name="AsciiProgressBar" Text="░░░░░░░░░░░░░░░░░........" Foreground="#88CC88" FontSize="16" VerticalAlignment="Center"/>
+                </Grid>
+                <TextBlock x:Name="XpRemainingText" Text="" 
+                           Foreground="#444444" FontSize="11" Margin="0,5,0,0" FontStyle="Italic"/>
+            </StackPanel>
 
-            <!-- Badges Grid -->
-            <ScrollViewer Grid.Row="2" Margin="20,0">
-                <ItemsControl x:Name="AchievementsList">
-                    <ItemsControl.ItemsPanel>
-                        <ItemsPanelTemplate>
-                            <WrapPanel Orientation="Horizontal" HorizontalAlignment="Center"/>
-                        </ItemsPanelTemplate>
-                    </ItemsControl.ItemsPanel>
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate>
-                            <Border Width="100" Height="120" Margin="5" Background="#111111" BorderBrush="#333333" BorderThickness="1" CornerRadius="8" ToolTip="{Binding Description}">
-                                <Border.Style>
-                                    <Style TargetType="Border">
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding IsUnlocked}" Value="True">
-                                                <Setter Property="BorderBrush" Value="#FFD700"/>
-                                                <Setter Property="Background" Value="#221F00"/>
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </Border.Style>
-                                <StackPanel VerticalAlignment="Center">
-                                    <TextBlock Text="{Binding Icon}" FontSize="32" HorizontalAlignment="Center" Margin="0,0,0,5">
-                                        <TextBlock.Style>
-                                            <Style TargetType="TextBlock">
-                                                <Style.Triggers>
-                                                    <DataTrigger Binding="{Binding IsUnlocked}" Value="False">
-                                                        <Setter Property="Opacity" Value="0.3"/>
-                                                        <Setter Property="Effect">
-                                                            <Setter.Value>
-                                                                <BlurEffect Radius="5"/>
-                                                            </Setter.Value>
-                                                        </Setter>
-                                                    </DataTrigger>
-                                                </Style.Triggers>
-                                            </Style>
-                                        </TextBlock.Style>
-                                    </TextBlock>
-                                    <TextBlock Foreground="White" FontSize="11" FontWeight="Bold" TextWrapping="Wrap" TextAlignment="Center" Margin="5,0">
-                                        <TextBlock.Style>
-                                            <Style TargetType="TextBlock">
-                                                <Setter Property="Text" Value="{Binding Name}"/>
-                                                <Style.Triggers>
-                                                    <DataTrigger Binding="{Binding IsUnlocked}" Value="False">
-                                                        <Setter Property="Text" Value="???"/>
-                                                        <Setter Property="Opacity" Value="0.5"/>
-                                                        <Setter Property="Effect">
-                                                            <Setter.Value>
-                                                                <BlurEffect Radius="3"/>
-                                                            </Setter.Value>
-                                                        </Setter>
-                                                    </DataTrigger>
-                                                </Style.Triggers>
-                                            </Style>
-                                        </TextBlock.Style>
-                                    </TextBlock>
-                                    
-                                    <TextBlock x:Name="RewardText" Foreground="#888888" FontSize="9" HorizontalAlignment="Center" Margin="0,2,0,0">
-                                        <TextBlock.Style>
-                                            <Style TargetType="TextBlock">
-                                                <Setter Property="Text" Value="{Binding XpReward, StringFormat=+{0} XP}"/>
-                                                <Style.Triggers>
-                                                    <DataTrigger Binding="{Binding IsUnlocked}" Value="False">
-                                                        <Setter Property="Text" Value="{Binding RequirementText}"/>
-                                                        <Setter Property="Foreground" Value="#FFD700"/>
-                                                        <Setter Property="FontWeight" Value="Bold"/>
-                                                    </DataTrigger>
-                                                </Style.Triggers>
-                                            </Style>
-                                        </TextBlock.Style>
-                                    </TextBlock>
-                                </StackPanel>
-                            </Border>
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
+            <!-- Badges List -->
+            <ScrollViewer Grid.Row="2" Margin="30,0">
+                <StackPanel>
+                    <!-- Unlocked Section -->
+                    <TextBlock Text="═══ Unlocked Badges ══════════════════════" Foreground="#555555" FontSize="10" Margin="0,0,0,15"/>
+                    <ItemsControl x:Name="UnlockedAchievementsList" Margin="0,0,0,30">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel Orientation="Horizontal" HorizontalAlignment="Left"/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Width="80" Height="100" Margin="0,0,10,15" Background="#111111" BorderBrush="#88CC88" BorderThickness="1">
+                                    <StackPanel VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding Icon}" FontSize="28" HorizontalAlignment="Center" Margin="0,0,0,5"/>
+                                        <TextBlock Text="{Binding Name}" Foreground="#CCCCCC" FontSize="10" FontWeight="Bold" TextAlignment="Center" Margin="5,0"/>
+                                        <TextBlock Text="[ Unlocked ]" Foreground="#444444" FontSize="8" HorizontalAlignment="Center" Margin="0,2,0,0"/>
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <!-- Locked Section -->
+                    <TextBlock Text="═══ Locked Badges ════════════════════════" Foreground="#555555" FontSize="10" Margin="0,0,0,15"/>
+                    <ItemsControl x:Name="LockedAchievementsList">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel Orientation="Horizontal" HorizontalAlignment="Left"/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Width="80" Height="100" Margin="0,0,10,15" Background="#111111" BorderBrush="#333333" BorderThickness="1">
+                                    <StackPanel VerticalAlignment="Center" Opacity="0.4">
+                                        <TextBlock Text="🔒" FontSize="28" HorizontalAlignment="Center" Margin="0,0,0,5"/>
+                                        <TextBlock Text="???" Foreground="#888888" FontSize="10" FontWeight="Bold" TextAlignment="Center" Margin="5,0"/>
+                                        <TextBlock Text="{Binding RequirementText}" Foreground="#FF6B6B" FontSize="8" HorizontalAlignment="Center" Margin="0,2,0,0" TextAlignment="Center"/>
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
             </ScrollViewer>
 
             <!-- Footer -->

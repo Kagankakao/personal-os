@@ -41,4 +41,14 @@ public interface IUserService
     /// Update user preferences
     /// </summary>
     Task UpdatePreferencesAsync(UserPreferences preferences);
+
+    /// <summary>
+    /// Set the last active user ID for session persistence
+    /// </summary>
+    Task SetLastActiveUserIdAsync(int? userId);
+
+    /// <summary>
+    /// Get the last active user ID from the database
+    /// </summary>
+    Task<int?> GetLastActiveUserIdAsync();
 }
