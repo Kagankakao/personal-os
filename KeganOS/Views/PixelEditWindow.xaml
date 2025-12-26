@@ -1,0 +1,49 @@
+<Window x:Class="KeganOS.Views.PixelEditWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Select Theme Color" Height="200" Width="280"
+        WindowStartupLocation="CenterOwner"
+        Background="#1A1A1A"
+        FontFamily="Consolas"
+        WindowStyle="None"
+        ResizeMode="NoResize"
+        AllowsTransparency="True">
+    
+    <Border BorderBrush="#444444" BorderThickness="1">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="35"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="50"/>
+            </Grid.RowDefinitions>
+            
+            <!-- Title Bar -->
+            <Grid Grid.Row="0" Background="#0D0D0D" MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
+                <TextBlock Text="Select Theme Color" Foreground="#CCCCCC" VerticalAlignment="Center" Margin="15,0,0,0" FontSize="13"/>
+                <Button Content="✕" HorizontalAlignment="Right" VerticalAlignment="Center" 
+                        Width="35" Height="35" Background="Transparent" BorderThickness="0"
+                        Foreground="#888888" Click="CloseButton_Click" Cursor="Hand"/>
+            </Grid>
+            
+            <!-- Theme Colors -->
+            <StackPanel Grid.Row="1" Margin="15" VerticalAlignment="Center">
+                <TextBlock Text="PIXE.LA THEMES" Foreground="#666666" FontSize="10" Margin="0,0,0,12" HorizontalAlignment="Center"/>
+                <UniformGrid Columns="3" Rows="2" HorizontalAlignment="Center">
+                    <Button Tag="shibafu" Background="#70cc14" Width="60" Height="35" Margin="4" BorderThickness="0" Click="PresetColor_Click" Cursor="Hand" ToolTip="Green (shibafu)"/>
+                    <Button Tag="momiji" Background="#f3591e" Width="60" Height="35" Margin="4" BorderThickness="0" Click="PresetColor_Click" Cursor="Hand" ToolTip="Red (momiji)"/>
+                    <Button Tag="sora" Background="#00aced" Width="60" Height="35" Margin="4" BorderThickness="0" Click="PresetColor_Click" Cursor="Hand" ToolTip="Blue (sora)"/>
+                    <Button Tag="ichou" Background="#e4b41b" Width="60" Height="35" Margin="4" BorderThickness="0" Click="PresetColor_Click" Cursor="Hand" ToolTip="Yellow (ichou)"/>
+                    <Button Tag="ajisai" Background="#7246df" Width="60" Height="35" Margin="4" BorderThickness="0" Click="PresetColor_Click" Cursor="Hand" ToolTip="Purple (ajisai)"/>
+                    <Button Tag="kuro" Background="#222222" Width="60" Height="35" Margin="4" BorderThickness="1" BorderBrush="#444444" Click="PresetColor_Click" Cursor="Hand" ToolTip="Black (kuro)"/>
+                </UniformGrid>
+            </StackPanel>
+            
+            <!-- Footer -->
+            <Border Grid.Row="2" BorderBrush="#333333" BorderThickness="0,1,0,0" Padding="15,10">
+                <Button Content="Cancel" HorizontalAlignment="Center" Padding="20,8" 
+                        Background="Transparent" Foreground="#888888" BorderThickness="1" BorderBrush="#444444"
+                        Click="CloseButton_Click" Cursor="Hand"/>
+            </Border>
+        </Grid>
+    </Border>
+</Window>

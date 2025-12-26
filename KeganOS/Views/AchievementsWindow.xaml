@@ -108,7 +108,21 @@
                                             </Style>
                                         </TextBlock.Style>
                                     </TextBlock>
-                                    <TextBlock Text="{Binding XpReward, StringFormat=+{0} XP}" Foreground="#888888" FontSize="9" HorizontalAlignment="Center" Margin="0,2,0,0"/>
+                                    
+                                    <TextBlock x:Name="RewardText" Foreground="#888888" FontSize="9" HorizontalAlignment="Center" Margin="0,2,0,0">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="Text" Value="{Binding XpReward, StringFormat=+{0} XP}"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsUnlocked}" Value="False">
+                                                        <Setter Property="Text" Value="{Binding RequirementText}"/>
+                                                        <Setter Property="Foreground" Value="#FFD700"/>
+                                                        <Setter Property="FontWeight" Value="Bold"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
                                 </StackPanel>
                             </Border>
                         </DataTemplate>

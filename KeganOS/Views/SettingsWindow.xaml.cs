@@ -19,14 +19,16 @@ public partial class SettingsWindow : Window
     private User? _currentUser;
     private readonly IUserService _userService;
     private readonly IAIProvider _aiProvider;
+    private readonly IPixelaService _pixelaService;
     private readonly IBackupService? _backupService;
     private bool _showApiKey = false;
 
-    public SettingsWindow(IUserService userService, IAIProvider aiProvider, IBackupService? backupService = null)
+    public SettingsWindow(IUserService userService, IAIProvider aiProvider, IPixelaService pixelaService, IBackupService? backupService = null)
     {
         InitializeComponent();
         _userService = userService;
         _aiProvider = aiProvider;
+        _pixelaService = pixelaService;
         _backupService = backupService;
         _logger.Information("Settings window opened");
     }
@@ -55,6 +57,11 @@ public partial class SettingsWindow : Window
             ApiStatusText.Foreground = new System.Windows.Media.SolidColorBrush(
                 (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#6BFF6B"));
         }
+
+        // Pixe.la Account
+        PixelaUsernameTextBox.Text = _currentUser.PixelaUsername ?? "";
+        PixelaTokenPasswordBox.Password = _currentUser.PixelaToken ?? "";
+        PixelaGraphIdTextBox.Text = _currentUser.PixelaGraphId ?? "";
 
         // Backup location
         var backupPath = Path.Combine(
@@ -382,6 +389,11 @@ public partial class SettingsWindow : Window
             _currentUser.DisplayName = DisplayNameTextBox.Text.Trim();
             _currentUser.PersonalSymbol = string.IsNullOrEmpty(SymbolTextBox.Text) ? "🦭" : SymbolTextBox.Text;
             _currentUser.GeminiApiKey = ApiKeyPasswordBox.Password;
+            
+            // Update Pixe.la credentials
+            _currentUser.PixelaUsername = PixelaUsernameTextBox.Text.Trim();
+            _currentUser.PixelaToken = PixelaTokenPasswordBox.Password;
+            _currentUser.PixelaGraphId = PixelaGraphIdTextBox.Text.Trim();
 
             // Save to database
             await _userService.UpdateUserAsync(_currentUser);
@@ -395,6 +407,31 @@ public partial class SettingsWindow : Window
             _logger.Error(ex, "Failed to save settings");
             System.Windows.MessageBox.Show($"Failed to save settings: {ex.Message}", "Error", 
                 MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    private void ShowPixelaTokenButton_Click(object sender, RoutedEventArgs e)
+    {
+        // Toggle visibility (simplified - just show in message)
+        if (!string.IsNullOrEmpty(PixelaTokenPasswordBox.Password))
+        {
+            System.Windows.MessageBox.Show($"Token: {PixelaTokenPasswordBox.Password}", "Pixe.la Token");
+        }
+    }
+
+    private void GetPixelaAccountLink_Click(object sender, MouseButtonEventArgs e)
+    {
+        try
+        {
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = "https://pixe.la",
+                UseShellExecute = true
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.Error(ex, "Failed to open Pixe.la website");
         }
     }
     private void OpenThemesButton_Click(object sender, RoutedEventArgs e)

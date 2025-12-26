@@ -174,7 +174,7 @@ namespace KeganOS.Views {
                 return;
             }
             _contentLoaded = true;
-            System.Uri resourceLocater = new System.Uri("/KeganOS;V1.0.0.0;component/views/createprofilewindow.xaml", System.UriKind.Relative);
+            System.Uri resourceLocater = new System.Uri("/KeganOS;component/views/createprofilewindow.xaml", System.UriKind.Relative);
             
             #line 1 "..\..\..\..\Views\CreateProfileWindow.xaml"
             System.Windows.Application.LoadComponent(this, resourceLocater);

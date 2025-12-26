@@ -21,3 +21,18 @@ public class PixelaPixel
     public DateTime Date { get; set; }
     public double Quantity { get; set; }
 }
+
+/// <summary>
+/// Configuration for a Pixe.la graph
+/// </summary>
+public class PixelaGraphDefinition
+{
+    public string Id { get; set; } = "";
+    public string Name { get; set; } = "";
+    public string Unit { get; set; } = "";
+    public string Type { get; set; } = "";
+    public string Color { get; set; } = "";
+    public string Timezone { get; set; } = "";
+    public bool IsEnablePng { get; set; }
+    public bool StartOnMonday { get; set; }
+}

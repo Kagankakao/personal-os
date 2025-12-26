@@ -107,6 +107,13 @@ public class AppDbContext
             migrateCmd.CommandText = "ALTER TABLE Users ADD COLUMN UnlockedAchievements TEXT;";
             migrateCmd.ExecuteNonQuery();
         } catch { /* Column likely exists */ }
+        
+        try 
+        {
+            var migrateCmd = connection.CreateCommand();
+            migrateCmd.CommandText = "ALTER TABLE Users ADD COLUMN SavedColors TEXT;";
+            migrateCmd.ExecuteNonQuery();
+        } catch { /* Column likely exists */ }
 
         _initialized = true;
         _logger.Information("Database initialized successfully");

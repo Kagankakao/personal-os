@@ -98,4 +98,52 @@ public class AnalyticsService : IAnalyticsService
             return "Unable to generate insights at this time. Please check your internet connection and API key.";
         }
     }
+
+    public async Task<int> CalculateCurrentStreakAsync(User user)
+    {
+        try
+        {
+            var entries = await _journalService.ReadEntriesAsync(user);
+            if (!entries.Any()) return 0;
+
+            var dates = entries.Select(e => e.Date.Date).Distinct().OrderByDescending(d => d).ToList();
+            if (!dates.Any()) return 0;
+
+            int streak = 0;
+            DateTime checkDate = DateTime.Today;
+
+            // If no entry today, check if there was one yesterday (streak still active)
+            if (dates[0] < checkDate)
+            {
+                if (dates[0] == checkDate.AddDays(-1))
+                {
+                    checkDate = checkDate.AddDays(-1);
+                }
+                else
+                {
+                    return 0; // Streak broken
+                }
+            }
+
+            foreach (var date in dates)
+            {
+                if (date == checkDate)
+                {
+                    streak++;
+                    checkDate = checkDate.AddDays(-1);
+                }
+                else
+                {
+                    break;
+                }
+            }
+
+            return streak;
+        }
+        catch (Exception ex)
+        {
+            _logger.Error(ex, "Error calculating streak");
+            return 0;
+        }
+    }
 }

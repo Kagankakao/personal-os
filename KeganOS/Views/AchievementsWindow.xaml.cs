@@ -26,12 +26,7 @@ public partial class AchievementsWindow : Window
         LevelBadgeText.Text = _user.Level.ToString();
         LevelTitleText.Text = $"Level {_user.Level}";
         XpProgressBar.Value = _user.LevelProgress * 100;
-        
-        long currentLevelXpStart = (_user.Level - 1) * 100;
-        long nextLevelXpStart = _user.Level * 100;
-        long xpInLevel = _user.XP - currentLevelXpStart;
-        
-        XpText.Text = $"{xpInLevel} / 100 XP"; // Simplified linear 100xp per level logic
+        XpText.Text = $"{_user.XpInCurrentLevel} / {_user.XpRequiredForLevel} XP";
 
         // Bind Achievements - sorted ascending by XP reward
         var achievements = _achievementService.GetAchievements(_user)

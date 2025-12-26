@@ -23,6 +23,11 @@ public interface IPixelaService
     Task<IEnumerable<PixelaPixel>> GetPixelsAsync(User user, DateTime? from = null, DateTime? to = null);
 
     /// <summary>
+    /// Get the graph definition (name, color, unit) from Pixe.la
+    /// </summary>
+    Task<PixelaGraphDefinition?> GetGraphDefinitionAsync(User user);
+
+    /// <summary>
     /// Generate a token from username (for auto-registration)
     /// </summary>
     string GenerateToken(string username);
@@ -75,4 +80,17 @@ public interface IPixelaService
     /// Uses PUT /v1/users/{username}/graphs/{graphID}/{yyyyMMdd}/increment
     /// </summary>
     Task<bool> IncrementPixelAsync(User user, DateTime date, double quantity);
+
+    /// <summary>
+    /// Update graph settings on Pixe.la
+    /// Uses PUT /v1/users/{username}/graphs/{graphID}
+    /// Returns: (success, errorMessage)
+    /// </summary>
+    Task<(bool success, string? error)> UpdateGraphAsync(
+        User user, 
+        string? name = null, 
+        string? color = null, 
+        string? unit = null, 
+        bool? isEnablePng = null,
+        bool? startOnMonday = null);
 }

@@ -116,6 +116,7 @@ public class UserService : IUserService
                 TotalHours = @totalHours,
                 XP = @xp,
                 UnlockedAchievements = @achievements,
+                SavedColors = @savedColors,
                 LastLoginAt = CURRENT_TIMESTAMP
             WHERE Id = @id";
 
@@ -131,6 +132,7 @@ public class UserService : IUserService
         cmd.Parameters.AddWithValue("@totalHours", user.TotalHours);
         cmd.Parameters.AddWithValue("@xp", user.XP);
         cmd.Parameters.AddWithValue("@achievements", user.UnlockedAchievementsJson ?? "");
+        cmd.Parameters.AddWithValue("@savedColors", user.SavedColors ?? "");
 
         await cmd.ExecuteNonQueryAsync();
     }
@@ -239,6 +241,15 @@ public class UserService : IUserService
         }
         catch { /* Column may not exist in old DB */ }
         
+        string savedColors = "";
+        try
+        {
+            var ordinal = reader.GetOrdinal("SavedColors");
+            if (!reader.IsDBNull(ordinal))
+                savedColors = reader.GetString(ordinal);
+        }
+        catch { /* Column may not exist in old DB */ }
+        
         return new User
         {
             Id = reader.GetInt32(reader.GetOrdinal("Id")),
@@ -253,6 +264,7 @@ public class UserService : IUserService
             TotalHours = totalHours,
             XP = xp,
             UnlockedAchievementsJson = unlockedAchievements,
+            SavedColors = savedColors,
             CreatedAt = reader.GetDateTime(reader.GetOrdinal("CreatedAt")),
             LastLoginAt = reader.GetDateTime(reader.GetOrdinal("LastLoginAt"))
         };

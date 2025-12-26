@@ -73,28 +73,39 @@ public partial class MainWindow : System.Windows.Window
         {
             try
             {
-                var toast = new Views.Components.ToastNotification();
-                toast.HorizontalAlignment = System.Windows.HorizontalAlignment.Right;
-                toast.VerticalAlignment = System.Windows.VerticalAlignment.Bottom;
-                toast.Margin = new System.Windows.Thickness(0, 0, 20, 50);
-                System.Windows.Controls.Grid.SetRow(toast, 1);
-                
-                // Wire up click to open achievements
-                toast.OnToastClicked += (s, e) =>
+                // List of achievement IDs that deserve a "Big Win" celebration
+                string[] bigWins = { "lvl10", "lvl20", "lvl50", "lvl100", "hours100", "hours500", "hours1000" };
+
+                if (bigWins.Contains(achievement.Id))
                 {
-                    var achievementsWindow = new Views.AchievementsWindow(_currentUser, _achievementService);
-                    achievementsWindow.Owner = this;
-                    achievementsWindow.ShowDialog();
-                };
-                
-                RootGrid.Children.Add(toast);
-                toast.Show(achievement.Name, achievement.Icon, achievement.XpReward);
-                
-                _logger.Information("Displayed toast for achievement: {Name}", achievement.Name);
+                    MajorCelebrationOverlay.Show(achievement.Name, achievement.Icon, achievement.XpReward);
+                    _logger.Information("Displayed big celebration for achievement: {Name}", achievement.Name);
+                }
+                else
+                {
+                    var toast = new Views.Components.ToastNotification();
+                    toast.HorizontalAlignment = System.Windows.HorizontalAlignment.Right;
+                    toast.VerticalAlignment = System.Windows.VerticalAlignment.Bottom;
+                    toast.Margin = new System.Windows.Thickness(0, 0, 20, 50);
+                    System.Windows.Controls.Grid.SetRow(toast, 1);
+                    
+                    // Wire up click to open achievements
+                    toast.OnToastClicked += (s, e) =>
+                    {
+                        var achievementsWindow = new Views.AchievementsWindow(_currentUser, _achievementService);
+                        achievementsWindow.Owner = this;
+                        achievementsWindow.ShowDialog();
+                    };
+                    
+                    RootGrid.Children.Add(toast);
+                    toast.Show(achievement.Name, achievement.Icon, achievement.XpReward);
+                    
+                    _logger.Information("Displayed toast for achievement: {Name}", achievement.Name);
+                }
             }
             catch (Exception ex)
             {
-                _logger.Error(ex, "Failed to show achievement toast");
+                _logger.Error(ex, "Failed to show achievement notification");
             }
         });
     }
@@ -185,7 +196,7 @@ public partial class MainWindow : System.Windows.Window
         Close();
     }
 
-    private void SettingsButton_Click(object sender, System.Windows.RoutedEventArgs e)
+    private async void SettingsButton_Click(object sender, System.Windows.RoutedEventArgs e)
     {
         if (_currentUser == null)
         {
@@ -197,7 +208,7 @@ public partial class MainWindow : System.Windows.Window
         
         try
         {
-            var settingsWindow = new Views.SettingsWindow(_userService, _aiProvider)
+            var settingsWindow = new Views.SettingsWindow(_userService, _aiProvider, _pixelaService, _backupService)
             {
                 Owner = this
             };
@@ -205,9 +216,21 @@ public partial class MainWindow : System.Windows.Window
             
             if (settingsWindow.ShowDialog() == true)
             {
+                // IMPORTANT: Reload user from DB to get updated settings (especially Pixe.la credentials)
+                var refreshedUser = await _userService.GetUserByIdAsync(_currentUser.Id);
+                if (refreshedUser != null)
+                {
+                    _currentUser = refreshedUser;
+                    _logger.Information("User data refreshed from database after settings save");
+                }
+                
                 // Refresh UI with updated settings
                 PersonalSymbol.Text = string.IsNullOrEmpty(_currentUser.PersonalSymbol) ? "🦭" : _currentUser.PersonalSymbol;
                 UserDisplayName.Text = _currentUser.DisplayName;
+                
+                // Reload heatmap with new credentials
+                _ = LoadPixelaHeatmapAsync();
+                
                 _logger.Information("Settings saved, UI refreshed");
             }
         }
@@ -553,8 +576,17 @@ public partial class MainWindow : System.Windows.Window
             height: 100% !important;
             display: block;
         }}
-        svg:hover {{  
-            opacity: 0.85;
+        /* Enable hover on pixels */
+        rect.day {{
+            transition: all 0.2s ease-in-out;
+            transform-origin: center;
+        }}
+        rect.day:hover {{
+            stroke: #FFD700 !important;
+            stroke-width: 2px !important;
+            cursor: pointer;
+            filter: brightness(1.5);
+            transform: scale(1.3);
         }}
         /* Block all internal SVG links */
         svg a {{
@@ -565,10 +597,36 @@ public partial class MainWindow : System.Windows.Window
 <body>
     {svg}
     <script>
+        // Use a flag to prevent click bubbling when a pixel is clicked
+        let pixelClicked = false;
+
+        document.querySelectorAll('rect.day').forEach(r => {{
+            r.addEventListener('click', function(e) {{
+                pixelClicked = true;
+                e.preventDefault();
+                e.stopPropagation();
+                
+                const titleElement = r.querySelector('title');
+                if (titleElement) {{
+                    const title = titleElement.textContent;
+                    // Format: 2023-10-24 : 5.00 hours
+                    const match = title.match(/(\d{{4}}-\d{{2}}-\d{{2}})/);
+                    if (match) {{
+                        window.chrome.webview.postMessage({{ 
+                            type: 'pixel_click', 
+                            date: match[1],
+                            text: title
+                        }});
+                    }}
+                }}
+            }});
+        }});
+
         document.body.addEventListener('click', function(e) {{
-            e.preventDefault();
-            e.stopPropagation();
-            window.open('{graphUrl}', '_blank');
+            if (!pixelClicked) {{
+                window.open('{graphUrl}', '_blank');
+            }}
+            pixelClicked = false;
         }});
     </script>
 </body>
@@ -576,9 +634,14 @@ public partial class MainWindow : System.Windows.Window
             
             // Ensure WebView2 is initialized before navigating
             await PixelaHeatmapWebView.EnsureCoreWebView2Async();
+            
+            // Unsubscribe and subscribe to prevent duplicate handlers
+            PixelaHeatmapWebView.WebMessageReceived -= PixelaHeatmapWebView_WebMessageReceived;
+            PixelaHeatmapWebView.WebMessageReceived += PixelaHeatmapWebView_WebMessageReceived;
+            
             PixelaHeatmapWebView.NavigateToString(html);
             
-            PixelaStatus.Text = $"📊 {_currentUser.PixelaUsername}/{_currentUser.PixelaGraphId}";
+            PixelaStatus.Text = $"📊 {_currentUser.PixelaUsername}/{_currentUser.PixelaGraphId} • Click pixel to edit";
             
             _logger.Information("Pixe.la heatmap (anchor: {Date}) rendered with WebView2", latestDate ?? "today");
         }
@@ -588,6 +651,65 @@ public partial class MainWindow : System.Windows.Window
             PixelaStatus.Text = "Could not load heatmap";
         }
     }
+
+    private void PixelaHeatmapWebView_WebMessageReceived(object? sender, Microsoft.Web.WebView2.Core.CoreWebView2WebMessageReceivedEventArgs e)
+    {
+        try
+        {
+            var json = e.WebMessageAsJson;
+            using var doc = System.Text.Json.JsonDocument.Parse(json);
+            var root = doc.RootElement;
+            
+            if (root.GetProperty("type").GetString() == "pixel_click")
+            {
+                var dateStr = root.GetProperty("date").GetString();
+                var text = root.GetProperty("text").GetString();
+                
+                _logger.Information("Pixel clicked: {Date} - {Text}", dateStr, text);
+
+                if (_currentUser != null)
+                {
+                    var editWindow = new Views.PixelEditWindow(_pixelaService, _userService, _currentUser)
+                    {
+                        Owner = this
+                    };
+
+                    if (editWindow.ShowDialog() == true)
+                    {
+                        // Refresh heatmap to show changes
+                        _ = LoadPixelaHeatmapAsync();
+                        _logger.Information("Heatmap refreshed after pixel update");
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.Error(ex, "Error handling WebView2 message");
+        }
+    }
+
+    private async void PaletteColor_Click(object sender, System.Windows.RoutedEventArgs e)
+    {
+        if (sender is System.Windows.Controls.Button btn && _currentUser != null)
+        {
+            var color = btn.Tag?.ToString();
+            if (string.IsNullOrEmpty(color)) return;
+
+            _logger.Information("Changing Pixe.la theme to: {Color}", color);
+            var (success, error) = await _pixelaService.UpdateGraphAsync(_currentUser, color: color);
+            
+            if (success)
+            {
+                _ = LoadPixelaHeatmapAsync(); // Refresh
+            }
+            else
+            {
+                System.Windows.MessageBox.Show(error ?? "Unknown error", "Failed to Update Theme");
+            }
+        }
+    }
+
 
     private async void StartFocusButton_Click(object sender, System.Windows.RoutedEventArgs e)
     {

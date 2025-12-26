@@ -43,6 +43,47 @@ public class PixelaService : IPixelaService, IDisposable
         !string.IsNullOrEmpty(user.PixelaToken) &&
         !string.IsNullOrEmpty(user.PixelaGraphId);
 
+    /// <summary>
+    /// Send HTTP request with retry logic for Pixe.la's 25% rate limit rejection
+    /// </summary>
+    private async Task<(HttpResponseMessage response, string body, bool success)> SendWithRetryAsync(
+        Func<HttpRequestMessage> createRequest, 
+        int maxRetries = 5, 
+        int retryDelayMs = 500)
+    {
+        for (int attempt = 1; attempt <= maxRetries; attempt++)
+        {
+            var request = createRequest();
+            var response = await _httpClient.SendAsync(request);
+            var body = await response.Content.ReadAsStringAsync();
+            
+            // Check for rate limit rejection
+            bool isRejected = false;
+            try
+            {
+                using var doc = JsonDocument.Parse(body);
+                if (doc.RootElement.TryGetProperty("isRejected", out var rejectedProp) && rejectedProp.GetBoolean())
+                {
+                    isRejected = true;
+                }
+            }
+            catch { }
+            
+            // If rejected due to rate limiting, retry
+            if (isRejected && attempt < maxRetries)
+            {
+                _logger.Information("Rate limited by Pixe.la, retrying in {Delay}ms (attempt {Attempt}/{Max})", 
+                    retryDelayMs, attempt, maxRetries);
+                await Task.Delay(retryDelayMs);
+                continue;
+            }
+            
+            return (response, body, response.IsSuccessStatusCode);
+        }
+        
+        return (null!, "Max retries exceeded", false);
+    }
+
     public async Task<PixelaStats?> GetStatsAsync(User user)
     {
         if (!IsConfigured(user))
@@ -90,6 +131,32 @@ public class PixelaService : IPixelaService, IDisposable
         catch (Exception ex)
         {
             _logger.Error(ex, "Failed to fetch Pixe.la stats");
+            return null;
+        }
+    }
+
+    public async Task<PixelaGraphDefinition?> GetGraphDefinitionAsync(User user)
+    {
+        if (!IsConfigured(user)) return null;
+
+        _logger.Information("Fetching Pixe.la graph definition for {User}/{Graph}", 
+            user.PixelaUsername, user.PixelaGraphId);
+
+        try
+        {
+            var request = new HttpRequestMessage(HttpMethod.Get,
+                $"{BaseUrl}/{user.PixelaUsername}/graphs/{user.PixelaGraphId}");
+            request.Headers.Add("X-USER-TOKEN", user.PixelaToken);
+
+            var response = await _httpClient.SendAsync(request);
+            if (!response.IsSuccessStatusCode) return null;
+
+            var json = await response.Content.ReadAsStringAsync();
+            return JsonSerializer.Deserialize<PixelaGraphDefinition>(json);
+        }
+        catch (Exception ex)
+        {
+            _logger.Error(ex, "Failed to fetch Pixe.la graph definition");
             return null;
         }
     }
@@ -270,33 +337,108 @@ public class PixelaService : IPixelaService, IDisposable
     public async Task<bool> EnablePngAsync(User user)
     {
         if (!IsConfigured(user)) return false;
+        var (success, _) = await UpdateGraphAsync(user, isEnablePng: true);
+        return success;
+    }
 
-        _logger.Information("Enabling PNG for Pixe.la graph: {GraphId}", user.PixelaGraphId);
+    /// <summary>
+    /// Update graph settings on Pixe.la
+    /// PUT /v1/users/{username}/graphs/{graphID}
+    /// </summary>
+    public async Task<(bool success, string? error)> UpdateGraphAsync(
+        User user, 
+        string? name = null, 
+        string? color = null, 
+        string? unit = null, 
+        bool? isEnablePng = null,
+        bool? startOnMonday = null)
+    {
+        if (!IsConfigured(user))
+        {
+            _logger.Warning("Cannot update graph: Pixe.la not configured for user");
+            return (false, "Pixe.la not configured. Check Settings.");
+        }
 
         try
         {
-            var payload = new { isEnablePng = true };
-            var json = JsonSerializer.Serialize(payload);
-            
-            var request = new HttpRequestMessage(HttpMethod.Put, $"{BaseUrl}/{user.PixelaUsername}/graphs/{user.PixelaGraphId}");
-            request.Headers.Add("X-USER-TOKEN", user.PixelaToken);
-            request.Content = new StringContent(json, Encoding.UTF8, "application/json");
+            var payload = new Dictionary<string, object>();
+            if (!string.IsNullOrEmpty(name)) payload["name"] = name;
+            if (!string.IsNullOrEmpty(color)) payload["color"] = color;
+            if (!string.IsNullOrEmpty(unit)) payload["unit"] = unit;
+            if (isEnablePng != null) payload["isEnablePng"] = isEnablePng.Value;
+            if (startOnMonday != null) payload["startOnMonday"] = startOnMonday.Value;
 
-            var response = await _httpClient.SendAsync(request);
-            var success = response.IsSuccessStatusCode;
-            
-            if (!success)
+            if (payload.Count == 0)
             {
-                var body = await response.Content.ReadAsStringAsync();
-                _logger.Warning("Failed to enable PNG: {Status} - {Body}", response.StatusCode, body);
+                _logger.Debug("No graph properties to update");
+                return (true, null);
+            }
+
+            var json = JsonSerializer.Serialize(payload);
+            var url = $"{BaseUrl}/{user.PixelaUsername}/graphs/{user.PixelaGraphId}";
+            
+            _logger.Information("Updating Pixe.la graph: PUT {Url} with payload: {Payload}", url, json);
+            _logger.Debug("Using credentials - Username: {Username}, Token: {TokenPrefix}...", 
+                user.PixelaUsername, 
+                user.PixelaToken?.Substring(0, Math.Min(8, user.PixelaToken?.Length ?? 0)) ?? "null");
+            
+            // Retry loop for free tier rate limiting (25% rejection)
+            const int maxRetries = 5;
+            const int retryDelayMs = 500;
+            
+            for (int attempt = 1; attempt <= maxRetries; attempt++)
+            {
+                var request = new HttpRequestMessage(HttpMethod.Put, url);
+                request.Headers.Add("X-USER-TOKEN", user.PixelaToken);
+                request.Content = new StringContent(json, Encoding.UTF8, "application/json");
+
+                var response = await _httpClient.SendAsync(request);
+                var responseBody = await response.Content.ReadAsStringAsync();
+                
+                _logger.Debug("Pixe.la response (attempt {Attempt}): {Status} - {Body}", attempt, response.StatusCode, responseBody);
+                
+                // Check for rate limit rejection
+                bool isRejected = false;
+                string errorMsg = responseBody;
+                try
+                {
+                    using var doc = JsonDocument.Parse(responseBody);
+                    if (doc.RootElement.TryGetProperty("isRejected", out var rejectedProp) && rejectedProp.GetBoolean())
+                    {
+                        isRejected = true;
+                    }
+                    if (doc.RootElement.TryGetProperty("message", out var msgProp))
+                    {
+                        errorMsg = msgProp.GetString() ?? responseBody;
+                    }
+                }
+                catch { /* use raw response */ }
+                
+                // If rejected due to rate limiting, retry
+                if (isRejected && attempt < maxRetries)
+                {
+                    _logger.Information("Rate limited by Pixe.la, retrying in {Delay}ms (attempt {Attempt}/{Max})", 
+                        retryDelayMs, attempt, maxRetries);
+                    await Task.Delay(retryDelayMs);
+                    continue;
+                }
+                
+                if (!response.IsSuccessStatusCode)
+                {
+                    _logger.Warning("Failed to update graph: {Status} - {Error}", response.StatusCode, errorMsg);
+                    return (false, $"Pixe.la: {errorMsg}");
+                }
+                
+                _logger.Information("Graph update succeeded on attempt {Attempt}", attempt);
+                return (true, null);
             }
             
-            return success;
+            return (false, "Pixe.la: Max retries exceeded due to rate limiting");
         }
         catch (Exception ex)
         {
-            _logger.Error(ex, "Failed to enable Pixe.la PNG format");
-            return false;
+            _logger.Error(ex, "Failed to update Pixe.la graph settings");
+            return (false, $"Network error: {ex.Message}");
         }
     }
 

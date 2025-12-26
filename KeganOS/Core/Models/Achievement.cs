@@ -21,4 +21,12 @@ public class Achievement
     // For UI binding
     public bool IsUnlocked { get; set; }
     public DateTime? UnlockedAt { get; set; }
+
+    public string RequirementText => RequirementType switch
+    {
+        AchievementRequirementType.Level => $"Lv.{RequirementValue}",
+        AchievementRequirementType.TotalHours => $"{(int)RequirementValue}h",
+        AchievementRequirementType.Streak => $"{(int)RequirementValue} days",
+        _ => ""
+    };
 }

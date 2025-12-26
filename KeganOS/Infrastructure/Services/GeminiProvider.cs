@@ -28,8 +28,14 @@ public class GeminiProvider : IAIProvider, IDisposable
         catch (Exception ex) { _logger.Error(ex, "Failed to configure Gemini"); }
     }
 
+    private void CheckDisposed()
+    {
+        if (_disposed) throw new ObjectDisposedException(nameof(GeminiProvider));
+    }
+
     public async Task<string> GenerateResponseAsync(string prompt, IEnumerable<AppChatMessage>? history = null)
     {
+        CheckDisposed();
         if (!IsAvailable) return "AI not configured. Add API key in settings.";
         try
         {
@@ -39,10 +45,15 @@ public class GeminiProvider : IAIProvider, IDisposable
         catch (Exception ex) { return $"Error: {ex.Message}"; }
     }
 
-    public Task<float[]> GenerateEmbeddingAsync(string text) => Task.FromResult(Array.Empty<float>());
+    public Task<float[]> GenerateEmbeddingAsync(string text)
+    {
+        CheckDisposed();
+        return Task.FromResult(Array.Empty<float>());
+    }
 
     public async Task<string> InterpretQuoteAsync(string quote, string context)
     {
+        CheckDisposed();
         if (!IsAvailable) return quote;
         try
         {
@@ -52,5 +63,17 @@ public class GeminiProvider : IAIProvider, IDisposable
         catch { return quote; }
     }
 
-    public void Dispose() { _disposed = true; GC.SuppressFinalize(this); }
+    public void Dispose()
+    {
+        if (_disposed) return;
+        
+        _disposed = true;
+        
+        // Internal clean up if needed
+        _googleAI = null;
+        _model = null;
+        
+        _logger.Debug("GeminiProvider disposed");
+        GC.SuppressFinalize(this);
+    }
 }

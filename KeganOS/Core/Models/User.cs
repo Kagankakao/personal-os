@@ -45,6 +45,11 @@ public class User
     // AI integration
     public string? GeminiApiKey { get; set; }
     
+    /// <summary>
+    /// Comma-separated hex values for saved/recent colors in the palette
+    /// </summary>
+    public string? SavedColors { get; set; }
+    
     // Stats
     /// <summary>
     /// Total focus hours logged
@@ -77,13 +82,30 @@ public class User
     }
 
     /// <summary>
-    /// User level calculated from XP (Square root curve: Level = sqrt(XP / 10) approx)
-    /// Or simple: Level 1 = 0-100 XP, Level 2 = 100-300 XP...
-    /// Let's use: Level = 1 + (int)Math.Sqrt(XP / 10.0) 
-    /// Example: 10h = 100XP -> sqrt(10) = 3.1 -> Level 4? Maybe too fast.
-    /// Let's stick to legacy linear for now but based on XP: 100 XP (10 hours) = 1 Level
+    /// User level calculated from XP (Quadratic curve: Level = 1 + floor(sqrt(XP / 100)))
+    /// This makes leveling "harder" as you progress.
     /// </summary>
-    public int Level => 1 + (int)(XP / 100.0);
+    public int Level => 1 + (int)Math.Floor(Math.Sqrt(XP / 100.0));
+
+    /// <summary>
+    /// The total XP required to reach the START of the current level
+    /// </summary>
+    public long CurrentLevelXpStart => (long)(Math.Pow(Level - 1, 2) * 100);
+
+    /// <summary>
+    /// The total XP required to reach the NEXT level
+    /// </summary>
+    public long NextLevelXpStart => (long)(Math.Pow(Level, 2) * 100);
+
+    /// <summary>
+    /// XP earned within the current level
+    /// </summary>
+    public long XpInCurrentLevel => XP - CurrentLevelXpStart;
+
+    /// <summary>
+    /// Total XP needed between current level and next level
+    /// </summary>
+    public long XpRequiredForLevel => NextLevelXpStart - CurrentLevelXpStart;
     
     /// <summary>
     /// Display string for hours (e.g., "42.5h")
@@ -98,16 +120,7 @@ public class User
     /// <summary>
     /// Progress to next level (0 to 1)
     /// </summary>
-    public double LevelProgress 
-    {
-        get 
-        {
-            var currentLevelXpStart = (Level - 1) * 100;
-            var nextLevelXpStart = Level * 100;
-            var xpInLevel = XP - currentLevelXpStart;
-            return (double)xpInLevel / 100.0;
-        }
-    }
+    public double LevelProgress => XpRequiredForLevel == 0 ? 0 : (double)XpInCurrentLevel / XpRequiredForLevel;
 
     // Timestamps
     public DateTime CreatedAt { get; set; } = DateTime.Now;

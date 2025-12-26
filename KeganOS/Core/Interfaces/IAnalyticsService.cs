@@ -19,4 +19,9 @@ public interface IAnalyticsService
     /// Generates an AI insight for a specific category
     /// </summary>
     Task<string> GenerateInsightAsync(User user, DateTime weekStartDate, string insightType);
+
+    /// <summary>
+    /// Calculates the current active streak in days
+    /// </summary>
+    Task<int> CalculateCurrentStreakAsync(User user);
 }
