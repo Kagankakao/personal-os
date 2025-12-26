@@ -59,7 +59,7 @@
     </Window.Resources>
     
     <Border BorderBrush="#333333" BorderThickness="1">
-        <Grid x:Name="RootGrid">
+        <Grid x:Name="RootGrid" Background="Transparent" Focusable="True" MouseDown="RootGrid_MouseDown">
             <Grid.RowDefinitions>
                 <RowDefinition Height="32"/> <!-- Custom Title Bar -->
                 <RowDefinition Height="*"/>  <!-- Content -->
@@ -250,7 +250,9 @@
                                  Padding="10"
                                  AcceptsReturn="True" TextWrapping="Wrap"
                                  VerticalScrollBarVisibility="Auto"
-                                 CaretBrush="#CCCCCC"/>
+                                 CaretBrush="#CCCCCC"
+                                 GotFocus="JournalInput_GotFocus"
+                                 LostFocus="JournalInput_LostFocus"/>
                         
                         <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
                             <Button Style="{StaticResource BracketButton}" 
@@ -262,41 +264,31 @@
                         </StackPanel>
                     </Grid>
                 </Border>
-                
-                <!-- ═══ AI CHAT ═══ -->
-                <Border Grid.Row="4" Style="{StaticResource AsciiBox}">
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
-                        
-                        <TextBlock Text="🤖" FontSize="14" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                        
-                        <TextBox Grid.Column="1" x:Name="AIChatInput"
-                                 Text="Ask me anything about your journey..."
-                                 Background="Transparent" Foreground="#666666"
-                                 BorderThickness="0" Padding="5"
-                                 VerticalContentAlignment="Center"
-                                 CaretBrush="#CCCCCC"/>
-                        
-                        <TextBlock Grid.Column="2" Text="[↵]" Foreground="#444444" VerticalAlignment="Center"
-                                   Cursor="Hand" x:Name="AskAIButton" MouseDown="AskAIButton_Click"/>
-                    </Grid>
-                </Border>
-                
-                <!-- ═══ MILESTONE ═══ -->
-                <StackPanel Grid.Row="5" Orientation="Horizontal" Margin="0,5,0,0">
-                    <TextBlock Text="💡" FontSize="12"/>
-                    <TextBlock Foreground="#777777" FontSize="12" Margin="5,0,0,0"
-                               x:Name="MilestoneMessage">
-                        <Run Text="1 year ago today: "/>
-                        <Run Text="&quot;IT HAS BEGUN&quot;" Foreground="#AAAAAA"/>
-                        <Run Text=" - You started something special. That fire is still in you."/>
-                    </TextBlock>
-                </StackPanel>
             </Grid>
+            
+            <!-- ═══ FLOATING ASK PROMETHEUS BUTTON ═══ -->
+            <Border x:Name="AskPrometheusButton" 
+                    Grid.Row="1"
+                    HorizontalAlignment="Right" 
+                    VerticalAlignment="Bottom"
+                    Margin="0,0,25,25"
+                    Background="#1A1A1A"
+                    BorderBrush="#444444"
+                    BorderThickness="1"
+                    CornerRadius="8"
+                    Padding="12,8"
+                    Cursor="Hand"
+                    MouseDown="AskPrometheusButton_Click"
+                    Panel.ZIndex="100">
+                <Border.Effect>
+                    <DropShadowEffect Color="Black" BlurRadius="10" ShadowDepth="3" Opacity="0.5"/>
+                </Border.Effect>
+                <StackPanel Orientation="Horizontal">
+                    <!-- Placeholder for logo - will be replaced with Image when provided -->
+                    <TextBlock Text="🔥" FontSize="18" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                    <TextBlock Text="Ask Prometheus" Foreground="#CCCCCC" FontSize="12" VerticalAlignment="Center"/>
+                </StackPanel>
+            </Border>
             
             <!-- Full-screen Celebration Overlay -->
             <comp:CelebrationOverlay x:Name="MajorCelebrationOverlay" Visibility="Collapsed" Grid.RowSpan="2"/>

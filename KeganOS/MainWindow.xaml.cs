@@ -196,6 +196,13 @@ public partial class MainWindow : System.Windows.Window
         Close();
     }
 
+    private void RootGrid_MouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        // Clear focus from journal when clicking empty dashboard space
+        // This makes Ask Prometheus button visible again
+        RootGrid.Focus();
+    }
+
     private async void SettingsButton_Click(object sender, System.Windows.RoutedEventArgs e)
     {
         if (_currentUser == null)
@@ -798,28 +805,27 @@ public partial class MainWindow : System.Windows.Window
         LoadUserDataAsync();
     }
 
-    private async void AskAIButton_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    private async void AskPrometheusButton_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
     {
-        var question = AIChatInput.Text;
-        if (string.IsNullOrWhiteSpace(question) || question.Contains("Ask me anything"))
-        {
-            return;
-        }
-
-        _logger.Information("AI question: {Question}", question);
+        _logger.Information("Ask Prometheus button clicked");
 
         // Check if AI is configured
         if (!_aiProvider.IsAvailable)
         {
-            System.Windows.MessageBox.Show("AI is not configured.\n\nPlease add your Gemini API key in profile settings to use AI features.",
-                "AI Not Configured", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
+            System.Windows.MessageBox.Show("Prometheus is not configured.\n\nPlease add your Gemini API key in settings to awaken Prometheus.",
+                "Prometheus Not Configured", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
             return;
         }
 
-        // Show loading state
-        var originalText = AIChatInput.Text;
-        AIChatInput.Text = "Thinking...";
-        AIChatInput.IsEnabled = false;
+        // Simple input dialog for question
+        var inputDialog = new Views.TextInputDialog("Ask Prometheus", "What would you like to know about your journey?");
+        if (inputDialog.ShowDialog() != true || string.IsNullOrWhiteSpace(inputDialog.ResponseText))
+        {
+            return;
+        }
+
+        var question = inputDialog.ResponseText;
+        _logger.Information("Prometheus question: {Question}", question);
 
         try
         {
@@ -850,20 +856,29 @@ public partial class MainWindow : System.Windows.Window
             _chatHistory.Add(new ChatMessage("assistant", response));
 
             // Show response
-            System.Windows.MessageBox.Show(response, "AI Response", 
+            System.Windows.MessageBox.Show(response, "🔥 Prometheus", 
                 System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
         }
         catch (Exception ex)
         {
-            _logger.Error(ex, "Failed to get AI response");
-            System.Windows.MessageBox.Show($"Failed to get AI response: {ex.Message}", 
+            _logger.Error(ex, "Failed to get Prometheus response");
+            System.Windows.MessageBox.Show($"Failed to consult Prometheus: {ex.Message}", 
                 "Error", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Warning);
         }
-        finally
-        {
-            AIChatInput.Text = "Ask me anything about your journey...";
-            AIChatInput.IsEnabled = true;
-        }
+    }
+
+    private void JournalInput_GotFocus(object sender, System.Windows.RoutedEventArgs e)
+    {
+        // Fade out Ask Prometheus button when typing in journal
+        var fadeOut = new System.Windows.Media.Animation.DoubleAnimation(1.0, 0.2, TimeSpan.FromMilliseconds(200));
+        AskPrometheusButton.BeginAnimation(OpacityProperty, fadeOut);
+    }
+
+    private void JournalInput_LostFocus(object sender, System.Windows.RoutedEventArgs e)
+    {
+        // Fade in Ask Prometheus button when not typing
+        var fadeIn = new System.Windows.Media.Animation.DoubleAnimation(0.2, 1.0, TimeSpan.FromMilliseconds(200));
+        AskPrometheusButton.BeginAnimation(OpacityProperty, fadeIn);
     }
 
     private void CustomizeButton_Click(object sender, System.Windows.RoutedEventArgs e)

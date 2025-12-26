@@ -10,11 +10,11 @@ none
 false
 TRACE;DEBUG;NET;NET9_0;NETCOREAPP;WINDOWS;WINDOWS7_0;NET5_0_OR_GREATER;NET6_0_OR_GREATER;NET7_0_OR_GREATER;NET8_0_OR_GREATER;NET9_0_OR_GREATER;NETCOREAPP3_0_OR_GREATER;NETCOREAPP3_1_OR_GREATER;WİNDOWS7_0_OR_GREATER
 C:\Users\ariba\OneDrive\Documenti\Software Projects\AI Projects\personal-os\personal-os\KeganOS\App.xaml
-12-851768611
+13-270012630
 3-47997122
-42586959447
+43698512885
 2641104920621
-MainWindow.xaml;Views\AchievementsWindow.xaml;Views\AddManualTimeWindow.xaml;Views\Components\CelebrationOverlay.xaml;Views\Components\ToastNotification.xaml;Views\CreateProfileWindow.xaml;Views\KegomoDoroSettingsWindow.xaml;Views\PixelEditWindow.xaml;Views\ProfileSelectionWindow.xaml;Views\SettingsWindow.xaml;Views\ThemeGalleryWindow.xaml;Views\WeeklyReportWindow.xaml;
+MainWindow.xaml;Views\AchievementsWindow.xaml;Views\AddManualTimeWindow.xaml;Views\Components\CelebrationOverlay.xaml;Views\Components\ToastNotification.xaml;Views\CreateProfileWindow.xaml;Views\KegomoDoroSettingsWindow.xaml;Views\PixelEditWindow.xaml;Views\ProfileSelectionWindow.xaml;Views\SettingsWindow.xaml;Views\TextInputDialog.xaml;Views\ThemeGalleryWindow.xaml;Views\WeeklyReportWindow.xaml;
 
 False
 
