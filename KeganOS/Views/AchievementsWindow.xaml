@@ -25,10 +25,33 @@
             <Grid Grid.Row="0" Background="#0D0D0D" MouseDown="TitleBar_MouseDown">
                 <TextBlock Text="Achievements" Foreground="#FFFFFF" FontSize="14" FontWeight="Bold" 
                            Margin="20,15"/>
-                <Button Content="✕" HorizontalAlignment="Right" 
-                        Background="Transparent" Foreground="#666666"
-                        BorderThickness="0" Padding="15,10" Cursor="Hand"
-                        Click="CloseButton_Click"/>
+                <Button Content="✕" HorizontalAlignment="Right" Click="CloseButton_Click">
+                    <Button.Style>
+                        <Style TargetType="Button">
+                            <Setter Property="Background" Value="Transparent"/>
+                            <Setter Property="Foreground" Value="#FF4444"/>
+                            <Setter Property="BorderThickness" Value="0"/>
+                            <Setter Property="Cursor" Value="Hand"/>
+                            <Setter Property="Padding" Value="15,10"/>
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="Button">
+                                        <Border Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}">
+                                            <TextBlock Text="{TemplateBinding Content}" 
+                                                       Foreground="{TemplateBinding Foreground}"
+                                                       HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="14"/>
+                                        </Border>
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                            <Style.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter Property="Foreground" Value="#FF4444"/>
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Button.Style>
+                </Button>
             </Grid>
 
             <!-- User Stats Summary -->
@@ -38,7 +61,7 @@
                     <TextBlock x:Name="XpText" Text="0 / 0 XP" Foreground="#666666" FontSize="12" HorizontalAlignment="Right" VerticalAlignment="Bottom"/>
                 </Grid>
                 <Grid Height="24">
-                    <TextBlock x:Name="AsciiProgressBar" Text="░░░░░░░░░░░░░░░░░........" Foreground="#88CC88" FontSize="16" VerticalAlignment="Center"/>
+                    <TextBlock x:Name="AsciiProgressBar" Text="" Foreground="#88CC88" FontSize="16" VerticalAlignment="Center"/>
                 </Grid>
                 <TextBlock x:Name="XpRemainingText" Text="" 
                            Foreground="#444444" FontSize="11" Margin="0,5,0,0" FontStyle="Italic"/>
@@ -57,11 +80,11 @@
                         </ItemsControl.ItemsPanel>
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <Border Width="80" Height="100" Margin="0,0,10,15" Background="#111111" BorderBrush="#88CC88" BorderThickness="1">
+                                <Border Width="80" Height="100" Margin="0,0,10,15" Background="#111111" BorderBrush="{Binding Color}" BorderThickness="1">
                                     <StackPanel VerticalAlignment="Center">
-                                        <TextBlock Text="{Binding Icon}" FontSize="28" HorizontalAlignment="Center" Margin="0,0,0,5"/>
+                                        <TextBlock Text="{Binding Icon}" Foreground="{Binding Color}" FontSize="28" HorizontalAlignment="Center" Margin="0,0,0,5"/>
                                         <TextBlock Text="{Binding Name}" Foreground="#CCCCCC" FontSize="10" FontWeight="Bold" TextAlignment="Center" Margin="5,0"/>
-                                        <TextBlock Text="[ Unlocked ]" Foreground="#444444" FontSize="8" HorizontalAlignment="Center" Margin="0,2,0,0"/>
+                                        <TextBlock Text="[ Unlocked ]" Foreground="#666666" FontSize="8" HorizontalAlignment="Center" Margin="0,2,0,0"/>
                                     </StackPanel>
                                 </Border>
                             </DataTemplate>

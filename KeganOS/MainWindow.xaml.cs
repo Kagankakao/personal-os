@@ -78,7 +78,7 @@ public partial class MainWindow : System.Windows.Window
 
                 if (bigWins.Contains(achievement.Id))
                 {
-                    MajorCelebrationOverlay.Show(achievement.Name, achievement.Icon, achievement.XpReward);
+                    MajorCelebrationOverlay.Show(achievement.Name, achievement.Icon, achievement.XpReward, achievement.Color);
                     _logger.Information("Displayed big celebration for achievement: {Name}", achievement.Name);
                 }
                 else
@@ -98,7 +98,7 @@ public partial class MainWindow : System.Windows.Window
                     };
                     
                     RootGrid.Children.Add(toast);
-                    toast.Show(achievement.Name, achievement.Icon, achievement.XpReward);
+                    toast.Show(achievement.Name, achievement.Icon, achievement.XpReward, achievement.Color);
                     
                     _logger.Information("Displayed toast for achievement: {Name}", achievement.Name);
                 }
@@ -411,7 +411,7 @@ public partial class MainWindow : System.Windows.Window
             }
             
             // Population new Stats fields - show XP within current level for consistency with Achievements
-            UserLevelText.Text = $"🏆 Level {_currentUser.Level} • {_currentUser.XpInCurrentLevel}/{_currentUser.XpRequiredForLevel} XP";
+            UserLevelText.Text = $"Level {_currentUser.Level} • {_currentUser.XpInCurrentLevel}/{_currentUser.XpRequiredForLevel} XP";
             
             // Set Dynamic Level Color
             var levelColor = GetLevelTierColor(_currentUser.Level);
@@ -428,9 +428,15 @@ public partial class MainWindow : System.Windows.Window
             UserXpBar.Text = bar;
             UserXpBar.Foreground = UserLevelText.Foreground; // Match progress bar to level color
 
-            // Streaks (placeholder logic - would ideally come from a StreakService)
-            CurrentStreakText.Text = "7 days"; 
-            BestStreakText.Text = "23 days";
+            // Streaks (calculated from analytics service)
+            var currentStreak = await _analyticsService.CalculateCurrentStreakAsync(_currentUser);
+            CurrentStreakText.Text = $"{currentStreak} days"; 
+            // Best streak: use stored value if higher, or update it
+            if (currentStreak > _currentUser.BestStreak)
+            {
+                _currentUser.BestStreak = currentStreak;
+            }
+            BestStreakText.Text = $"{_currentUser.BestStreak} days";
 
             // Load Pixe.la heatmap if configured
             await LoadPixelaHeatmapAsync();

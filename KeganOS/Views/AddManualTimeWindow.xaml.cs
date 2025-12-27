@@ -43,7 +43,14 @@ public partial class AddManualTimeWindow : Window
 
     private void CancelButton_Click(object sender, RoutedEventArgs e)
     {
-        DialogResult = false;
+        try
+        {
+            DialogResult = false;
+        }
+        catch (InvalidOperationException)
+        {
+            // Window not opened as dialog
+        }
         Close();
     }
 
@@ -96,8 +103,16 @@ public partial class AddManualTimeWindow : Window
             System.Windows.MessageBox.Show($"Added {duration:hh\\:mm\\:ss} on {date:dd/MM/yyyy}", "Time Added",
                 MessageBoxButton.OK, MessageBoxImage.Information);
 
-            DialogResult = true;
+            try
+            {
+                DialogResult = true;
+            }
+            catch (InvalidOperationException)
+            {
+                // Window not opened as dialog
+            }
             Close();
+
         }
         catch (Exception ex)
         {
@@ -247,12 +262,13 @@ public partial class AddManualTimeWindow : Window
 
     /// <summary>
     /// Save entry to both journey file and time.csv in KEGOMODORO format
+    /// For Manual Add: Sum hours if date exists, merge notes with \n\n
     /// </summary>
     private void SaveToKegomoDoroFiles(DateTime date, TimeSpan duration, string note)
     {
         _logger.Information("SaveToKegomoDoroFiles called for {Date} with duration {Duration}", date, duration);
         
-        // Save to journey file
+        // Save to journey file with smart merging
         var journeyPath = GetJourneyFilePath();
         _logger.Information("Journey path resolved to: {Path}, exists: {Exists}", journeyPath, !string.IsNullOrEmpty(journeyPath) && File.Exists(journeyPath));
         
@@ -260,15 +276,59 @@ public partial class AddManualTimeWindow : Window
         {
             try
             {
-                // KEGOMODORO format: \n\nMM/dd/yyyy\nHH:mm:ss note
-                var entry = $"\n\n{date:MM/dd/yyyy}\n{duration:hh\\:mm\\:ss}";
-                if (!string.IsNullOrEmpty(note))
-                {
-                    entry += $" {note}";
-                }
+                var dateStr = date.ToString("MM/dd/yyyy");
+                var content = File.Exists(journeyPath) ? File.ReadAllText(journeyPath, System.Text.Encoding.UTF8) : "";
                 
-                File.AppendAllText(journeyPath, entry, System.Text.Encoding.UTF8);
-                _logger.Information("SUCCESS: Saved to journey file: {Path}", journeyPath);
+                // Check if date already exists in the file
+                var datePattern = new System.Text.RegularExpressions.Regex(
+                    $@"\n\n{System.Text.RegularExpressions.Regex.Escape(dateStr)}\n(\d{{2}}:\d{{2}}:\d{{2}})(.*)(?=\n\n|\Z)", 
+                    System.Text.RegularExpressions.RegexOptions.Singleline);
+                
+                var match = datePattern.Match(content);
+                
+                if (match.Success)
+                {
+                    // Date exists - sum the hours and merge notes
+                    var existingTimeStr = match.Groups[1].Value;
+                    var existingNotes = match.Groups[2].Value.Trim();
+                    
+                    // Parse existing time
+                    if (TimeSpan.TryParse(existingTimeStr, out var existingTime))
+                    {
+                        var newTotalTime = existingTime.Add(duration);
+                        var newTimeStr = newTotalTime.ToString(@"hh\:mm\:ss");
+                        
+                        // Merge notes with proper line break
+                        var mergedNotes = existingNotes;
+                        if (!string.IsNullOrEmpty(note))
+                        {
+                            mergedNotes = string.IsNullOrEmpty(existingNotes) 
+                                ? note 
+                                : $"{existingNotes}\n\n{note}";
+                        }
+                        
+                        var newEntry = $"\n\n{dateStr}\n{newTimeStr}";
+                        if (!string.IsNullOrEmpty(mergedNotes))
+                        {
+                            newEntry += $" {mergedNotes}";
+                        }
+                        
+                        // Replace the old entry with the new one
+                        content = datePattern.Replace(content, newEntry, 1);
+                        File.WriteAllText(journeyPath, content, System.Text.Encoding.UTF8);
+                        _logger.Information("SUCCESS: Merged time for {Date} - now {Time}", dateStr, newTotalTime);
+                    }
+                    else
+                    {
+                        // Couldn't parse existing time - append as new
+                        AppendNewJourneyEntry(journeyPath, dateStr, duration, note);
+                    }
+                }
+                else
+                {
+                    // Date doesn't exist - append new entry
+                    AppendNewJourneyEntry(journeyPath, dateStr, duration, note);
+                }
             }
             catch (Exception ex)
             {
@@ -304,5 +364,16 @@ public partial class AddManualTimeWindow : Window
         {
             _logger.Warning("Time CSV path is empty - cannot save!");
         }
+    }
+    
+    private void AppendNewJourneyEntry(string journeyPath, string dateStr, TimeSpan duration, string note)
+    {
+        var entry = $"\n\n{dateStr}\n{duration:hh\\:mm\\:ss}";
+        if (!string.IsNullOrEmpty(note))
+        {
+            entry += $" {note}";
+        }
+        File.AppendAllText(journeyPath, entry, System.Text.Encoding.UTF8);
+        _logger.Information("SUCCESS: Appended new entry to journey file: {Path}", journeyPath);
     }
 }

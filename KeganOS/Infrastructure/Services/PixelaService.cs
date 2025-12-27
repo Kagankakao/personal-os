@@ -455,7 +455,7 @@ public class PixelaService : IPixelaService, IDisposable
         {
             try
             {
-                var url = $"{BaseUrl}/users/{user.PixelaUsername}/graphs/{user.PixelaGraphId}/{date:yyyyMMdd}";
+                var url = $"{BaseUrl}/{user.PixelaUsername}/graphs/{user.PixelaGraphId}/{date:yyyyMMdd}";
                 var request = new HttpRequestMessage(HttpMethod.Get, url);
                 request.Headers.Add("X-USER-TOKEN", user.PixelaToken);
 
@@ -574,49 +574,93 @@ public class PixelaService : IPixelaService, IDisposable
     }
 
     /// <summary>
-    /// Post or update a pixel value for a specific date
-    /// PUT /v1/users/{username}/graphs/{graphID}/{yyyyMMdd}
+    /// Post a pixel value for a specific date using POST endpoint
+    /// POST /v1/users/{username}/graphs/{graphID}
+    /// Includes retry loop for Pixe.la rate limiting (isRejected:true)
     /// </summary>
     public async Task<bool> PostPixelAsync(User user, DateTime date, double quantity)
     {
         if (!IsConfigured(user)) return false;
 
         var dateStr = date.ToString("yyyyMMdd");
-        var url = $"{BaseUrl}/users/{user.PixelaUsername}/graphs/{user.PixelaGraphId}/{dateStr}";
+        var url = $"{BaseUrl}/{user.PixelaUsername}/graphs/{user.PixelaGraphId}";
         
         _logger.Information("Posting pixel: {Quantity}h on {Date} to {Url}", quantity, dateStr, url);
 
-        try
+        int maxRetries = 10;
+        int retryDelayMs = 500;
+
+        for (int attempt = 1; attempt <= maxRetries; attempt++)
         {
-            var payload = new { quantity = quantity.ToString("F2") };
-            var content = new StringContent(
-                JsonSerializer.Serialize(payload),
-                Encoding.UTF8,
-                "application/json");
-
-            var request = new HttpRequestMessage(HttpMethod.Put, url);
-            request.Headers.Add("X-USER-TOKEN", user.PixelaToken);
-            request.Content = content;
-
-            var response = await _httpClient.SendAsync(request);
-            var responseBody = await response.Content.ReadAsStringAsync();
-
-            if (response.IsSuccessStatusCode)
+            try
             {
-                _logger.Information("Pixel posted successfully: {Date} = {Quantity}h", dateStr, quantity);
-                return true;
+                var payload = new { date = dateStr, quantity = quantity.ToString("F2") };
+                var content = new StringContent(
+                    JsonSerializer.Serialize(payload),
+                    Encoding.UTF8,
+                    "application/json");
+
+                var request = new HttpRequestMessage(HttpMethod.Post, url);
+                request.Headers.Add("X-USER-TOKEN", user.PixelaToken);
+                request.Content = content;
+
+                var response = await _httpClient.SendAsync(request);
+                var responseBody = await response.Content.ReadAsStringAsync();
+
+                // Check for rate limit rejection
+                bool isRejected = false;
+                try
+                {
+                    using var doc = JsonDocument.Parse(responseBody);
+                    if (doc.RootElement.TryGetProperty("isRejected", out var rejectedProp) && rejectedProp.GetBoolean())
+                    {
+                        isRejected = true;
+                    }
+                }
+                catch { }
+
+                if (isRejected && attempt < maxRetries)
+                {
+                    _logger.Information("Rate limited by Pixe.la (isRejected:true), retrying in {Delay}ms (attempt {Attempt}/{Max})", 
+                        retryDelayMs, attempt, maxRetries);
+                    await Task.Delay(retryDelayMs);
+                    continue;
+                }
+
+                if (response.IsSuccessStatusCode || response.StatusCode == System.Net.HttpStatusCode.OK)
+                {
+                    _logger.Information("Pixel posted successfully: {Date} = {Quantity}h", dateStr, quantity);
+                    return true;
+                }
+                else
+                {
+                    _logger.Warning("Failed to post pixel (attempt {Attempt}): {Status} - {Body}", attempt, response.StatusCode, responseBody);
+                    
+                    // Retry on 503 or 500
+                    if ((response.StatusCode == System.Net.HttpStatusCode.ServiceUnavailable || 
+                         response.StatusCode == System.Net.HttpStatusCode.InternalServerError) && attempt < maxRetries)
+                    {
+                        await Task.Delay(retryDelayMs * attempt);
+                        continue;
+                    }
+                    
+                    return false;
+                }
             }
-            else
+            catch (Exception ex)
             {
-                _logger.Warning("Failed to post pixel: {Status} - {Body}", response.StatusCode, responseBody);
+                _logger.Error(ex, "Error posting pixel to Pixe.la (attempt {Attempt})", attempt);
+                if (attempt < maxRetries)
+                {
+                    await Task.Delay(retryDelayMs);
+                    continue;
+                }
                 return false;
             }
         }
-        catch (Exception ex)
-        {
-            _logger.Error(ex, "Error posting pixel to Pixe.la");
-            return false;
-        }
+        
+        _logger.Warning("Failed to post pixel after {MaxRetries} attempts", maxRetries);
+        return false;
     }
 
     /// <summary>

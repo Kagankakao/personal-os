@@ -20,21 +20,46 @@
             <!-- Title Bar -->
             <Grid Grid.Row="0" Background="#0D0D0D" MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
                 <TextBlock Text="Select Theme Color" Foreground="#CCCCCC" VerticalAlignment="Center" Margin="15,0,0,0" FontSize="13"/>
-                <Button Content="✕" HorizontalAlignment="Right" VerticalAlignment="Center" 
-                        Width="35" Height="35" Background="Transparent" BorderThickness="0"
-                        Foreground="#888888" Click="CloseButton_Click" Cursor="Hand"/>
+                <Button Content="✕" HorizontalAlignment="Right" VerticalAlignment="Center" Click="CloseButton_Click">
+                    <Button.Style>
+                        <Style TargetType="Button">
+                            <Setter Property="Background" Value="Transparent"/>
+                            <Setter Property="Foreground" Value="#FF4444"/>
+                            <Setter Property="BorderThickness" Value="0"/>
+                            <Setter Property="Cursor" Value="Hand"/>
+                            <Setter Property="Width" Value="35"/>
+                            <Setter Property="Height" Value="35"/>
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="Button">
+                                        <Border Background="{TemplateBinding Background}">
+                                            <TextBlock Text="{TemplateBinding Content}" 
+                                                       Foreground="{TemplateBinding Foreground}"
+                                                       HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="14"/>
+                                        </Border>
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                            <Style.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter Property="Foreground" Value="#FF4444"/>
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Button.Style>
+                </Button>
             </Grid>
             
             <!-- Theme Colors -->
             <StackPanel Grid.Row="1" Margin="15" VerticalAlignment="Center">
                 <TextBlock Text="PIXE.LA THEMES" Foreground="#666666" FontSize="10" Margin="0,0,0,12" HorizontalAlignment="Center"/>
                 <UniformGrid Columns="3" Rows="2" HorizontalAlignment="Center">
-                    <Button Tag="shibafu" Background="#70cc14" Width="60" Height="35" Margin="4" BorderThickness="0" Click="PresetColor_Click" Cursor="Hand" ToolTip="Green (shibafu)"/>
-                    <Button Tag="momiji" Background="#f3591e" Width="60" Height="35" Margin="4" BorderThickness="0" Click="PresetColor_Click" Cursor="Hand" ToolTip="Red (momiji)"/>
-                    <Button Tag="sora" Background="#00aced" Width="60" Height="35" Margin="4" BorderThickness="0" Click="PresetColor_Click" Cursor="Hand" ToolTip="Blue (sora)"/>
-                    <Button Tag="ichou" Background="#e4b41b" Width="60" Height="35" Margin="4" BorderThickness="0" Click="PresetColor_Click" Cursor="Hand" ToolTip="Yellow (ichou)"/>
-                    <Button Tag="ajisai" Background="#7246df" Width="60" Height="35" Margin="4" BorderThickness="0" Click="PresetColor_Click" Cursor="Hand" ToolTip="Purple (ajisai)"/>
-                    <Button Tag="kuro" Background="#222222" Width="60" Height="35" Margin="4" BorderThickness="1" BorderBrush="#444444" Click="PresetColor_Click" Cursor="Hand" ToolTip="Black (kuro)"/>
+                    <Button Tag="shibafu" Background="#70cc14" Width="35" Height="35" Margin="3" BorderThickness="0" Click="PresetColor_Click" Cursor="Hand" ToolTip="Green (shibafu)"/>
+                    <Button Tag="momiji" Background="#f3591e" Width="35" Height="35" Margin="3" BorderThickness="0" Click="PresetColor_Click" Cursor="Hand" ToolTip="Red (momiji)"/>
+                    <Button Tag="sora" Background="#00aced" Width="35" Height="35" Margin="3" BorderThickness="0" Click="PresetColor_Click" Cursor="Hand" ToolTip="Blue (sora)"/>
+                    <Button Tag="ichou" Background="#e4b41b" Width="35" Height="35" Margin="3" BorderThickness="0" Click="PresetColor_Click" Cursor="Hand" ToolTip="Yellow (ichou)"/>
+                    <Button Tag="ajisai" Background="#7246df" Width="35" Height="35" Margin="3" BorderThickness="0" Click="PresetColor_Click" Cursor="Hand" ToolTip="Purple (ajisai)"/>
+                    <Button Tag="kuro" Background="#222222" Width="35" Height="35" Margin="3" BorderThickness="1" BorderBrush="#444444" Click="PresetColor_Click" Cursor="Hand" ToolTip="Black (kuro)"/>
                 </UniformGrid>
             </StackPanel>
             

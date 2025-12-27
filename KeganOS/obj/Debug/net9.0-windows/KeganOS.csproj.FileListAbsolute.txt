@@ -132,3 +132,4 @@ C:\Users\ariba\OneDrive\Documenti\Software Projects\AI Projects\personal-os\pers
 C:\Users\ariba\OneDrive\Documenti\Software Projects\AI Projects\personal-os\personal-os\KeganOS\obj\Debug\net9.0-windows\Views\TextInputDialog.g.cs
 C:\Users\ariba\OneDrive\Documenti\Software Projects\AI Projects\personal-os\personal-os\KeganOS\obj\Debug\net9.0-windows\Views\DeleteConfirmationWindow.baml
 C:\Users\ariba\OneDrive\Documenti\Software Projects\AI Projects\personal-os\personal-os\KeganOS\obj\Debug\net9.0-windows\Views\DeleteConfirmationWindow.g.cs
+C:\Users\ariba\OneDrive\Documenti\Software Projects\AI Projects\personal-os\personal-os\KeganOS\obj\Debug\net9.0-windows\KeganOS.sourcelink.json

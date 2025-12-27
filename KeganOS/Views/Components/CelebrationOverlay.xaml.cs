@@ -11,10 +11,12 @@ public partial class CelebrationOverlay : System.Windows.Controls.UserControl
         InitializeComponent();
     }
 
-    public void Show(string achievementName, string icon, int xpReward)
+    public void Show(string achievementName, string icon, int xpReward, string color = "#FFCC00")
     {
         AchievementName.Text = achievementName;
         BadgeIcon.Text = icon;
+        BadgeIcon.Foreground = new System.Windows.Media.SolidColorBrush(
+            (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(color));
         RewardText.Text = $"+{xpReward} XP";
         
         this.Visibility = Visibility.Visible;

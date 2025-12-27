@@ -50,6 +50,17 @@ public partial class CreateProfileWindow : System.Windows.Window
         // Focus on first input
         Loaded += (s, e) => DisplayNameInput.Focus();
     }
+    
+    private void TitleBar_MouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        if (e.ClickCount == 1)
+            DragMove();
+    }
+    
+    private void CloseButton_Click(object sender, System.Windows.RoutedEventArgs e)
+    {
+        Close();
+    }
 
     private void LoadEditingUser()
     {
@@ -192,7 +203,7 @@ public partial class CreateProfileWindow : System.Windows.Window
             var separatorPattern = new Regex(@"^[-*=_]{3,}");
             var headerPattern = new Regex(@"^##?\s");
             
-            int dateEntries = 0;
+            var uniqueDates = new HashSet<string>();
             int timeEntries = 0;
             int noteLines = 0;
             int emptyLines = 0;
@@ -208,7 +219,7 @@ public partial class CreateProfileWindow : System.Windows.Window
                 }
                 
                 if (datePattern.IsMatch(trimmed))
-                    dateEntries++;
+                    uniqueDates.Add(trimmed); // Use HashSet for unique dates
                 else if (timePattern.IsMatch(trimmed))
                     timeEntries++;
                 else if (separatorPattern.IsMatch(trimmed) || headerPattern.IsMatch(trimmed))
@@ -217,6 +228,7 @@ public partial class CreateProfileWindow : System.Windows.Window
                     noteLines++; // Notes, reflections, comments - all valid!
             }
             
+            int dateEntries = uniqueDates.Count;
             _validEntriesCount = dateEntries;
             
             // Show status - always green if we found dates!

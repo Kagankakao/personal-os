@@ -233,24 +233,32 @@ public partial class SettingsWindow : Window
             
             Directory.CreateDirectory(backupDir);
             
-            // Backup database file
-            var dbPath = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                "KeganOS", "keganos.db");
-            
-            if (File.Exists(dbPath))
+            // Find database - check multiple possible locations
+            var possibleDbPaths = new[]
             {
-                var backupFileName = $"keganos_backup_{DateTime.Now:yyyyMMdd_HHmmss}.db";
+                Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "keganos.db"),
+                Path.Combine(Environment.CurrentDirectory, "keganos.db"),
+                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "KeganOS", "keganos.db"),
+                "keganos.db"
+            };
+            
+            var dbPath = possibleDbPaths.FirstOrDefault(File.Exists);
+            
+            if (!string.IsNullOrEmpty(dbPath) && File.Exists(dbPath))
+            {
+                var safeUsername = _currentUser.DisplayName?.Replace(" ", "_") ?? "user";
+                var backupFileName = $"{safeUsername}_backup_{DateTime.Now:yyyyMMdd_HHmmss}.db";
                 var backupPath = Path.Combine(backupDir, backupFileName);
                 File.Copy(dbPath, backupPath, overwrite: true);
                 
-                _logger.Information("Backup created at {Path}", backupPath);
+                _logger.Information("Backup created from {Source} to {Path}", dbPath, backupPath);
                 System.Windows.MessageBox.Show($"Backup created successfully!\n\n{backupPath}", "Backup Complete", 
                     MessageBoxButton.OK, MessageBoxImage.Information);
             }
             else
             {
-                System.Windows.MessageBox.Show("No database found to backup.", "Backup", 
+                _logger.Warning("No database found. Searched: {Paths}", string.Join(", ", possibleDbPaths));
+                System.Windows.MessageBox.Show($"No database found to backup.\n\nSearched:\n{string.Join("\n", possibleDbPaths)}", "Backup", 
                     MessageBoxButton.OK, MessageBoxImage.Warning);
             }
         }

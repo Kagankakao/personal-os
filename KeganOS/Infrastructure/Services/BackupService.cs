@@ -37,36 +37,59 @@ public class BackupService : IBackupService
 
             var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
             
-            // Backup database
-            var dbPath = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                "KeganOS", "keganos.db");
+            // Find database - check multiple possible locations
+            var possibleDbPaths = new[]
+            {
+                Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "keganos.db"),
+                Path.Combine(Environment.CurrentDirectory, "keganos.db"),
+                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "KeganOS", "keganos.db"),
+                "keganos.db"
+            };
+            
+            var dbPath = possibleDbPaths.FirstOrDefault(File.Exists);
 
-            if (File.Exists(dbPath))
+            if (!string.IsNullOrEmpty(dbPath) && File.Exists(dbPath))
             {
                 var dbBackupPath = Path.Combine(backupDir, $"db_{timestamp}.db");
                 File.Copy(dbPath, dbBackupPath, overwrite: true);
-                _logger.Information("Database backed up: {Path}", dbBackupPath);
+                _logger.Information("Database backed up from {Source} to {Path}", dbPath, dbBackupPath);
+            }
+            else
+            {
+                _logger.Warning("No database found to backup. Searched paths: {Paths}", string.Join(", ", possibleDbPaths));
             }
 
             // Backup journal
             var journalBackupPath = await BackupJournalAsync(user);
             
-            // Create manifest
+            // Backup avatar image if it exists
+            string? avatarBackupPath = null;
+            if (!string.IsNullOrEmpty(user.AvatarPath) && File.Exists(user.AvatarPath))
+            {
+                avatarBackupPath = await BackupImageAsync(user, user.AvatarPath);
+            }
+            
+            // Create manifest with all backup info
             var manifest = new
             {
                 UserId = user.Id,
                 UserName = user.DisplayName,
                 BackupDate = DateTime.Now,
-                HasDatabase = File.Exists(dbPath),
-                HasJournal = !string.IsNullOrEmpty(journalBackupPath)
+                HasDatabase = !string.IsNullOrEmpty(dbPath),
+                HasJournal = !string.IsNullOrEmpty(journalBackupPath),
+                HasAvatar = !string.IsNullOrEmpty(avatarBackupPath),
+                AvatarOriginalPath = user.AvatarPath
             };
 
             var manifestPath = Path.Combine(backupDir, $"manifest_{timestamp}.json");
             var json = JsonSerializer.Serialize(manifest, new JsonSerializerOptions { WriteIndented = true });
             await File.WriteAllTextAsync(manifestPath, json);
 
-            _logger.Information("Backup created for {User} at {Path}", user.DisplayName, backupDir);
+            _logger.Information("Full backup created for {User} at {Path} (DB: {DB}, Journal: {J}, Avatar: {A})", 
+                user.DisplayName, backupDir, 
+                !string.IsNullOrEmpty(dbPath), 
+                !string.IsNullOrEmpty(journalBackupPath),
+                !string.IsNullOrEmpty(avatarBackupPath));
             
             // Cleanup old backups
             await CleanupOldBackupsAsync(user);

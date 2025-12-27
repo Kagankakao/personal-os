@@ -14,6 +14,7 @@ public class Achievement
     public string Name { get; set; } = "";
     public string Description { get; set; } = "";
     public string Icon { get; set; } = "🏆"; // Emoji default
+    public string Color { get; set; } = "#88CC88"; // Badge color (default green)
     public AchievementRequirementType RequirementType { get; set; }
     public double RequirementValue { get; set; } // e.g., 100 (hours) or 7 (days)
     public int XpReward { get; set; }

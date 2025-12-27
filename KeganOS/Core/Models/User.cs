@@ -61,6 +61,11 @@ public class User
     /// Total focus hours logged
     /// </summary>
     public double TotalHours { get; set; } = 0;
+    
+    /// <summary>
+    /// Best streak ever achieved (persisted)
+    /// </summary>
+    public int BestStreak { get; set; } = 0;
 
     /// <summary>
     /// Experience Points

@@ -32,7 +32,7 @@ public partial class AchievementsWindow : Window
         // Dynamic ASCII Progress Bar
         int totalDots = 25;
         int filledDots = (int)(_user.LevelProgress * totalDots);
-        AsciiProgressBar.Text = new string('░', filledDots) + new string('.', totalDots - filledDots);
+        AsciiProgressBar.Text = new string('░', filledDots) + new string(' ', totalDots - filledDots);
         
         PopulateAchievements();
     }

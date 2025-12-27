@@ -11,18 +11,57 @@
         AllowsTransparency="True">
     
     <Border BorderBrush="#333333" BorderThickness="1">
-        <Grid Margin="30">
+        <Grid>
             <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="35"/>
                 <RowDefinition Height="*"/>
-                <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
             
-            <!-- Header -->
-            <StackPanel Grid.Row="0" Margin="0,0,0,20">
-                <TextBlock Text="Create Profile" Foreground="#FFFFFF" FontSize="20"/>
-                <TextBlock Text="Set up your personal space." Foreground="#666666" FontSize="11" Margin="0,5,0,0"/>
-            </StackPanel>
+            <!-- Title Bar (Draggable) -->
+            <Grid Grid.Row="0" Background="#0D0D0D" MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
+                <TextBlock Text="Create Profile" Foreground="#CCCCCC" VerticalAlignment="Center" Margin="15,0,0,0" FontSize="14"/>
+                <Button Content="✕" HorizontalAlignment="Right" Click="CloseButton_Click">
+                    <Button.Style>
+                        <Style TargetType="Button">
+                            <Setter Property="Background" Value="Transparent"/>
+                            <Setter Property="Foreground" Value="#FF4444"/>
+                            <Setter Property="BorderThickness" Value="0"/>
+                            <Setter Property="Cursor" Value="Hand"/>
+                            <Setter Property="Width" Value="35"/>
+                            <Setter Property="Height" Value="35"/>
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="Button">
+                                        <Border Background="{TemplateBinding Background}">
+                                            <TextBlock Text="{TemplateBinding Content}" 
+                                                       Foreground="{TemplateBinding Foreground}"
+                                                       HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="14"/>
+                                        </Border>
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                            <Style.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter Property="Foreground" Value="#FF4444"/>
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Button.Style>
+                </Button>
+            </Grid>
+            
+            <!-- Main Content -->
+            <Grid Grid.Row="1" Margin="30">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+            
+                <!-- Header -->
+                <StackPanel Grid.Row="0" Margin="0,0,0,20">
+                    <TextBlock Text="Set up your personal space." Foreground="#666666" FontSize="11"/>
+                </StackPanel>
             
             <!-- Form -->
             <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
@@ -173,6 +212,7 @@
                         BorderThickness="0" Padding="15,8" Cursor="Hand"
                         Click="CreateButton_Click"/>
             </StackPanel>
+            </Grid>
         </Grid>
     </Border>
 </Window>

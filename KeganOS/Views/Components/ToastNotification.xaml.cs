@@ -14,10 +14,12 @@ public partial class ToastNotification : System.Windows.Controls.UserControl
         InitializeComponent();
     }
 
-    public void Show(string title, string icon, int xp)
+    public void Show(string title, string icon, int xp, string color = "#FFCC00")
     {
         TitleText.Text = title;
         IconText.Text = icon;
+        IconText.Foreground = new System.Windows.Media.SolidColorBrush(
+            (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(color));
         XpText.Text = $"+{xp} XP";
 
         var slideIn = (Storyboard)FindResource("SlideIn");
