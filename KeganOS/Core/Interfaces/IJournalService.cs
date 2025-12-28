@@ -23,6 +23,13 @@ public interface IJournalService
     Task AppendEntryAsync(User user, string note, TimeSpan? timeWorked = null);
 
     /// <summary>
+    /// Append only a note to the journal (no time) - for Save to Journal button
+    /// If date exists, appends note to existing entry without touching time
+    /// If date doesn't exist, creates new entry with just date + note
+    /// </summary>
+    Task AppendNoteOnlyAsync(User user, string note);
+
+    /// <summary>
     /// Open the journal file in Notepad
     /// </summary>
     void OpenInNotepad(User user);

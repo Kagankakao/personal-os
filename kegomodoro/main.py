@@ -86,14 +86,26 @@ def check_single_instance():
         # Check if the process is actually running
         try:
             with open(LOCK_FILE_PATH, 'r') as f:
-                pid = int(f.read().strip())
-            # Check if process exists using os.kill with signal 0 (doesn't kill, just checks)
-            os.kill(pid, 0)
-            # If we get here, process exists - show warning and exit
-            tkinter.messagebox.showwarning("KEGOMODORO", "KEGOMODORO is already running!")
-            sys.exit(0)
-        except (ValueError, OSError, ProcessLookupError):
-            # Process doesn't exist or lock file is invalid - it's a stale lock file
+                content = f.read().strip()
+                # Handle "launching" marker from KeganOS
+                if content == "launching":
+                    # KeganOS just created this, give it a moment
+                    pass
+                else:
+                    pid = int(content)
+                    # On Windows, check if process exists using subprocess
+                    import subprocess
+                    result = subprocess.run(
+                        ['tasklist', '/FI', f'PID eq {pid}', '/NH'],
+                        capture_output=True, text=True, creationflags=subprocess.CREATE_NO_WINDOW
+                    )
+                    if str(pid) in result.stdout:
+                        # Process is actually running - show warning and exit
+                        tkinter.messagebox.showwarning("KEGOMODORO", "KEGOMODORO is already running!")
+                        sys.exit(0)
+                    # else: PID not found, it's a stale lock file - we'll overwrite it
+        except (ValueError, OSError, FileNotFoundError):
+            # Lock file is invalid or process check failed - treat as stale
             pass
         except Exception:
             pass
@@ -341,7 +353,9 @@ def connect_to_pixela():
 def pomodoro_mode():
     global pomodoro_mode_activate, crono_mode_activate, hours, minute, second, reset_pass
     if crono_mode_activate:
-        with open(TIME_CSV_PATH, mode='a') as file:
+        # Save current time before switching modes
+        with open(TIME_CSV_PATH, mode='w') as file:
+            file.write("hours,minute,second\n")
             file.write(f"{hours},{minute},{second}\n")
     reset_pass = True
     reset()
@@ -353,31 +367,50 @@ def pomodoro_mode():
 
 
 def crono_mode():
-    global crono_mode_activate, pomodoro_mode_activate, second, minute, hours, show_hours, crono_reset,reset_pass
+    global crono_mode_activate, pomodoro_mode_activate, second, minute, hours, show_hours, crono_reset, reset_pass
+    
+    # First, save current time if we're already in crono mode
     if crono_mode_activate:
-        with open(TIME_CSV_PATH, mode='a') as file:
+        # Save current time before re-entering crono mode
+        with open(TIME_CSV_PATH, mode='w') as file:
+            file.write("hours,minute,second\n")
             file.write(f"{hours},{minute},{second}\n")
+    
+    # Read the saved time from CSV BEFORE resetting
+    saved_hours, saved_minute, saved_second = 0, 0, 0
+    try:
+        _lazy_import_pandas()  # Ensure pandas is loaded
+        df = pd.read_csv(TIME_CSV_PATH)
+        if len(df) > 0:
+            saved_second = int(df['second'].iloc[-1])
+            saved_minute = int(df['minute'].iloc[-1])
+            saved_hours = int(df['hours'].iloc[-1])
+            print(f"Loaded time from CSV: {saved_hours}:{saved_minute}:{saved_second}")
+    except Exception as e:
+        print(f"Error reading time.csv: {e}")
+    
     reset_pass = True
     reset()
     reset_pass = False
     crono_mode_activate = True
     pomodoro_mode_activate = False
 
-    # Gets the time from the time file
-    df = pd.read_csv(TIME_CSV_PATH)
-    second = df['second'].iloc[-1]
-    minute = df['minute'].iloc[-1]
-    hours = df['hours'].iloc[-1]
+    # Restore the saved time values AFTER reset
+    second = saved_second
+    minute = saved_minute
+    hours = saved_hours
+    
     if int(hours) != 0:
         show_hours = True
 
+    # Update the display
     if not show_hours:
         canvas.itemconfig(timer, text=f"{minute:02d}:{second:02d}")
-        floating_timer_label.config(text=f"{minute:02d}:{second:02d}", font=(FONT_NAME, FLOATING_MINUTE_FONT_SIZE, "bold")) #? Related to the floating timer
+        floating_timer_label.config(text=f"{minute:02d}:{second:02d}", font=(FONT_NAME, FLOATING_MINUTE_FONT_SIZE, "bold"))
         floating_timer_label.place(x=MINUTE_X, y=MINUTE_Y)
     if show_hours:
-        canvas.itemconfig(timer, text=f"{hours:02d}:{minute:02d}:{second:02d}", font=(FONT_NAME, MAIN_HOUR_FONT_SIZE, "bold")) #? Related to the main screen's timer
-        floating_timer_label.config(text=f"{hours:02d}:{minute:02d}:{second:02d}", font=(FONT_NAME, FLOATING_HOUR_FONT_SIZE, "bold")) #? Related to the floating timer
+        canvas.itemconfig(timer, text=f"{hours:02d}:{minute:02d}:{second:02d}", font=(FONT_NAME, MAIN_HOUR_FONT_SIZE, "bold"))
+        floating_timer_label.config(text=f"{hours:02d}:{minute:02d}:{second:02d}", font=(FONT_NAME, FLOATING_HOUR_FONT_SIZE, "bold"))
         floating_timer_label.place(x=HOURS_X, y=HOURS_Y)
 def floating_window(**kwargs):
     global open_floating_window, checked_state
@@ -643,7 +676,9 @@ def save_data():
         pause_timer()
     if crono_mode_activate:
         crono_reset = False
-        with open(TIME_CSV_PATH, mode='a') as file:
+        # Save current accumulated time
+        with open(TIME_CSV_PATH, mode='w') as file:
+            file.write("hours,minute,second\n")
             file.write(f"{hours},{minute},{second}\n")
 
         if show_hours:
@@ -663,26 +698,89 @@ def save_data():
                 else: 
                     showinfo("Your note:", '{}'.format(saved_note))
         try:
-            if note_writer_first_gap == 0:
-                note_writer_first = "\n"
+            today_date_slash = dt.datetime.now().strftime('%m/%d/%Y')  # 12/28/2025
+            today_date_dot = dt.datetime.now().strftime('%m.%d.%Y')    # 12.28.2025
+            
+            # Format the current time
+            if show_hours:
+                time_str = f"{hours:02d}:{minute:02d}:{second:02d}"
             else:
-                note_writer_first = "\n\n"
-            note_writer_first_gap = None
-            with open(SAVE_FILE_NAME, 'a', encoding='utf-8') as file:
-                if not show_hours:
-                    file.write(
-                        f"{note_writer_first}{dt.datetime.now().strftime('%m/%d/%Y')}\n{minute:02d}:{second:02d}")
+                time_str = f"{minute:02d}:{second:02d}"
+            
+            # Read existing file content
+            existing_content = ""
+            if os.path.exists(SAVE_FILE_NAME):
+                with open(SAVE_FILE_NAME, 'r', encoding='utf-8') as file:
+                    existing_content = file.read()
+            
+            # Check if today's date already exists in the file (check BOTH formats)
+            lines = existing_content.split('\n')
+            today_index = -1
+            for i, line in enumerate(lines):
+                # Check for both / and . date formats
+                if line.strip() == today_date_slash or line.strip() == today_date_dot:
+                    today_index = i
+                    break
+            
+            if today_index >= 0 and today_index + 1 < len(lines):
+                # Today exists - update time and append note
+                existing_time_line = lines[today_index + 1]
+                
+                # Replace time with current time, keep any existing notes
+                existing_notes = ""
+                space_idx = existing_time_line.find(' ')
+                if space_idx > 0:
+                    existing_notes = existing_time_line[space_idx + 1:].strip()
+                
+                # Build new line with updated time
+                new_time_line = time_str
+                if existing_notes:
+                    new_time_line += " " + existing_notes
+                
+                lines[today_index + 1] = new_time_line
+                
+                # Find end of this entry (next empty line or next date or end of file)
+                import re
+                entry_end_index = today_index + 2
+                while entry_end_index < len(lines):
+                    line = lines[entry_end_index].strip()
+                    # Only stop at next date entry (not at empty lines)
+                    if re.match(r'^\d{2}[/\.]\d{2}[/\.]\d{4}$', line):
+                        break
+                    entry_end_index += 1
+                
+                # Check if time line has a note beside it (space means note exists)
+                has_inline_note = ' ' in new_time_line
+                # Check if there are notes below the time line
+                has_notes_below = entry_end_index > today_index + 2
+                
+                # Append new note
+                if saved_note:
+                    # Only add inline if NO notes exist at all (neither inline nor below)
+                    if not has_inline_note and not has_notes_below:
+                        # No notes at all - add inline with time
+                        lines[today_index + 1] = new_time_line + " " + saved_note
+                    else:
+                        # Notes exist (inline or below) - append at end with blank line
+                        lines.insert(entry_end_index, "")  # Blank line
+                        lines.insert(entry_end_index + 1, saved_note)
+                
+                # Write back
+                with open(SAVE_FILE_NAME, 'w', encoding='utf-8') as file:
+                    file.write('\n'.join(lines))
+                print(f"Merged note with existing entry for today")
+            else:
+                # Today doesn't exist - append new entry (use / format)
+                with open(SAVE_FILE_NAME, 'a', encoding='utf-8') as file:
+                    file.write(f"\n\n{today_date_slash}\n{time_str}")
                     if saved_note:
                         file.write(f" {saved_note}")
-                else: 
-                    file.write(
-                        f"{note_writer_first}{dt.datetime.now().strftime('%m/%d/%Y')}\n{hours:02d}:{minute:02d}:{second:02d}")
-                    if saved_note:
-                        file.write(f" {saved_note}")
+                print(f"Created new entry for {today_date_slash}")
+            
             time.sleep(0.03)
             open_in_notepad(SAVE_FILE_NAME)
-        except e:
-            print(e)
+        except Exception as e:
+            print(f"Error saving: {e}")
     else:
         tkinter.messagebox.showerror("Error", "You need to be in stopwatch mode to use save button.")
 
@@ -712,7 +810,10 @@ def center_window(window):
 
 def on_closing():
     if not pomodoro_mode_activate:
-        with open(TIME_CSV_PATH, mode='a') as file:
+        # OVERWRITE time.csv with current total (not append)
+        # This ensures next session reads the correct accumulated time
+        with open(TIME_CSV_PATH, mode='w') as file:
+            file.write("hours,minute,second\n")
             file.write(f"{hours},{minute},{second}\n")
     cleanup_lock_file()  # Clean up lock file before exit
     root.destroy()

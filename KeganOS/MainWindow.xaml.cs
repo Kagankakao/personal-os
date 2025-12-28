@@ -828,6 +828,15 @@ public partial class MainWindow : System.Windows.Window
     {
         if (_currentUser == null) return;
         
+        // Check if KEGOMODORO is running - prevent data conflicts
+        if (_kegomoDoroService.IsAnyInstanceRunning)
+        {
+            System.Windows.MessageBox.Show(
+                "Please close KEGOMODORO before saving to journal.\n\nThe stopwatch must be stopped to avoid data conflicts.",
+                "KEGOMODORO Running", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Warning);
+            return;
+        }
+        
         var entry = JournalInput.Text;
         if (string.IsNullOrWhiteSpace(entry))
         {
@@ -837,7 +846,8 @@ public partial class MainWindow : System.Windows.Window
         _logger.Information("Saving journal entry: {Preview}...", 
             entry.Length > 30 ? entry[..30] : entry);
         
-        await _journalService.AppendEntryAsync(_currentUser, entry);
+        // Use note-only method - does NOT write time, only appends note
+        await _journalService.AppendNoteOnlyAsync(_currentUser, entry);
         JournalInput.Text = "";
         
         // Reload stats

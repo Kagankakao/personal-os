@@ -128,21 +128,222 @@ public class JournalService : IJournalService
     public async Task AppendEntryAsync(User user, string note, TimeSpan? timeWorked = null)
     {
         var filePath = GetJournalFilePath(user);
-        _logger.Information("Appending entry to: {Path}", filePath);
+        _logger.Information("Saving entry to: {Path}", filePath);
 
         try
         {
-            var date = DateTime.Now.ToString("MM/dd/yyyy");
-            var time = timeWorked?.ToString(@"hh\:mm\:ss") ?? "00:00:00";
+            var today = DateTime.Now.Date;
+            var dateStr = today.ToString("MM/dd/yyyy");
             
-            var entry = $"\n\n{date}\n{time} {note}";
+            // If no timeWorked provided, read from time.csv (KEGOMODORO's stopwatch data)
+            var hoursFromTimeCsv = await GetTodayHoursFromTimeCsvAsync();
+            var finalTime = timeWorked ?? hoursFromTimeCsv;
+            var timeStr = finalTime.ToString(@"hh\:mm\:ss");
             
-            await File.AppendAllTextAsync(filePath, entry);
-            _logger.Information("Entry appended successfully");
+            _logger.Debug("Final time for entry: {Time} (from time.csv: {FromCsv})", 
+                timeStr, timeWorked == null ? "yes" : "no");
+            
+            // Read existing file content
+            var existingContent = File.Exists(filePath) ? await File.ReadAllTextAsync(filePath) : "";
+            
+            // Check if today's date already exists
+            var lines = existingContent.Split('\n').ToList();
+            var todayIndex = -1;
+            for (int i = 0; i < lines.Count; i++)
+            {
+                if (lines[i].Trim().StartsWith(dateStr))
+                {
+                    todayIndex = i;
+                    break;
+                }
+            }
+            
+            if (todayIndex >= 0)
+            {
+                // Today exists - merge notes and update time
+                _logger.Information("Merging with existing entry for {Date}", dateStr);
+                
+                // Find existing time and note on the next line
+                if (todayIndex + 1 < lines.Count)
+                {
+                    var existingTimeLine = lines[todayIndex + 1].Trim();
+                    var existingNote = "";
+                    
+                    // Extract existing note from time line
+                    var spaceIdx = existingTimeLine.IndexOf(' ');
+                    if (spaceIdx > 0)
+                    {
+                        existingNote = existingTimeLine.Substring(spaceIdx + 1).Trim();
+                    }
+                    
+                    // Merge notes if new note provided and different
+                    string mergedNote;
+                    if (string.IsNullOrWhiteSpace(existingNote))
+                    {
+                        mergedNote = note;
+                    }
+                    else if (existingNote.Contains(note))
+                    {
+                        mergedNote = existingNote; // Note already exists
+                    }
+                    else
+                    {
+                        mergedNote = existingNote + "\n" + note;
+                    }
+                    
+                    // Update the line with new time (always overwrite with latest) and merged note
+                    lines[todayIndex + 1] = $"{timeStr} {mergedNote}";
+                }
+                
+                // Write back
+                await File.WriteAllTextAsync(filePath, string.Join('\n', lines));
+                _logger.Information("Entry merged successfully");
+            }
+            else
+            {
+                // New date - append new entry
+                var entry = $"\n\n{dateStr}\n{timeStr} {note}";
+                await File.AppendAllTextAsync(filePath, entry);
+                _logger.Information("New entry appended for {Date}", dateStr);
+            }
         }
         catch (Exception ex)
         {
-            _logger.Error(ex, "Failed to append entry");
+            _logger.Error(ex, "Failed to save entry");
+            throw;
+        }
+    }
+    
+    /// <summary>
+    /// Reads the last entry from time.csv to get today's accumulated hours
+    /// </summary>
+    private async Task<TimeSpan> GetTodayHoursFromTimeCsvAsync()
+    {
+        try
+        {
+            var timeCsvPath = Path.Combine(_kegomoDoroPath, "dependencies", "texts", "Configurations", "time.csv");
+            
+            if (!File.Exists(timeCsvPath))
+            {
+                _logger.Debug("time.csv not found at {Path}", timeCsvPath);
+                return TimeSpan.Zero;
+            }
+            
+            var lines = await File.ReadAllLinesAsync(timeCsvPath);
+            
+            // Find last non-empty line with valid format
+            for (int i = lines.Length - 1; i >= 0; i--)
+            {
+                var line = lines[i].Trim();
+                if (string.IsNullOrEmpty(line)) continue;
+                
+                var parts = line.Split(',');
+                if (parts.Length >= 3)
+                {
+                    if (int.TryParse(parts[0], out var hours) &&
+                        int.TryParse(parts[1], out var minutes) &&
+                        int.TryParse(parts[2].Split(',')[0], out var seconds)) // Handle malformed lines like "10,25,00,0,0"
+                    {
+                        var result = new TimeSpan(hours, minutes, seconds);
+                        _logger.Debug("Read time from time.csv: {Time}", result);
+                        return result;
+                    }
+                }
+            }
+            
+            return TimeSpan.Zero;
+        }
+        catch (Exception ex)
+        {
+            _logger.Warning(ex, "Failed to read time.csv");
+            return TimeSpan.Zero;
+        }
+    }
+
+    /// <summary>
+    /// Append only a note to the journal (no time modification)
+    /// Used by Save to Journal button - never writes time, only notes
+    /// </summary>
+    public async Task AppendNoteOnlyAsync(User user, string note)
+    {
+        var filePath = GetJournalFilePath(user);
+        _logger.Information("Saving note-only entry to: {Path}", filePath);
+
+        try
+        {
+            var today = DateTime.Now.Date;
+            var dateStrSlash = today.ToString("MM/dd/yyyy", System.Globalization.CultureInfo.InvariantCulture);  // Forces 12/28/2025
+            var dateStrDot = today.ToString("MM.dd.yyyy");    // 12.28.2025 (for searching old entries)
+            
+            // Read existing file content
+            var existingContent = File.Exists(filePath) ? await File.ReadAllTextAsync(filePath) : "";
+            var lines = existingContent.Split('\n').ToList();
+            
+            // Find today's date (check BOTH formats for cross-app compatibility)
+            var todayIndex = -1;
+            for (int i = 0; i < lines.Count; i++)
+            {
+                var lineTrim = lines[i].Trim();
+                if (lineTrim == dateStrSlash || lineTrim == dateStrDot)
+                {
+                    todayIndex = i;
+                    break;
+                }
+            }
+            
+            if (todayIndex >= 0 && todayIndex + 1 < lines.Count)
+            {
+                // Find where the NEXT DATE ENTRY starts (or end of file)
+                var entryEndIndex = todayIndex + 2;
+                while (entryEndIndex < lines.Count)
+                {
+                    var line = lines[entryEndIndex].Trim();
+                    // Only stop at the next date entry (not at empty lines)
+                    if (System.Text.RegularExpressions.Regex.IsMatch(line, @"^\d{2}[/\.]\d{2}[/\.]\d{4}$"))
+                    {
+                        break;
+                    }
+                    entryEndIndex++;
+                }
+                // Check if time line has a note beside it
+                var timeLine = lines[todayIndex + 1];
+                var hasInlineNote = timeLine.Contains(' ');  // If space exists, note is inline
+                var hasNotesBelow = entryEndIndex > todayIndex + 2;  // If lines exist below time line
+                
+                // Append note
+                if (!lines.Any(l => l.Contains(note)))  // Check if note already exists
+                {
+                    // Only add inline if NO notes exist at all (neither inline nor below)
+                    if (!hasInlineNote && !hasNotesBelow)
+                    {
+                        // No notes at all - add inline with time
+                        lines[todayIndex + 1] = timeLine + " " + note;
+                    }
+                    else
+                    {
+                        // Notes exist (inline or below) - append at end
+                        lines.Insert(entryEndIndex, "");  // Blank line before new note
+                        lines.Insert(entryEndIndex + 1, note);
+                    }
+                    await File.WriteAllTextAsync(filePath, string.Join('\n', lines));
+                    _logger.Information("Note appended to existing entry for {Date}", dateStrSlash);
+                }
+                else
+                {
+                    _logger.Information("Note already exists for {Date}, skipping", dateStrSlash);
+                }
+            }
+            else
+            {
+                // No entry for today - add date + note (NO time)
+                var entry = $"\n\n{dateStrSlash}\n{note}";
+                await File.AppendAllTextAsync(filePath, entry);
+                _logger.Information("New note-only entry created for {Date}", dateStrSlash);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.Error(ex, "Failed to save note-only entry");
             throw;
         }
     }

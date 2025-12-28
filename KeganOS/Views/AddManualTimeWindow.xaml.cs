@@ -5,6 +5,7 @@ using System.Windows;
 using System.Windows.Input;
 using KeganOS.Core.Interfaces;
 using KeganOS.Core.Models;
+using Microsoft.Extensions.DependencyInjection;
 using Serilog;
 
 namespace KeganOS.Views;
@@ -58,6 +59,16 @@ public partial class AddManualTimeWindow : Window
     {
         try
         {
+            // Check if KEGOMODORO is running - prevent data conflicts
+            var kegomoDoroService = ((App)System.Windows.Application.Current).Services.GetRequiredService<IKegomoDoroService>();
+            if (kegomoDoroService.IsAnyInstanceRunning)
+            {
+                System.Windows.MessageBox.Show(
+                    "Please close KEGOMODORO before adding manual time.\n\nThe stopwatch must be stopped to avoid data conflicts.",
+                    "KEGOMODORO Running", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
             // Validate and get values
             if (!ValidateInputs(out var date, out var duration, out var note))
                 return;
@@ -262,7 +273,7 @@ public partial class AddManualTimeWindow : Window
 
     /// <summary>
     /// Save entry to both journey file and time.csv in KEGOMODORO format
-    /// For Manual Add: Sum hours if date exists, merge notes with \n\n
+    /// For Manual Add: Sum hours if date exists, append note on new line
     /// </summary>
     private void SaveToKegomoDoroFiles(DateTime date, TimeSpan duration, string note)
     {
@@ -276,58 +287,93 @@ public partial class AddManualTimeWindow : Window
         {
             try
             {
-                var dateStr = date.ToString("MM/dd/yyyy");
+                var dateStrSlash = date.ToString("MM/dd/yyyy", System.Globalization.CultureInfo.InvariantCulture);  // Forces 12/28/2025
+                var dateStrDot = date.ToString("MM.dd.yyyy");    // 12.28.2025 (for searching old entries)
                 var content = File.Exists(journeyPath) ? File.ReadAllText(journeyPath, System.Text.Encoding.UTF8) : "";
+                var lines = content.Split('\n').ToList();
                 
-                // Check if date already exists in the file
-                var datePattern = new System.Text.RegularExpressions.Regex(
-                    $@"\n\n{System.Text.RegularExpressions.Regex.Escape(dateStr)}\n(\d{{2}}:\d{{2}}:\d{{2}})(.*)(?=\n\n|\Z)", 
-                    System.Text.RegularExpressions.RegexOptions.Singleline);
-                
-                var match = datePattern.Match(content);
-                
-                if (match.Success)
+                // Find today's date (check BOTH formats for cross-app compatibility)
+                var todayIndex = -1;
+                for (int i = 0; i < lines.Count; i++)
                 {
-                    // Date exists - sum the hours and merge notes
-                    var existingTimeStr = match.Groups[1].Value;
-                    var existingNotes = match.Groups[2].Value.Trim();
+                    var lineTrim = lines[i].Trim();
+                    if (lineTrim == dateStrSlash || lineTrim == dateStrDot)
+                    {
+                        todayIndex = i;
+                        break;
+                    }
+                }
+                
+                if (todayIndex >= 0 && todayIndex + 1 < lines.Count)
+                {
+                    // Date exists - sum time and append note
+                    var existingTimeLine = lines[todayIndex + 1];
                     
-                    // Parse existing time
+                    // Parse existing time (first part before space)
+                    var spaceIdx = existingTimeLine.IndexOf(' ');
+                    var existingTimeStr = spaceIdx > 0 ? existingTimeLine.Substring(0, spaceIdx) : existingTimeLine.Trim();
+                    var existingFirstNote = spaceIdx > 0 ? existingTimeLine.Substring(spaceIdx + 1) : "";
+                    
+                    // Parse and sum times
+                    TimeSpan newTotalTime = duration;
                     if (TimeSpan.TryParse(existingTimeStr, out var existingTime))
                     {
-                        var newTotalTime = existingTime.Add(duration);
-                        var newTimeStr = newTotalTime.ToString(@"hh\:mm\:ss");
-                        
-                        // Merge notes with proper line break
-                        var mergedNotes = existingNotes;
-                        if (!string.IsNullOrEmpty(note))
-                        {
-                            mergedNotes = string.IsNullOrEmpty(existingNotes) 
-                                ? note 
-                                : $"{existingNotes}\n\n{note}";
-                        }
-                        
-                        var newEntry = $"\n\n{dateStr}\n{newTimeStr}";
-                        if (!string.IsNullOrEmpty(mergedNotes))
-                        {
-                            newEntry += $" {mergedNotes}";
-                        }
-                        
-                        // Replace the old entry with the new one
-                        content = datePattern.Replace(content, newEntry, 1);
-                        File.WriteAllText(journeyPath, content, System.Text.Encoding.UTF8);
-                        _logger.Information("SUCCESS: Merged time for {Date} - now {Time}", dateStr, newTotalTime);
+                        newTotalTime = existingTime.Add(duration);
                     }
-                    else
+                    
+                    // Rebuild the time line - use total hours (not wrapped at 24)
+                    var totalHours = (int)newTotalTime.TotalHours;
+                    var newTimeStr = $"{totalHours:D2}:{newTotalTime.Minutes:D2}:{newTotalTime.Seconds:D2}";
+                    var newLine = newTimeStr;
+                    if (!string.IsNullOrEmpty(existingFirstNote))
                     {
-                        // Couldn't parse existing time - append as new
-                        AppendNewJourneyEntry(journeyPath, dateStr, duration, note);
+                        newLine += " " + existingFirstNote;
                     }
+                    
+                    lines[todayIndex + 1] = newLine;
+                    
+                    // Find where the NEXT DATE ENTRY starts (or end of file)
+                    // Skip past all notes and blank lines
+                    var entryEndIndex = todayIndex + 2;
+                    while (entryEndIndex < lines.Count)
+                    {
+                        var line = lines[entryEndIndex].Trim();
+                        // Only stop at the next date entry (not at empty lines)
+                        if (System.Text.RegularExpressions.Regex.IsMatch(line, @"^\d{2}[/\.]\d{2}[/\.]\d{4}$"))
+                        {
+                            break;  // Found next date, stop here (insert before this)
+                        }
+                        entryEndIndex++;
+                    }
+                    
+                    // Append note at the end of this entry
+                    if (!string.IsNullOrEmpty(note))
+                    {
+                        // Check if there are ANY notes: inline OR below the time line
+                        var hasInlineNote = !string.IsNullOrEmpty(existingFirstNote);
+                        var hasNotesBelow = entryEndIndex > todayIndex + 2;  // If entryEndIndex > date+time+1, there are lines below
+                        
+                        // Only add inline if there are NO notes at all (neither inline nor below)
+                        if (!hasInlineNote && !hasNotesBelow)
+                        {
+                            lines[todayIndex + 1] = newLine + " " + note;
+                        }
+                        else
+                        {
+                            // Notes already exist (inline or below) - append at end with blank line
+                            lines.Insert(entryEndIndex, "");  // Blank line before new note
+                            lines.Insert(entryEndIndex + 1, note);
+                        }
+                    }
+                    
+                    // Write back
+                    File.WriteAllText(journeyPath, string.Join('\n', lines), System.Text.Encoding.UTF8);
+                    _logger.Information("SUCCESS: Merged time for {Date} - now {Time}", dateStrSlash, newTotalTime);
                 }
                 else
                 {
                     // Date doesn't exist - append new entry
-                    AppendNewJourneyEntry(journeyPath, dateStr, duration, note);
+                    AppendNewJourneyEntry(journeyPath, dateStrSlash, duration, note);
                 }
             }
             catch (Exception ex)
@@ -341,34 +387,54 @@ public partial class AddManualTimeWindow : Window
             _logger.Warning("Journey path is empty - cannot save!");
         }
 
-        // Save to time.csv (append new row with total time)
+        // Save to time.csv - read existing, add manual time, overwrite
+        // This ensures KEGOMODORO will continue from the correct accumulated time
         var timeCsvPath = GetTimeCsvPath();
-        _logger.Information("Time CSV path resolved to: {Path}, exists: {Exists}", timeCsvPath, !string.IsNullOrEmpty(timeCsvPath) && File.Exists(timeCsvPath));
-        
         if (!string.IsNullOrEmpty(timeCsvPath))
         {
             try
             {
-                // KEGOMODORO time.csv format: hours,minute,second (one row per entry)
-                var line = $"{(int)duration.TotalHours},{duration.Minutes},{duration.Seconds}";
-                File.AppendAllText(timeCsvPath, $"\n{line}");
-                _logger.Information("SUCCESS: Saved to time.csv: {Path}", timeCsvPath);
+                // Read existing time from CSV
+                TimeSpan existingTime = TimeSpan.Zero;
+                if (File.Exists(timeCsvPath))
+                {
+                    var lines = File.ReadAllLines(timeCsvPath);
+                    if (lines.Length >= 2)
+                    {
+                        var parts = lines[1].Split(',');
+                        if (parts.Length >= 3 &&
+                            int.TryParse(parts[0], out int h) &&
+                            int.TryParse(parts[1], out int m) &&
+                            int.TryParse(parts[2].Split(',')[0], out int s))
+                        {
+                            existingTime = new TimeSpan(h, m, s);
+                        }
+                    }
+                }
+                
+                // Add manual time to existing
+                var newTotal = existingTime.Add(duration);
+                
+                // Overwrite with new total (proper CSV format)
+                var csvContent = $"hours,minute,second\n{(int)newTotal.TotalHours},{newTotal.Minutes},{newTotal.Seconds}\n";
+                File.WriteAllText(timeCsvPath, csvContent);
+                
+                _logger.Information("SUCCESS: Updated time.csv: {OldTime} + {Added} = {NewTotal}", 
+                    existingTime, duration, newTotal);
             }
             catch (Exception ex)
             {
-                _logger.Error(ex, "Failed to save to time.csv: {Path}", timeCsvPath);
-                System.Windows.MessageBox.Show($"Error saving to time.csv: {ex.Message}", "File Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                _logger.Error(ex, "Failed to update time.csv");
             }
-        }
-        else
-        {
-            _logger.Warning("Time CSV path is empty - cannot save!");
         }
     }
     
     private void AppendNewJourneyEntry(string journeyPath, string dateStr, TimeSpan duration, string note)
     {
-        var entry = $"\n\n{dateStr}\n{duration:hh\\:mm\\:ss}";
+        // Use total hours (not wrapped at 24)
+        var totalHours = (int)duration.TotalHours;
+        var timeStr = $"{totalHours:D2}:{duration.Minutes:D2}:{duration.Seconds:D2}";
+        var entry = $"\n\n{dateStr}\n{timeStr}";
         if (!string.IsNullOrEmpty(note))
         {
             entry += $" {note}";

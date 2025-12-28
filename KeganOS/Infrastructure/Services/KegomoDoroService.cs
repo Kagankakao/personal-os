@@ -57,18 +57,55 @@ public class KegomoDoroService : IKegomoDoroService
         _logger.Debug("Config path: {ConfigPath}", _configPath);
     }
 
-    public bool IsRunning => _process != null && !_process.HasExited;
+    public bool IsRunning 
+    {
+        get
+        {
+            try
+            {
+                if (_process == null)
+                {
+                    return false;
+                }
+                
+                // Refresh process info
+                _process.Refresh();
+                
+                if (_process.HasExited)
+                {
+                    _logger.Debug("Tracked KEGOMODORO process has exited, clearing reference");
+                    _process = null;
+                    return false;
+                }
+                
+                _logger.Debug("Tracked KEGOMODORO process is still running (PID: {PID})", _process.Id);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                // Process object may be invalid
+                _logger.Debug(ex, "Error checking tracked process, clearing reference");
+                _process = null;
+                return false;
+            }
+        }
+    }
     
     /// <summary>
     /// Check if any KEGOMODORO process is running (even ones started externally)
     /// Uses lock file mechanism - KEGOMODORO creates .kegomodoro.lock when running
+    /// Also validates that the PID in the lock file is actually running
     /// </summary>
     public bool IsAnyInstanceRunning
     {
         get
         {
             // Check our tracked process first
-            if (IsRunning) return true;
+            if (IsRunning)
+            {
+                _logger.Information("IsAnyInstanceRunning: TRUE (tracked process)");
+                return true;
+            }
             
             // Check for lock file created by KEGOMODORO
             try
@@ -76,8 +113,46 @@ public class KegomoDoroService : IKegomoDoroService
                 var lockFilePath = Path.Combine(_kegomoDoroPath, ".kegomodoro.lock");
                 if (File.Exists(lockFilePath))
                 {
-                    _logger.Debug("Found KEGOMODORO lock file at {Path}", lockFilePath);
-                    return true;
+                    // Read the PID and verify the process is actually running
+                    var content = File.ReadAllText(lockFilePath).Trim();
+                    
+                    // Handle "launching" marker
+                    if (content == "launching")
+                    {
+                        _logger.Debug("Lock file contains 'launching' marker - assuming KEGOMODORO is starting");
+                        return true;
+                    }
+                    
+                    if (int.TryParse(content, out int pid))
+                    {
+                        // Check if process with this PID exists
+                        try
+                        {
+                            var process = System.Diagnostics.Process.GetProcessById(pid);
+                            // Process exists - but is it actually KEGOMODORO?
+                            if (process != null && !process.HasExited)
+                            {
+                                _logger.Debug("Lock file PID {PID} is running", pid);
+                                return true;
+                            }
+                        }
+                        catch (ArgumentException)
+                        {
+                            // Process doesn't exist - stale lock file
+                            _logger.Debug("Lock file PID {PID} not found - stale lock file, deleting", pid);
+                            try { File.Delete(lockFilePath); } catch { }
+                        }
+                        catch (InvalidOperationException)
+                        {
+                            // Process has exited
+                            _logger.Debug("Lock file PID {PID} has exited - stale lock file, deleting", pid);
+                            try { File.Delete(lockFilePath); } catch { }
+                        }
+                    }
+                    else
+                    {
+                        _logger.Debug("Lock file contains invalid content: {Content}", content);
+                    }
                 }
             }
             catch (Exception ex)
@@ -85,6 +160,7 @@ public class KegomoDoroService : IKegomoDoroService
                 _logger.Debug(ex, "Error checking for KEGOMODORO lock file");
             }
             
+            _logger.Debug("IsAnyInstanceRunning: FALSE (no process, no valid lock file)");
             return false;
         }
     }
