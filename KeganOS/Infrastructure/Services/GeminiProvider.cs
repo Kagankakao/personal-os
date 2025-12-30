@@ -22,8 +22,8 @@ public class GeminiProvider : IAIProvider, IDisposable
         {
             _apiKey = apiKey;
             _googleAI = new GoogleAI(apiKey);
-            _model = _googleAI.GenerativeModel("gemini-2.5-flash-preview-05-20");
-            _logger.Information("Gemini AI configured with gemini-2.5-flash");
+            _model = _googleAI.GenerativeModel("gemini-3-flash-preview");
+            _logger.Information("Gemini AI configured with gemini-3-flash-preview");
         }
         catch (Exception ex) { _logger.Error(ex, "Failed to configure Gemini"); }
     }

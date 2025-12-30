@@ -2,6 +2,7 @@ using Serilog;
 using System;
 using System.IO;
 using System.Windows.Media.Imaging;
+using KeganOS.Core.Models;
 
 namespace KeganOS.Views;
 
@@ -13,6 +14,7 @@ public partial class KegomoDoroSettingsWindow : System.Windows.Window
     private readonly ILogger _logger = Log.ForContext<KegomoDoroSettingsWindow>();
     private readonly string _configPath;
     private readonly string _imagesPath;
+    private readonly User? _currentUser;
     private string? _newFireImagePath;
     private string? _newFloatingImagePath;
     
@@ -20,9 +22,10 @@ public partial class KegomoDoroSettingsWindow : System.Windows.Window
     public bool ImageChanged { get; private set; }
     public Action? OnImageChanged { get; set; }
 
-    public KegomoDoroSettingsWindow()
+    public KegomoDoroSettingsWindow(User? currentUser = null)
     {
         InitializeComponent();
+        _currentUser = currentUser;
         
         // Find KEGOMODORO paths
         var possiblePaths = new[]
@@ -35,15 +38,49 @@ public partial class KegomoDoroSettingsWindow : System.Windows.Window
 
         _configPath = "";
         _imagesPath = "";
+        
+        // Find the base path first
+        string? activeBasePath = null;
         foreach (var path in possiblePaths)
         {
-            var configFile = Path.Combine(path, "dependencies", "texts", "Configurations", "configuration.csv");
-            var imagesDir = Path.Combine(path, "dependencies", "images");
-            if (File.Exists(configFile))
+            if (Directory.Exists(Path.Combine(path, "dependencies")))
             {
-                _configPath = configFile;
-                _imagesPath = imagesDir;
+                activeBasePath = path;
                 break;
+            }
+        }
+
+        if (activeBasePath != null)
+        {
+            if (_currentUser != null)
+            {
+                var userTextsDir = Path.Combine(activeBasePath, "dependencies", "texts", "Users", _currentUser.DisplayName);
+                Directory.CreateDirectory(userTextsDir);
+                _configPath = Path.Combine(userTextsDir, "configuration.csv");
+                
+                var userImagesDir = Path.Combine(activeBasePath, "dependencies", "images", "Users", _currentUser.DisplayName);
+                Directory.CreateDirectory(userImagesDir);
+                _imagesPath = userImagesDir;
+                
+                _logger.Information("Using user-specific settings for {User}: {Path}", _currentUser.DisplayName, _configPath);
+                
+                // If user config doesn't exist yet, copy from global
+                if (!File.Exists(_configPath))
+                {
+                    var globalConfig = Path.Combine(activeBasePath, "dependencies", "texts", "Configurations", "configuration.csv");
+                    if (File.Exists(globalConfig))
+                    {
+                        File.Copy(globalConfig, _configPath);
+                        _logger.Information("Copied global config to user folder: {Path}", _configPath);
+                    }
+                }
+            }
+            else
+            {
+                // Fallback to global config
+                _configPath = Path.Combine(activeBasePath, "dependencies", "texts", "Configurations", "configuration.csv");
+                _imagesPath = Path.Combine(activeBasePath, "dependencies", "images");
+                _logger.Information("No user logged in, using global settings: {Path}", _configPath);
             }
         }
         
@@ -138,8 +175,10 @@ public partial class KegomoDoroSettingsWindow : System.Windows.Window
             catch (Exception ex)
             {
                 _logger.Error(ex, "Failed to load selected image");
-                System.Windows.MessageBox.Show($"Failed to load image: {ex.Message}", "Error",
-                    System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+                if (Owner is MainWindow main)
+                    main.ShowToast($"Failed to load image: {ex.Message}", "❌", "#CC4444");
+                else
+                    _logger.Error(ex, "Failed to load image");
             }
         }
     }
@@ -165,8 +204,10 @@ public partial class KegomoDoroSettingsWindow : System.Windows.Window
             catch (Exception ex)
             {
                 _logger.Error(ex, "Failed to load selected floating image");
-                System.Windows.MessageBox.Show($"Failed to load image: {ex.Message}", "Error",
-                    System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+                if (Owner is MainWindow main)
+                    main.ShowToast($"Failed to load image: {ex.Message}", "❌", "#CC4444");
+                else
+                    _logger.Error(ex, "Failed to load image");
             }
         }
     }
@@ -183,25 +224,24 @@ public partial class KegomoDoroSettingsWindow : System.Windows.Window
 
         try
         {
+            var mainWindow = Owner as MainWindow;
+
             // Validate inputs
             if (!int.TryParse(WorkDurationInput.Text, out var workDuration) || workDuration <= 0)
             {
-                System.Windows.MessageBox.Show("Invalid work duration. Please enter a positive number.", "Validation Error",
-                    System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Warning);
+                mainWindow?.ShowToast("Invalid work duration.", "⚠️", "#FFCC00");
                 return;
             }
 
             if (!int.TryParse(ShortBreakInput.Text, out var shortBreak) || shortBreak <= 0)
             {
-                System.Windows.MessageBox.Show("Invalid short break duration. Please enter a positive number.", "Validation Error",
-                    System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Warning);
+                mainWindow?.ShowToast("Invalid short break duration.", "⚠️", "#FFCC00");
                 return;
             }
 
             if (!int.TryParse(LongBreakInput.Text, out var longBreak) || longBreak <= 0)
             {
-                System.Windows.MessageBox.Show("Invalid long break duration. Please enter a positive number.", "Validation Error",
-                    System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Warning);
+                mainWindow?.ShowToast("Invalid long break duration.", "⚠️", "#FFCC00");
                 return;
             }
 
@@ -231,14 +271,7 @@ public partial class KegomoDoroSettingsWindow : System.Windows.Window
                 _logger.Information("Floating image updated: {Source} -> {Dest}", _newFloatingImagePath, destPath);
             }
 
-            // Notify MainWindow to reload images
-            if (ImageChanged)
-            {
-                OnImageChanged?.Invoke();
-            }
-            
-            System.Windows.MessageBox.Show("Settings saved successfully!\n\nRestart KEGOMODORO for changes to take effect.", "Success",
-                System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
+            mainWindow?.ShowToast("Settings saved successfully!", "⚙️", "#44CC44");
             
             DialogResult = true;
             Close();

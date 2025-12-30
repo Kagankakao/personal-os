@@ -136,7 +136,7 @@ public class JournalService : IJournalService
             var dateStr = today.ToString("MM/dd/yyyy");
             
             // If no timeWorked provided, read from time.csv (KEGOMODORO's stopwatch data)
-            var hoursFromTimeCsv = await GetTodayHoursFromTimeCsvAsync();
+            var hoursFromTimeCsv = await GetTodayHoursFromTimeCsvAsync(user);
             var finalTime = timeWorked ?? hoursFromTimeCsv;
             var timeStr = finalTime.ToString(@"hh\:mm\:ss");
             
@@ -217,11 +217,28 @@ public class JournalService : IJournalService
     /// <summary>
     /// Reads the last entry from time.csv to get today's accumulated hours
     /// </summary>
-    private async Task<TimeSpan> GetTodayHoursFromTimeCsvAsync()
+    private async Task<TimeSpan> GetTodayHoursFromTimeCsvAsync(User? user = null)
     {
         try
         {
-            var timeCsvPath = Path.Combine(_kegomoDoroPath, "dependencies", "texts", "Configurations", "time.csv");
+            // Try user-specific folder first
+            string timeCsvPath;
+            if (user != null)
+            {
+                var userPath = Path.Combine(_kegomoDoroPath, "dependencies", "texts", "Users", user.DisplayName, "time.csv");
+                if (File.Exists(userPath))
+                {
+                    timeCsvPath = userPath;
+                }
+                else
+                {
+                    timeCsvPath = Path.Combine(_kegomoDoroPath, "dependencies", "texts", "Configurations", "time.csv");
+                }
+            }
+            else
+            {
+                timeCsvPath = Path.Combine(_kegomoDoroPath, "dependencies", "texts", "Configurations", "time.csv");
+            }
             
             if (!File.Exists(timeCsvPath))
             {

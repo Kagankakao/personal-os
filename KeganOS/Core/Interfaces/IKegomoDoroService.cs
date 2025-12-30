@@ -8,9 +8,14 @@ namespace KeganOS.Core.Interfaces;
 public interface IKegomoDoroService
 {
     /// <summary>
-    /// Launch the KEGOMODORO Python application
+    /// Launch the KEGOMODORO Python application (legacy, uses default config)
     /// </summary>
     void Launch();
+    
+    /// <summary>
+    /// Launch the KEGOMODORO Python application with user-specific configuration
+    /// </summary>
+    void Launch(User user);
 
     /// <summary>
     /// Check if KEGOMODORO is currently running
@@ -38,7 +43,7 @@ public interface IKegomoDoroService
     Task UpdateThemeAsync(string backgroundColor, string? mainImagePath = null);
 
     /// <summary>
-    /// Get the current configuration
+    /// Get the current configuration for a specific user
     /// </summary>
-    Task<UserPreferences> GetConfigurationAsync();
+    Task<UserPreferences> GetConfigurationAsync(User? user = null);
 }

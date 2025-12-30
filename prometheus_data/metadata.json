@@ -1,0 +1,49 @@
+[
+  {
+    "db_id": 1,
+    "user_id": 1,
+    "date": "2024-12-30",
+    "time_worked": "60",
+    "mood": "happy",
+    "source": "sqlite",
+    "id": 1
+  },
+  {
+    "db_id": 1,
+    "user_id": 1,
+    "date": "2025-12-30",
+    "time_worked": "60",
+    "mood": "happy",
+    "source": "sqlite",
+    "text": "Today I started using KeganOS and I am excited to track my productivity journey. This is my first note!",
+    "id": "sqlite_1"
+  },
+  {
+    "date": "12/30/2025",
+    "username": "jacky",
+    "source": "kegomodoro",
+    "text": "02:25:03 asfsaf",
+    "id": "kego_jacky_12/30/2025_0"
+  },
+  {
+    "date": "12/30/2025",
+    "username": "jacky",
+    "source": "kegomodoro",
+    "text": "neeeee",
+    "id": "kego_jacky_12/30/2025_1"
+  },
+  {
+    "date": "12/30/2025",
+    "username": "jacky",
+    "source": "kegomodoro",
+    "text": "test1",
+    "id": "kego_jacky_12/30/2025_2"
+  },
+  {
+    "date": "12/30/2025",
+    "username": "jacky",
+    "source": "kegomodoro",
+    "text": "afafsf",
+    "id": "kego_jacky_12/30/2025_3"
+  }
+]

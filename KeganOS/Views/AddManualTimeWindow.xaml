@@ -120,7 +120,7 @@
                             Background="Transparent" Foreground="#666666" BorderThickness="0"
                             Click="CancelButton_Click" Cursor="Hand" Padding="0"/>
                     
-                    <Button Content="Add Session" HorizontalAlignment="Right"
+                    <Button x:Name="AddTimeButton" Content="Add Session" HorizontalAlignment="Right"
                             Background="#2A2A2A" Foreground="#88CC88" BorderBrush="#333333" BorderThickness="1"
                             Padding="20,8" Click="AddTimeButton_Click" Cursor="Hand" FontSize="12"/>
                 </Grid>

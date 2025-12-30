@@ -22,6 +22,7 @@ public partial class MainWindow : System.Windows.Window
     private readonly IPixelaService _pixelaService;
     private readonly IAIProvider _aiProvider;
     private readonly IMotivationalMessageService _motivationalService;
+    private readonly IPrometheusService _prometheusService;
 
     private readonly IUserService _userService;
     private readonly IBackupService _backupService;
@@ -39,13 +40,13 @@ public partial class MainWindow : System.Windows.Window
         IKegomoDoroService kegomoDoroService, 
         IJournalService journalService, 
         IPixelaService pixelaService,
-
         IAIProvider aiProvider,
         IMotivationalMessageService motivationalService,
         IUserService userService,
         IBackupService backupService,
         IAchievementService achievementService,
-        IAnalyticsService analyticsService)
+        IAnalyticsService analyticsService,
+        IPrometheusService prometheusService)
     {
         InitializeComponent();
         _kegomoDoroService = kegomoDoroService;
@@ -57,6 +58,7 @@ public partial class MainWindow : System.Windows.Window
         _backupService = backupService;
         _achievementService = achievementService;
         _analyticsService = analyticsService;
+        _prometheusService = prometheusService;
         
         // Subscribe to achievements
         _achievementService.OnAchievementUnlocked += OnAchievementUnlocked;
@@ -315,6 +317,8 @@ public partial class MainWindow : System.Windows.Window
         PersonalSymbol.Text = string.IsNullOrEmpty(user.PersonalSymbol) ? "🦭" : user.PersonalSymbol;
         UserDisplayName.Text = user.DisplayName;
         
+        UpdateXpDisplay();
+        
         // Load user-specific data
         LoadUserDataAsync();
     }
@@ -411,22 +415,15 @@ public partial class MainWindow : System.Windows.Window
             }
             
             // Population new Stats fields - show XP within current level for consistency with Achievements
-            UserLevelText.Text = $"Level {_currentUser.Level} • {_currentUser.XpInCurrentLevel}/{_currentUser.XpRequiredForLevel} XP";
+            UpdateXpDisplay(); // Replaced
             
             // Set Dynamic Level Color
-            var levelColor = GetLevelTierColor(_currentUser.Level);
-            UserLevelText.Foreground = new System.Windows.Media.SolidColorBrush(
-                (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(levelColor));
             
             
             // Note: Removed LevelRegion.Background/BorderBrush overrides to preserve XAML hover effects
 
             // Generate ASCII progress bar with ░ (no dots or arrows)
             int totalBars = 20;
-            int filledBars = (int)(_currentUser.LevelProgress * totalBars);
-            string bar = new string('░', filledBars) + new string(' ', totalBars - filledBars);
-            UserXpBar.Text = bar;
-            UserXpBar.Foreground = UserLevelText.Foreground; // Match progress bar to level color
 
             // Streaks (calculated from analytics service)
             var currentStreak = await _analyticsService.CalculateCurrentStreakAsync(_currentUser);
@@ -438,8 +435,8 @@ public partial class MainWindow : System.Windows.Window
             }
             BestStreakText.Text = $"{_currentUser.BestStreak} days";
 
-            // Load Pixe.la heatmap if configured
-            await LoadPixelaHeatmapAsync();
+            // Load Pixe.la heatmap if configured (fire and forget for performance)
+            _ = LoadPixelaHeatmapAsync();
             
             // Load ticker quotes
             await LoadTickerQuotesAsync();
@@ -462,6 +459,12 @@ public partial class MainWindow : System.Windows.Window
             if (!string.IsNullOrEmpty(_currentUser.GeminiApiKey) && _aiProvider is GeminiProvider gemini)
             {
                 gemini.Configure(_currentUser.GeminiApiKey);
+            }
+            
+            // Configure Prometheus service with API key for cloud embeddings
+            if (!string.IsNullOrEmpty(_currentUser.GeminiApiKey) && _prometheusService is PrometheusService prometheusImpl)
+            {
+                prometheusImpl.SetApiKey(_currentUser.GeminiApiKey);
             }
 
             // Load quotes from journal service
@@ -878,28 +881,8 @@ public partial class MainWindow : System.Windows.Window
 
         try
         {
-            // Build context from user's journey
-            var context = "";
-            if (_currentUser != null)
-            {
-                var entries = await _journalService.ReadEntriesAsync(_currentUser);
-                var recentEntries = entries.OrderByDescending(e => e.Date).Take(5);
-                if (recentEntries.Any())
-                {
-                    context = $"Recent journal entries from {_currentUser.DisplayName}'s journey:\n" +
-                              string.Join("\n", recentEntries.Select(e => $"- {e.Date:MMM d}: {(e.NoteText.Length > 40 ? e.NoteText[..40] + "..." : e.NoteText)}"));
-                }
-            }
-
-            var prompt = string.IsNullOrEmpty(context) 
-                ? question 
-                : $"Context about the user's personal journey:\n{context}\n\nUser's question: {question}";
-
-            // Add to chat history
-            _chatHistory.Add(new ChatMessage("user", question));
-
-            // Get AI response
-            var response = await _aiProvider.GenerateResponseAsync(prompt, _chatHistory.TakeLast(6));
+            // Consult Prometheus with full semantic RAG context
+            var response = await _prometheusService.ConsultAsync(question, _currentUser?.Id);
             
             // Add response to history
             _chatHistory.Add(new ChatMessage("assistant", response));
@@ -973,5 +956,49 @@ public partial class MainWindow : System.Windows.Window
         if (level >= 50) return "#9B59B6";   // Amethyst Purple
         if (level >= 10) return "#5DADE2";   // Steel Blue
         return "#88CC88";                   // Fresh Green
+    }
+
+    private void UpdateXpDisplay()
+    {
+        if (_currentUser == null) return;
+
+        UserLevelText.Text = $"Level {_currentUser.Level} • {_currentUser.XpInCurrentLevel}/{_currentUser.XpRequiredForLevel} XP";
+
+        // Set Dynamic Level Color
+        var levelColor = GetLevelTierColor(_currentUser.Level);
+        UserLevelText.Foreground = new System.Windows.Media.SolidColorBrush(
+            (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(levelColor));
+
+        // Generate ASCII progress bar with ░ (no dots or arrows)
+        int totalBars = 20;
+        int filledBars = (int)(_currentUser.LevelProgress * totalBars);
+        string bar = new string('░', filledBars) + new string(' ', totalBars - filledBars);
+        UserXpBar.Text = bar;
+        UserXpBar.Foreground = UserLevelText.Foreground; // Match progress bar to level color
+    }
+
+    public void ShowToast(string title, string message, string icon = "💡", string color = "#5DADE2")
+    {
+        Dispatcher.Invoke(() =>
+        {
+            try
+            {
+                var toast = new Views.Components.ToastNotification();
+                toast.HorizontalAlignment = System.Windows.HorizontalAlignment.Right;
+                toast.VerticalAlignment = System.Windows.VerticalAlignment.Bottom;
+                toast.Margin = new System.Windows.Thickness(0, 0, 20, 50);
+                System.Windows.Controls.Grid.SetRow(toast, 1);
+                
+                RootGrid.Children.Add(toast);
+                toast.Show(title, icon, 0, color); // Reusing icon for the 'message' or similar
+                // Note: The ToastNotification.Show currently takes (name, icon, xp, color)
+                // We'll adapt it to show the title and 'message' logic if possible, 
+                // but for now, we'll map title -> name.
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, "Failed to show toast: {Message}", message);
+            }
+        });
     }
 }

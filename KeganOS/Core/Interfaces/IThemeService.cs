@@ -20,7 +20,7 @@ public interface IThemeService
     /// <summary>
     /// Apply a theme to KeganOS and update KEGOMODORO config
     /// </summary>
-    Task<bool> ApplyThemeAsync(Theme theme);
+    Task<bool> ApplyThemeAsync(Theme theme, User? user = null);
     
     /// <summary>
     /// Save a new custom theme

@@ -17,6 +17,12 @@ public class PixelaService : IPixelaService, IDisposable
     private readonly HttpClient _httpClient;
     private const string BaseUrl = "https://pixe.la/v1/users";
     private bool _disposed;
+    
+    // Caching for performance
+    private string? _cachedSvg;
+    private string? _cachedLatestDate;
+    private DateTime _lastCacheTime = DateTime.MinValue;
+    private static readonly TimeSpan CacheExpiry = TimeSpan.FromMinutes(15);
 
     public PixelaService()
     {
@@ -495,8 +501,17 @@ public class PixelaService : IPixelaService, IDisposable
     {
         if (!IsConfigured(user)) return "";
 
-        _logger.Information("Fetching SVG for heatmap (appearance: {Appearance})", appearance);
+        // Check cache if no specific date is requested (default dashboard view)
+        if (string.IsNullOrEmpty(date) && _cachedSvg != null && (DateTime.Now - _lastCacheTime) < CacheExpiry)
+        {
+            _logger.Debug("Returning cached Pixe.la SVG");
+            return _cachedSvg;
+        }
 
+        _logger.Information("Fetching SVG for heatmap (appearance: {Appearance})", appearance);
+        
+        // ... (rest of the method logic)
+        // I'll replace the whole method body to ensure caching is applied correctly
         int retryCount = 0;
         int maxRetries = 2;
 
@@ -530,7 +545,16 @@ public class PixelaService : IPixelaService, IDisposable
 
                 if (!response.IsSuccessStatusCode) return "";
 
-                return await response.Content.ReadAsStringAsync();
+                var svg = await response.Content.ReadAsStringAsync();
+                
+                // Update cache if this was a default view
+                if (string.IsNullOrEmpty(date) && !string.IsNullOrEmpty(svg))
+                {
+                    _cachedSvg = svg;
+                    _lastCacheTime = DateTime.Now;
+                }
+                
+                return svg;
             }
             catch (Exception ex)
             {
@@ -546,21 +570,38 @@ public class PixelaService : IPixelaService, IDisposable
     {
         if (!IsConfigured(user)) return null;
 
+        // Check cache
+        if (_cachedLatestDate != null && (DateTime.Now - _lastCacheTime) < CacheExpiry)
+        {
+            return _cachedLatestDate;
+        }
+
         _logger.Information("Searching for latest non-zero active date");
 
         try
         {
-            // Fetch pixels for last 365 days and find the max date with quantity > 0
-            var pixels = await GetPixelsAsync(user, DateTime.Today.AddDays(-365), DateTime.Today);
+            // Optimization: Fetch only last 90 days first instead of 365
+            var pixels = await GetPixelsAsync(user, DateTime.Today.AddDays(-90), DateTime.Today);
             var latestActive = pixels
                 .Where(p => p.Quantity > 0)
                 .OrderByDescending(p => p.Date)
                 .FirstOrDefault();
 
+            if (latestActive == null)
+            {
+                // Fallback to 365 days if nothing in last 90
+                pixels = await GetPixelsAsync(user, DateTime.Today.AddDays(-365), DateTime.Today);
+                latestActive = pixels
+                    .Where(p => p.Quantity > 0)
+                    .OrderByDescending(p => p.Date)
+                    .FirstOrDefault();
+            }
+
             if (latestActive != null)
             {
                 var dateStr = latestActive.Date.ToString("yyyyMMdd");
                 _logger.Information("Latest active date found: {Date}", dateStr);
+                _cachedLatestDate = dateStr;
                 return dateStr;
             }
 

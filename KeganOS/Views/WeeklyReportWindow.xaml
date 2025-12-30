@@ -49,21 +49,19 @@
 
             <!-- 1. Header -->
             <Grid Grid.Row="0" Margin="30,20,30,10" MouseDown="TitleBar_MouseDown" Background="Transparent">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
+                <!-- Title centered absolutely -->
+                <TextBlock Text="📊 Weekly Report" Foreground="#FFFFFF" FontSize="14" FontWeight="Bold" 
+                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
                 
-                <TextBlock Grid.Column="0" Text="📊 Weekly Report" Foreground="#FFFFFF" FontSize="14" FontWeight="Bold" VerticalAlignment="Center"/>
-
-                <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center">
+                <!-- Date navigation centered -->
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,25,0,0">
                     <Button Content="[◀]" Click="PrevWeek_Click" Background="Transparent" Foreground="#888888" FontSize="12" Cursor="Hand" BorderThickness="0"/>
                     <TextBlock x:Name="DateRangeText" Text="Dec 18 - Dec 24, 2024" Foreground="#AAAAAA" FontSize="12" VerticalAlignment="Center" Margin="10,0"/>
                     <Button Content="[▶]" Click="NextWeek_Click" Background="Transparent" Foreground="#888888" FontSize="12" Cursor="Hand" BorderThickness="0"/>
                 </StackPanel>
-
-                <Button Grid.Column="2" Content="✕" Click="CloseButton_Click">
+                
+                <!-- Close button right-aligned -->
+                <Button Content="✕" Click="CloseButton_Click" HorizontalAlignment="Right" VerticalAlignment="Top">
                     <Button.Style>
                         <Style TargetType="Button">
                             <Setter Property="Background" Value="Transparent"/>

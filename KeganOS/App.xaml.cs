@@ -99,8 +99,19 @@ public partial class App : System.Windows.Application
                 var motivationalService = _host.Services.GetRequiredService<IMotivationalMessageService>();
                 var achievementService = _host.Services.GetRequiredService<IAchievementService>();
                 var analyticsService = _host.Services.GetRequiredService<IAnalyticsService>();
+                var prometheusService = _host.Services.GetRequiredService<IPrometheusService>();
                 
-                var mainWindow = new MainWindow(kegomoDoroService, journalService, pixelaService, aiProvider, motivationalService, userService, backupService, achievementService, analyticsService);
+                var mainWindow = new MainWindow(
+                    kegomoDoroService, 
+                    journalService, 
+                    pixelaService, 
+                    aiProvider, 
+                    motivationalService, 
+                    userService, 
+                    backupService, 
+                    achievementService, 
+                    analyticsService,
+                    prometheusService);
                 mainWindow.SetCurrentUser(selectedUser!);
                 
                 // Set as main window and switch shutdown mode
@@ -145,6 +156,7 @@ public partial class App : System.Windows.Application
         
         // AI Services
         services.AddSingleton<IAIProvider, GeminiProvider>();
+        services.AddSingleton<IPrometheusService, PrometheusService>();
         services.AddSingleton<IMotivationalMessageService, MotivationalMessageService>();
 
 

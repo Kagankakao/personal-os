@@ -1,6 +1,7 @@
 import os
 import subprocess
 import csv
+import json
 import tkinter.messagebox
 import math
 import datetime as dt
@@ -76,6 +77,77 @@ def _lazy_import_pil():
         ImageTk = _ImageTk
     return Image, ImageTk
 
+# ---------------------------- NOTIFICATION CLASS --------------------------------- #
+class Notification:
+    """Modern non-blocking notification for Python app"""
+    def __init__(self, root, message, color="#44CC44"):
+        self.root = root
+        self.toast = tk.Toplevel(root)
+        self.toast.overrideredirect(True)
+        self.toast.attributes("-alpha", 0.0)
+        self.toast.configure(bg="#1A1A1A")
+        
+        # Position relative to parent
+        self.toast.update_idletasks()
+        rw = root.winfo_width()
+        rh = root.winfo_height()
+        rx = root.winfo_x()
+        ry = root.winfo_y()
+        
+        w = 300
+        h = 60
+        x = rx + (rw // 2) - (w // 2)
+        y = ry + 60 # Show near top
+        
+        self.toast.geometry(f"{w}x{h}+{x}+{y}")
+        self.toast.attributes("-topmost", True)
+        
+        # Border frame
+        frame = tk.Frame(self.toast, bg=color, padx=1, pady=1)
+        frame.pack(expand=True, fill="both")
+        
+        inner = tk.Frame(frame, bg="#1A1A1A")
+        inner.pack(expand=True, fill="both")
+        
+        lbl = tk.Label(inner, text=f"{message}", 
+                      fg=color, bg="#1A1A1A", 
+                      font=("Consolas", 10, "bold"),
+                      padx=10, pady=10,
+                      wraplength=280)
+        lbl.pack(expand=True, fill="both")
+        
+        # Fade in
+        self._fade_in()
+        
+    def _fade_in(self):
+        try:
+            alpha = float(self.toast.attributes("-alpha"))
+            if alpha < 0.95:
+                alpha += 0.1
+                self.toast.attributes("-alpha", alpha)
+                self.root.after(20, self._fade_in)
+            else:
+                self.root.after(2500, self._fade_out)
+        except:
+            pass
+            
+    def _fade_out(self):
+        try:
+            alpha = float(self.toast.attributes("-alpha"))
+            if alpha > 0:
+                alpha -= 0.05
+                self.toast.attributes("-alpha", alpha)
+                self.root.after(20, self._fade_out)
+            else:
+                self.toast.destroy()
+        except:
+            pass
+
+def show_notification(message, color="#44CC44"):
+    """Helper to show notification globally"""
+    if 'window' in globals():
+        Notification(window, message, color)
+
 # ---------------------------- LOCK FILE FOR SINGLE INSTANCE ------------------------------- #
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 LOCK_FILE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".kegomodoro.lock")
@@ -147,30 +219,82 @@ SWITCH_BUTTON_LIGHT_BG_COLOR = WHITE
 SWITCH_BUTTON_LIGHT_FG_COLOR = BLACK
 # ---------------------------- PIXELA CONFIGS ------------------------------- #
 PIXELA_ENDPOINT = "https://pixe.la/v1/users"
-USERNAME = "kegan"
-TOKEN = "afhus8hj2phfb29nn821r"
-GRAPH_ID = "graph1"
+
+# Load user-specific config from user_config.json (written by KeganOS)
+# Falls back to defaults if file doesn't exist (standalone mode)
+USER_CONFIG = {}
+USER_CONFIG_PATH = Path("user_config.json")
+if USER_CONFIG_PATH.exists():
+    try:
+        with open(USER_CONFIG_PATH, 'r', encoding='utf-8') as f:
+            USER_CONFIG = json.load(f)
+        print(f"Loaded user config for: {USER_CONFIG.get('username', 'unknown')}")
+    except Exception as e:
+        print(f"Warning: Failed to load user_config.json: {e}")
+
+# Use config values or defaults
+USERNAME = USER_CONFIG.get('pixela_username', 'kegan')
+TOKEN = USER_CONFIG.get('pixela_token', 'afhus8hj2phfb29nn821r')
+GRAPH_ID = USER_CONFIG.get('pixela_graph_id', 'graph1')
+DATA_FOLDER = USER_CONFIG.get('data_folder', '')  # Empty = use default paths
+JOURNEY_FILE_NAME = USER_CONFIG.get('journey_file', 'KAÆ[Æß#.txt')
 
 DEPENDENCIES = Path("dependencies/")
 IMAGES = f"{DEPENDENCIES}/images"
 AUDIOS = f"{DEPENDENCIES}/audios"
 TEXTS = f"{DEPENDENCIES}/texts"
-CONFIGURATION = f"{TEXTS}/Configurations"
 
-SAVE_FILE_NAME = f"{TEXTS}/KAÆ[Æß#.txt" # ! Change this to your desired file name
-FLOATING_WINDOW_CHECKER_PATH = f"{CONFIGURATION}/floating_window_checker.txt"
-TIME_CSV_PATH = f"{CONFIGURATION}/time.csv"
-CONFIGURATION_PATH = f"{CONFIGURATION}/configuration.csv"
+# Use user-specific data folder if configured
+if DATA_FOLDER:
+    # DATA_FOLDER already contains full relative path like "dependencies/texts/Users/laluga/"
+    USER_TEXTS = DATA_FOLDER
+    CONFIGURATION = USER_TEXTS  # Config in user folder
+    SAVE_FILE_NAME = f"{USER_TEXTS}{JOURNEY_FILE_NAME}"
+    TIME_CSV_PATH = f"{USER_TEXTS}time.csv"
+    CONFIGURATION_PATH = f"{USER_TEXTS}configuration.csv"
+    FLOATING_WINDOW_CHECKER_PATH = f"{USER_TEXTS}floating_window_checker.txt"
+else:
+    # Default paths (standalone mode)
+    CONFIGURATION = f"{TEXTS}/Configurations"
+    SAVE_FILE_NAME = f"{TEXTS}/{JOURNEY_FILE_NAME}"
+    FLOATING_WINDOW_CHECKER_PATH = f"{CONFIGURATION}/floating_window_checker.txt"
+    TIME_CSV_PATH = f"{CONFIGURATION}/time.csv"
+    CONFIGURATION_PATH = f"{CONFIGURATION}/configuration.csv"
 
-NEW_WORK_SOUND_PATH = f"{AUDIOS}/new_work.mp3"
-WORK_SOUND_PATH = f"{AUDIOS}/work.mp3"
-BREAK_SOUND_PATH = f"{AUDIOS}/short_break.mp3"
-LONG_BREAK_SOUND_PATH = f"{AUDIOS}/long_break.mp3"
+# User-specific audio support
+def get_audio_path(filename):
+    """Get audio path - prefers user-specific folder, falls back to global"""
+    if DATA_FOLDER:
+        # Derive user audios folder from data folder
+        # DATA_FOLDER is like "dependencies/texts/Users/laluga/"
+        user_audios = DATA_FOLDER.replace("/texts/", "/audios/").replace("\\texts\\", "\\audios\\")
+        user_path = f"{user_audios}{filename}"
+        if os.path.exists(user_path):
+            return user_path
+    return f"{AUDIOS}/{filename}"
 
-APP_ICON_PATH = f"{IMAGES}/icon.ico" 
-FLOATING_IMAGE_PATH = f"{IMAGES}/behelit.png"
-LOGO_IMAGE_PATH = f"{IMAGES}/signature.png"
-MAIN_IMAGE_PATH = f"{IMAGES}/main_image.png"
+NEW_WORK_SOUND_PATH = get_audio_path("new_work.mp3")
+WORK_SOUND_PATH = get_audio_path("work.mp3")
+BREAK_SOUND_PATH = get_audio_path("short_break.mp3")
+LONG_BREAK_SOUND_PATH = get_audio_path("long_break.mp3")
+
+# User-specific images support
+# Check user folder first, fall back to global images
+def get_image_path(filename):
+    """Get image path - prefers user-specific folder, falls back to global"""
+    if DATA_FOLDER:
+        # Derive user images folder from data folder
+        # DATA_FOLDER is like "dependencies/texts/Users/laluga/"
+        user_images = DATA_FOLDER.replace("/texts/", "/images/").replace("\\texts\\", "\\images\\")
+        user_path = f"{user_images}{filename}"
+        if os.path.exists(user_path):
+            return user_path
+    return f"{IMAGES}/{filename}"
+
+APP_ICON_PATH = f"{IMAGES}/icon.ico"  # Icon stays global
+FLOATING_IMAGE_PATH = get_image_path("behelit.png")
+LOGO_IMAGE_PATH = f"{IMAGES}/signature.png"  # Logo stays global (branding)
+MAIN_IMAGE_PATH = get_image_path("main_image.png")
 
 # Sound objects (lazy loaded)
 _sounds_initialized = False
@@ -688,7 +812,8 @@ def save_data():
                 if saved_note == "pass" or saved_note == "" or saved_note=="None" or saved_note == None:
                     pass
                 else: 
-                    showinfo("Your note:", '{}'.format(saved_note))
+                    # Use modern notification instead of showinfo
+                    show_notification(f"Note saved: {saved_note[:40]}...")
         else:
             if not NOTEPAD_MODE:
                 print(f"young jesus perspective {NOTEPAD_MODE}")
@@ -696,7 +821,8 @@ def save_data():
                 if saved_note == "pass" or saved_note == "" or saved_note=="None" or saved_note == None:
                     pass
                 else: 
-                    showinfo("Your note:", '{}'.format(saved_note))
+                    # Use modern notification instead of showinfo
+                    show_notification(f"Note saved: {saved_note[:40]}...")
         try:
             today_date_slash = dt.datetime.now().strftime('%m/%d/%Y')  # 12/28/2025
             today_date_dot = dt.datetime.now().strftime('%m.%d.%Y')    # 12.28.2025
@@ -778,11 +904,12 @@ def save_data():
                 print(f"Created new entry for {today_date_slash}")
             
             time.sleep(0.03)
+            show_notification("Journal updated successfully!", color="#FFCC00")
             open_in_notepad(SAVE_FILE_NAME)
         except Exception as e:
             print(f"Error saving: {e}")
     else:
-        tkinter.messagebox.showerror("Error", "You need to be in stopwatch mode to use save button.")
+        show_notification("Save failed: Must be in stopwatch mode.", color="#CC4444")
 
     try:
         if crono_mode_activate:
@@ -857,12 +984,12 @@ class DraggableWindow(Toplevel):
         
         # Load the image and keep a reference to it
         self.image = ImageTk.PhotoImage(Image.open(FLOATING_IMAGE_PATH))
-        label = Label(self, image=self.image, bg='white', highlightthickness=0) #! Adjust the frame color of image
+        label = Label(self, image=self.image, bg='#FF00FF', highlightthickness=0)  # Magenta for transparency
         self.overrideredirect(True)
         self.geometry("+250+250")
         self.lift()
         self.wm_attributes("-topmost", True)
-        self.wm_attributes("-transparentcolor", "white")
+        self.wm_attributes("-transparentcolor", "#FF00FF")  # Magenta as transparent color
         label.pack()
 
         self.start_x = 0
@@ -895,7 +1022,9 @@ window.overrideredirect(True)
 window.resizable(False, False)
 window.geometry("+1150+440")
 
-floating_timer_label = Label(window, text="00:00", font=(FONT_NAME, FLOATING_MINUTE_FONT_SIZE, "bold"), foreground=WHITE, bg=DEEP_RED)
+# Floating timer label - using magenta background which is set as transparent in window
+# This makes the timer text appear without visible background, overlaying the image
+floating_timer_label = Label(window, text="00:00", font=(FONT_NAME, FLOATING_MINUTE_FONT_SIZE, "bold"), foreground=WHITE, bg='#FF00FF')
 floating_timer_label.pack()
 floating_timer_label.place(x=MINUTE_X, y=MINUTE_Y)
 

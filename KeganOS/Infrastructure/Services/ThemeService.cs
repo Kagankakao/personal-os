@@ -122,14 +122,33 @@ public class ThemeService : IThemeService
         return Task.FromResult(_builtInThemes.First());
     }
 
-    public async Task<bool> ApplyThemeAsync(Theme theme)
+    public async Task<bool> ApplyThemeAsync(Theme theme, User? user = null)
     {
         try
         {
-            _logger.Information("Applying theme: {Name} ({Id})", theme.Name, theme.Id);
+            _logger.Information("Applying theme: {Name} ({Id}) for user: {User}", 
+                theme.Name, theme.Id, user?.DisplayName ?? "global");
+            
+            // Determine config path - user-specific or global
+            string configPath;
+            if (user != null)
+            {
+                var userConfigPath = Path.Combine(_kegomoDoroPath, "dependencies", "texts", "Users", user.DisplayName, "configuration.csv");
+                if (File.Exists(userConfigPath))
+                {
+                    configPath = userConfigPath;
+                }
+                else
+                {
+                    configPath = Path.Combine(_kegomoDoroPath, "dependencies", "texts", "Configurations", "configuration.csv");
+                }
+            }
+            else
+            {
+                configPath = Path.Combine(_kegomoDoroPath, "dependencies", "texts", "Configurations", "configuration.csv");
+            }
             
             // 1. Update config.csv in KEGOMODORO
-            var configPath = Path.Combine(_kegomoDoroPath, "dependencies", "texts", "Configurations", "configuration.csv");
             if (File.Exists(configPath))
             {
                 var lines = await File.ReadAllLinesAsync(configPath);
@@ -183,10 +202,20 @@ public class ThemeService : IThemeService
                 }
             }
             
-            // 2. Copy images
-            // Destination paths match main.py hardcoded paths
-            var destMain = Path.Combine(_kegomoDoroPath, "dependencies", "images", "main_image.png");
-            var destFloat = Path.Combine(_kegomoDoroPath, "dependencies", "images", "behelit.png");
+            // 2. Copy images - to user folder if user provided, else global
+            string destMain, destFloat;
+            if (user != null)
+            {
+                var userImagesFolder = Path.Combine(_kegomoDoroPath, "dependencies", "images", "Users", user.DisplayName);
+                Directory.CreateDirectory(userImagesFolder);
+                destMain = Path.Combine(userImagesFolder, "main_image.png");
+                destFloat = Path.Combine(userImagesFolder, "behelit.png");
+            }
+            else
+            {
+                destMain = Path.Combine(_kegomoDoroPath, "dependencies", "images", "main_image.png");
+                destFloat = Path.Combine(_kegomoDoroPath, "dependencies", "images", "behelit.png");
+            }
             
             // Source paths - check specific theme folder first, else assume relative to Assets/Themes
             // NOTE: For built-in themes we might need to deploy valid files. this logic assumes they exist.

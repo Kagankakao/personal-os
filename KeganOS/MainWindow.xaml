@@ -361,6 +361,14 @@
             
             <!-- Full-screen Celebration Overlay -->
             <comp:CelebrationOverlay x:Name="MajorCelebrationOverlay" Visibility="Collapsed" Grid.RowSpan="2"/>
+
+            <!-- Toast Notifications Area -->
+            <StackPanel x:Name="ToastContainer" 
+                        Grid.RowSpan="2" 
+                        VerticalAlignment="Top" 
+                        HorizontalAlignment="Center" 
+                        Margin="0,50,0,0"
+                        Panel.ZIndex="1000"/>
         </Grid>
     </Border>
 </Window>

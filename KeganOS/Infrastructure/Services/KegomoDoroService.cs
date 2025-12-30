@@ -3,6 +3,7 @@ using KeganOS.Core.Models;
 using Serilog;
 using System.Diagnostics;
 using System.IO;
+using System.Text.Json;
 
 namespace KeganOS.Infrastructure.Services;
 
@@ -242,6 +243,136 @@ public class KegomoDoroService : IKegomoDoroService
         }
     }
 
+    /// <summary>
+    /// Launch KEGOMODORO with user-specific configuration
+    /// Writes user_config.json before launching so KEGOMODORO can read user-specific settings
+    /// </summary>
+    public void Launch(User user)
+    {
+        _logger.Information("Preparing to launch KEGOMODORO for user: {User}", user.DisplayName);
+        
+        try
+        {
+            // Create user-specific data folder
+            var userDataFolder = Path.Combine(_kegomoDoroPath, "dependencies", "texts", "Users", user.DisplayName);
+            Directory.CreateDirectory(userDataFolder);
+            
+            // Write user_config.json for KEGOMODORO to read
+            var userConfigPath = Path.Combine(_kegomoDoroPath, "user_config.json");
+            var userConfig = new
+            {
+                username = user.DisplayName,
+                pixela_username = user.PixelaUsername ?? "",
+                pixela_token = user.PixelaToken ?? "",
+                pixela_graph_id = user.PixelaGraphId ?? "",
+                data_folder = $"dependencies/texts/Users/{user.DisplayName}/",
+                journey_file = user.JournalFileName ?? $"KA\u00c6[\u00c6\u00df#.txt"
+            };
+            
+            var json = JsonSerializer.Serialize(userConfig, new JsonSerializerOptions { WriteIndented = true });
+            File.WriteAllText(userConfigPath, json);
+            _logger.Information("Written user_config.json for {User}", user.DisplayName);
+            
+            // Also copy time.csv to user folder if it doesn't exist there
+            var userTimeCsvPath = Path.Combine(userDataFolder, "time.csv");
+            if (!File.Exists(userTimeCsvPath))
+            {
+                var defaultTimeCsv = "hours,minute,second\n0,0,0\n";
+                File.WriteAllText(userTimeCsvPath, defaultTimeCsv);
+                _logger.Debug("Created default time.csv for user {User}", user.DisplayName);
+            }
+            
+            // Copy configuration.csv to user folder if it doesn't exist
+            var userConfigCsvPath = Path.Combine(userDataFolder, "configuration.csv");
+            if (!File.Exists(userConfigCsvPath) && File.Exists(_configPath))
+            {
+                File.Copy(_configPath, userConfigCsvPath);
+                _logger.Debug("Copied default configuration to user folder for {User}", user.DisplayName);
+            }
+            
+            // Copy journey file to user folder if it doesn't exist
+            var journeyFileName = user.JournalFileName ?? "KAÆ[Æß#.txt";
+            var userJourneyPath = Path.Combine(userDataFolder, journeyFileName);
+            if (!File.Exists(userJourneyPath))
+            {
+                // Try to find and copy existing global journey file
+                var globalTextsPath = Path.Combine(_kegomoDoroPath, "dependencies", "texts");
+                var globalJourneyPath = Path.Combine(globalTextsPath, journeyFileName);
+                
+                if (File.Exists(globalJourneyPath))
+                {
+                    File.Copy(globalJourneyPath, userJourneyPath);
+                    _logger.Information("Copied journey file to user folder for {User}", user.DisplayName);
+                }
+                else
+                {
+                    // Find any .txt file in global texts
+                    var txtFiles = Directory.GetFiles(globalTextsPath, "*.txt")
+                        .Where(f => !f.EndsWith(".lnk", StringComparison.OrdinalIgnoreCase))
+                        .ToList();
+                    
+                    if (txtFiles.Count > 0)
+                    {
+                        File.Copy(txtFiles[0], userJourneyPath);
+                        _logger.Information("Copied existing journey file {From} to user folder for {User}", 
+                            Path.GetFileName(txtFiles[0]), user.DisplayName);
+                    }
+                    else
+                    {
+                        // Create empty journey file
+                        File.WriteAllText(userJourneyPath, "");
+                        _logger.Debug("Created empty journey file for user {User}", user.DisplayName);
+                    }
+                }
+            }
+            
+            // Create user-specific images folder and copy defaults
+            var userImagesFolder = Path.Combine(_kegomoDoroPath, "dependencies", "images", "Users", user.DisplayName);
+            Directory.CreateDirectory(userImagesFolder);
+            
+            var globalImagesFolder = Path.Combine(_kegomoDoroPath, "dependencies", "images");
+            var imagesToCopy = new[] { "main_image.png", "behelit.png" };
+            
+            foreach (var imageName in imagesToCopy)
+            {
+                var userImagePath = Path.Combine(userImagesFolder, imageName);
+                var globalImagePath = Path.Combine(globalImagesFolder, imageName);
+                
+                if (!File.Exists(userImagePath) && File.Exists(globalImagePath))
+                {
+                    File.Copy(globalImagePath, userImagePath);
+                    _logger.Debug("Copied {Image} to user images folder for {User}", imageName, user.DisplayName);
+                }
+            }
+            
+            // Create user-specific audios folder and copy defaults
+            var userAudiosFolder = Path.Combine(_kegomoDoroPath, "dependencies", "audios", "Users", user.DisplayName);
+            Directory.CreateDirectory(userAudiosFolder);
+            
+            var globalAudiosFolder = Path.Combine(_kegomoDoroPath, "dependencies", "audios");
+            var audiosToCopy = new[] { "new_work.mp3", "work.mp3", "short_break.mp3", "long_break.mp3" };
+            
+            foreach (var audioName in audiosToCopy)
+            {
+                var userAudioPath = Path.Combine(userAudiosFolder, audioName);
+                var globalAudioPath = Path.Combine(globalAudiosFolder, audioName);
+                
+                if (!File.Exists(userAudioPath) && File.Exists(globalAudioPath))
+                {
+                    File.Copy(globalAudioPath, userAudioPath);
+                    _logger.Debug("Copied {Audio} to user audios folder for {User}", audioName, user.DisplayName);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.Warning(ex, "Failed to prepare user-specific config, launching with defaults");
+        }
+        
+        // Now launch using the existing method
+        Launch();
+    }
+
     public async Task UpdateConfigurationAsync(int workMin, int shortBreak, int longBreak)
     {
         _logger.Information("Updating KEGOMODORO configuration: Work={Work}min, ShortBreak={Short}min, LongBreak={Long}min",
@@ -277,17 +408,29 @@ public class KegomoDoroService : IKegomoDoroService
         await Task.CompletedTask;
     }
 
-    public async Task<UserPreferences> GetConfigurationAsync()
+    public async Task<UserPreferences> GetConfigurationAsync(User? user = null)
     {
         _logger.Debug("Reading KEGOMODORO configuration...");
         
         var prefs = new UserPreferences();
 
+        // Determine config path - use user-specific folder if user provided
+        string configPath = _configPath;
+        if (user != null)
+        {
+            var userConfigPath = Path.Combine(_kegomoDoroPath, "dependencies", "texts", "Users", user.DisplayName, "configuration.csv");
+            if (File.Exists(userConfigPath))
+            {
+                configPath = userConfigPath;
+                _logger.Debug("Using user-specific config: {Path}", userConfigPath);
+            }
+        }
+
         try
         {
-            if (File.Exists(_configPath))
+            if (File.Exists(configPath))
             {
-                var lines = await File.ReadAllLinesAsync(_configPath);
+                var lines = await File.ReadAllLinesAsync(configPath);
                 if (lines.Length >= 2)
                 {
                     var values = lines[1].Split(',');

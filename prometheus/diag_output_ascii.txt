@@ -1,0 +1,13 @@
+Python Executable: C:\Users\ariba\OneDrive\Documenti\Software Projects\AI Projects\personal-os\personal-os\prometheus\venv\bin\python.exe
+Python Version: 3.12.11 (main, Jun  7 2025, 12:31:34)  [GCC UCRT 15.1.0 64 bit (AMD64)]
+--- sys.path ---
+C:\Users\ariba\OneDrive\Documenti\Software Projects\AI Projects\personal-os\personal-os\prometheus
+C:\msys64\ucrt64\lib\python312.zip
+C:\msys64\ucrt64\lib\python3.12
+C:\msys64\ucrt64\lib\python3.12\lib-dynload
+C:\Users\ariba\OneDrive\Documenti\Software Projects\AI Projects\personal-os\personal-os\prometheus\venv\lib\python3.12\site-packages
+C:\msys64\ucrt64\lib\python3.12\site-packages
+----------------
+FAIL: grpc import failed: No module named 'grpc'
+SUCCESS: numpy imported
+FAIL: fastembed import failed: No module named 'huggingface_hub'

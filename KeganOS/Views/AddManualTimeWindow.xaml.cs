@@ -57,6 +57,9 @@ public partial class AddManualTimeWindow : Window
 
     private async void AddTimeButton_Click(object sender, RoutedEventArgs e)
     {
+        // Prevent multiple clicks
+        AddTimeButton.IsEnabled = false;
+        
         try
         {
             // Check if KEGOMODORO is running - prevent data conflicts
@@ -92,9 +95,14 @@ public partial class AddManualTimeWindow : Window
                 else
                 {
                     _logger.Warning("Failed to update Pixe.la");
+                    // Keep this warning as it's important feedback
                     System.Windows.MessageBox.Show("Time added locally, but failed to update Pixe.la graph.", "Warning",
                         MessageBoxButton.OK, MessageBoxImage.Warning);
                 }
+            }
+            else if (UpdatePixelaCheckBox.IsChecked == true)
+            {
+                _logger.Warning("Pixe.la update skipped - not configured for user {User}", _currentUser.DisplayName);
             }
 
             // XP and Achievement logic
@@ -109,11 +117,15 @@ public partial class AddManualTimeWindow : Window
             _currentUser.TotalHours += totalHours; // Update local tracker
             await _achievementService.CheckAchievementsAsync(_currentUser);
 
-            _logger.Information("Manual time added: {Duration} on {Date}", duration, date.ToShortDateString());
+            _logger.Information("Manual time added successfully: {Duration} on {Date}", duration, date.ToShortDateString());
             
-            System.Windows.MessageBox.Show($"Added {duration:hh\\:mm\\:ss} on {date:dd/MM/yyyy}", "Time Added",
-                MessageBoxButton.OK, MessageBoxImage.Information);
+            // Show modern toast on MainWindow
+            if (Owner is MainWindow main)
+            {
+                main.ShowToast($"Added {duration.TotalHours:F1}h to your journal!", "📖", "#44CC44");
+            }
 
+            // No popup - just close the window immediately
             try
             {
                 DialogResult = true;
@@ -130,6 +142,11 @@ public partial class AddManualTimeWindow : Window
             _logger.Error(ex, "Failed to add manual time");
             System.Windows.MessageBox.Show($"Failed to add time: {ex.Message}", "Error",
                 MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+        finally
+        {
+            // Re-enable button in case of early return or error
+            AddTimeButton.IsEnabled = true;
         }
     }
 
@@ -232,6 +249,41 @@ public partial class AddManualTimeWindow : Window
         var basePath = GetKegomoDoroBasePath();
         if (string.IsNullOrEmpty(basePath)) return string.Empty;
         
+        // Try user-specific folder first
+        if (_currentUser != null)
+        {
+            var userTextsPath = Path.Combine(basePath, "dependencies", "texts", "Users", _currentUser.DisplayName);
+            _logger.Debug("Looking for user journey in: {Path}, exists: {Exists}", userTextsPath, Directory.Exists(userTextsPath));
+            
+            if (Directory.Exists(userTextsPath))
+            {
+                try
+                {
+                    // Exclude known non-journey files
+                    var excludedFiles = new[] { "floating_window_checker.txt", "configuration.csv", "time.csv" };
+                    var userTxtFiles = Directory.GetFiles(userTextsPath, "*.txt")
+                        .Where(f => !f.EndsWith(".lnk", StringComparison.OrdinalIgnoreCase))
+                        .Where(f => !excludedFiles.Contains(Path.GetFileName(f), StringComparer.OrdinalIgnoreCase))
+                        .ToList();
+                    
+                    if (userTxtFiles.Count > 0)
+                    {
+                        _logger.Information("Found user journey file: {Path}", userTxtFiles[0]);
+                        return userTxtFiles[0];
+                    }
+                    else
+                    {
+                        _logger.Warning("No journey file found in user folder, only excluded files");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.Warning(ex, "Error finding user journey file");
+                }
+            }
+        }
+        
+        // Fallback to global texts folder
         var textsPath = Path.Combine(basePath, "dependencies", "texts");
         if (!Directory.Exists(textsPath))
         {
@@ -261,13 +313,24 @@ public partial class AddManualTimeWindow : Window
     }
 
     /// <summary>
-    /// Get the time.csv path
+    /// Get the time.csv path - prefers user-specific folder
     /// </summary>
     private string GetTimeCsvPath()
     {
         var basePath = GetKegomoDoroBasePath();
         if (string.IsNullOrEmpty(basePath)) return string.Empty;
         
+        // Try user-specific folder first
+        if (_currentUser != null)
+        {
+            var userPath = Path.Combine(basePath, "dependencies", "texts", "Users", _currentUser.DisplayName, "time.csv");
+            if (File.Exists(userPath) || Directory.Exists(Path.GetDirectoryName(userPath)))
+            {
+                return userPath;
+            }
+        }
+        
+        // Fallback to global path
         return Path.Combine(basePath, "dependencies", "texts", "Configurations", "time.csv");
     }
 
