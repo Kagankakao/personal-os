@@ -88,6 +88,13 @@ public partial class MainWindow : System.Windows.Window
             JournalInput?.Focus();
             e.Handled = true;
         }
+        // Ctrl+N - Toggle Nexus
+        else if (e.Key == System.Windows.Input.Key.N && 
+                 (System.Windows.Input.Keyboard.Modifiers & System.Windows.Input.ModifierKeys.Control) == System.Windows.Input.ModifierKeys.Control)
+        {
+            NexusToggleButton_Click(sender, e);
+            e.Handled = true;
+        }
     }
 
     private void OnAchievementUnlocked(object? sender, Achievement achievement)
@@ -997,5 +1004,36 @@ public partial class MainWindow : System.Windows.Window
                 _logger.Error(ex, "Failed to show toast: {Message}", message);
             }
         });
+    }
+
+    private void NexusToggleButton_Click(object sender, System.Windows.RoutedEventArgs e)
+    {
+        bool isOpening = NexusPanel.Visibility == System.Windows.Visibility.Collapsed;
+        double targetWidth = isOpening ? 980 : 600;
+
+        if (isOpening)
+        {
+            _logger.Information("Opening Nexus Side Panel (Expanding window)");
+            NexusPanel.Visibility = System.Windows.Visibility.Visible;
+            NexusColumn.Width = new System.Windows.GridLength(380);
+            NexusToggleButton.Content = "[ ✕ Close ]";
+            
+            // Re-render notes when opening to ensure Masonry is fresh
+            NeuralNexusWidget.RenderNotes();
+        }
+        else
+        {
+            _logger.Information("Closing Nexus Side Panel (Shrinking window)");
+            NexusPanel.Visibility = System.Windows.Visibility.Collapsed;
+            NexusColumn.Width = new System.Windows.GridLength(0);
+            NexusToggleButton.Content = "[ ≠ Nexus ]";
+        }
+
+        // Animate Window Width
+        var anim = new System.Windows.Media.Animation.DoubleAnimation(targetWidth, TimeSpan.FromMilliseconds(300))
+        {
+            EasingFunction = new System.Windows.Media.Animation.QuadraticEase { EasingMode = System.Windows.Media.Animation.EasingMode.EaseInOut }
+        };
+        this.BeginAnimation(WidthProperty, anim);
     }
 }

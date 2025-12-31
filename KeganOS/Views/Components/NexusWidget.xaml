@@ -1,0 +1,114 @@
+<UserControl x:Class="KeganOS.Views.Components.NexusWidget"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             mc:Ignorable="d" 
+             d:DesignHeight="800" d:DesignWidth="350"
+             FontFamily="Consolas" Background="#0A0A0A">
+    
+    <Grid Margin="15">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/> <!-- Tabs -->
+            <RowDefinition Height="Auto"/> <!-- Search -->
+            <RowDefinition Height="Auto"/> <!-- Tags -->
+            <RowDefinition Height="*"/>    <!-- Masonry Grid -->
+            <RowDefinition Height="Auto"/> <!-- Bottom Actions -->
+        </Grid.RowDefinitions>
+
+        <!-- Tabs -->
+        <UniformGrid Rows="1" Margin="0,0,0,15">
+            <Button Content="TASKS" Style="{StaticResource TitleBarButton}" Click="TaskTab_Click" Foreground="#AAAAAA"/>
+            <Button Content="NEURAL" Style="{StaticResource TitleBarButton}" Click="NeuralTab_Click" Foreground="#87CEEB"/>
+        </UniformGrid>
+
+        <!-- NeuralNotes Search (AI Powered) -->
+        <Border Grid.Row="1" Background="#1A1A1A" BorderBrush="#333333" BorderThickness="1" Padding="8" CornerRadius="4">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBox x:Name="NexusSearchInput" Background="Transparent" BorderThickness="0" 
+                         Foreground="#CCCCCC" CaretBrush="#CCCCCC" VerticalAlignment="Center"
+                         KeyDown="NexusSearchInput_KeyDown"/>
+                <TextBlock IsHitTestVisible="False" Text="Search or ask AI..." Foreground="#555555" 
+                           VerticalAlignment="Center" Margin="5,0,0,0">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Visibility" Value="Collapsed"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding Text, ElementName=NexusSearchInput}" Value="">
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+                <Button Grid.Column="1" Content="↑" Foreground="#87CEEB" Background="Transparent" 
+                        BorderThickness="0" Cursor="Hand" Click="NeuralAsk_Click"/>
+            </Grid>
+        </Border>
+
+        <!-- Tags Filter -->
+        <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,10,0,15">
+            <TextBlock Text="[All]" Foreground="#87CEEB" Cursor="Hand" Margin="0,0,10,0"/>
+            <TextBlock Text="#Ideas" Foreground="#666666" Cursor="Hand" Margin="0,0,10,0"/>
+            <TextBlock Text="#Life" Foreground="#666666" Cursor="Hand" Margin="0,0,10,0"/>
+            <TextBlock Text="#Project" Foreground="#666666" Cursor="Hand"/>
+        </StackPanel>
+
+        <!-- Masonry Grid (Simulated with multiple StackPanels for dynamic height) -->
+        <ScrollViewer Grid.Row="3" VerticalScrollBarVisibility="Auto">
+            <Grid x:Name="NotesGridContainer">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                
+                <StackPanel x:Name="Column1" Grid.Column="0" Margin="0,0,5,0"/>
+                <StackPanel x:Name="Column2" Grid.Column="1" Margin="5,0,0,0"/>
+            </Grid>
+        </ScrollViewer>
+
+        <!-- New Note Action -->
+        <Button Grid.Row="4" Style="{StaticResource BracketButton}" 
+                Content="+ New Neural Note" Foreground="#AAAAAA" 
+                HorizontalAlignment="Center" Margin="0,15,0,0"
+                Click="NewNote_Click"/>
+
+        <!-- Note Detail Panel (Overlay) -->
+        <Border x:Name="NoteDetailPanel" Grid.RowSpan="5" Background="#0A0A0A" Visibility="Collapsed" Padding="20">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/> <!-- Back button -->
+                    <RowDefinition Height="Auto"/> <!-- Title -->
+                    <RowDefinition Height="Auto"/> <!-- Metadata/Tags -->
+                    <RowDefinition Height="*"/>    <!-- Content -->
+                </Grid.RowDefinitions>
+
+                <Button Content="[ ← Back ]" Style="{StaticResource TitleBarButton}" 
+                        HorizontalAlignment="Left" Width="80" Click="BackToGrid_Click" 
+                        Foreground="#87CEEB" Margin="0,0,0,20"/>
+
+                <TextBox x:Name="DetailTitle" Grid.Row="1" FontSize="20" FontWeight="Bold" 
+                         Foreground="White" Background="Transparent" BorderThickness="0"
+                         TextWrapping="Wrap" Margin="0,0,0,10" IsReadOnly="True"/>
+
+                <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,0,0,20">
+                    <Border Background="#1A1A1A" Padding="8,4" CornerRadius="4">
+                        <TextBlock x:Name="DetailCategory" Foreground="#87CEEB" FontSize="10"/>
+                    </Border>
+                    <TextBlock x:Name="DetailDate" Foreground="#555555" FontSize="10" 
+                               Margin="10,0,0,0" VerticalAlignment="Center"/>
+                </StackPanel>
+
+                <ScrollViewer Grid.Row="3" VerticalScrollBarVisibility="Auto">
+                    <TextBox x:Name="DetailContent" Foreground="#CCCCCC" Background="Transparent" 
+                             BorderThickness="0" TextWrapping="Wrap" FontSize="14" 
+                             AcceptsReturn="True" IsReadOnly="True"/>
+                </ScrollViewer>
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>

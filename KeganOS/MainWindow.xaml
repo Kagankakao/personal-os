@@ -4,7 +4,7 @@
         xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
         xmlns:comp="clr-namespace:KeganOS.Views.Components"
         Title="KeganOS" 
-        Height="750" Width="600"
+        Height="780" Width="600"
         WindowStartupLocation="CenterScreen"
         Background="#0D0D0D"
         FontFamily="Consolas"
@@ -13,49 +13,7 @@
         AllowsTransparency="True">
     
     <Window.Resources>
-        <!-- ASCII border style -->
-        <Style x:Key="AsciiBox" TargetType="Border">
-            <Setter Property="BorderBrush" Value="#444444"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="Padding" Value="12"/>
-            <Setter Property="Margin" Value="0,0,0,12"/>
-        </Style>
-        
-        <!-- Bracket button style -->
-        <Style x:Key="BracketButton" TargetType="Button">
-            <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="Foreground" Value="#AAAAAA"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Padding" Value="8,4"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <TextBlock>
-                            <Run Text="[" Foreground="#666666"/>
-                            <Run Text="{TemplateBinding Content}" Foreground="{TemplateBinding Foreground}"/>
-                            <Run Text="]" Foreground="#666666"/>
-                        </TextBlock>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-        
-        <!-- Title bar button style -->
-        <Style x:Key="TitleBarButton" TargetType="Button">
-            <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Foreground" Value="#888888"/>
-            <Setter Property="FontSize" Value="12"/>
-            <Setter Property="Width" Value="40"/>
-            <Setter Property="Height" Value="30"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Style.Triggers>
-                <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="Background" Value="#333333"/>
-                </Trigger>
-            </Style.Triggers>
-        </Style>
+        <!-- Window-specific resources can go here -->
     </Window.Resources>
     
     <Border BorderBrush="#333333" BorderThickness="1">
@@ -114,221 +72,229 @@
             
             <!-- ═══ MAIN CONTENT ═══ -->
             <Grid Grid.Row="1" Margin="20,10,20,20">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/> <!-- Header -->
-                    <RowDefinition Height="Auto"/> <!-- Quote -->
-                    <RowDefinition Height="Auto"/> <!-- KEGOMODORO + Stats -->
-                    <RowDefinition Height="*"/>    <!-- Journal -->
-                    <RowDefinition Height="Auto"/> <!-- AI Chat -->
-                    <RowDefinition Height="Auto"/> <!-- Milestone -->
-                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" x:Name="MainContentColumn"/>
+                    <ColumnDefinition Width="0" x:Name="NexusColumn"/>
+                </Grid.ColumnDefinitions>
                 
-                <!-- ═══ TOP BAR ═══ -->
-                <Grid Grid.Row="0" Margin="0,0,0,15">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
-                    </Grid.ColumnDefinitions>
+                <!-- ═══ DASHBOARD AREA ═══ -->
+                <Grid Grid.Column="0" x:Name="DashboardContainer">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/> <!-- Header -->
+                        <RowDefinition Height="Auto"/> <!-- Quote -->
+                        <RowDefinition Height="Auto"/> <!-- KEGOMODORO + Stats -->
+                        <RowDefinition Height="*"/>    <!-- Journal -->
+                        <RowDefinition Height="Auto"/> <!-- AI Chat Area (Placeholder) -->
+                        <RowDefinition Height="Auto"/> <!-- Milestone -->
+                    </Grid.RowDefinitions>
                     
-                    <!-- Personal Symbol -->
-                    <TextBlock Text="KAÆ[Æß#" Foreground="#888888" FontSize="14" VerticalAlignment="Center"
-                               x:Name="PersonalSymbol"/>
-                    
-                    <!-- User + Settings -->
-                    <StackPanel Grid.Column="1" Orientation="Horizontal">
-                        <TextBlock Text="👤" FontSize="14" Margin="0,0,5,0"/>
-                        <TextBlock Text="Kegan" Foreground="#CCCCCC" FontSize="14" VerticalAlignment="Center"
-                                   x:Name="UserDisplayName"/>
-                        <Button x:Name="SettingsButton" Content="⚙" Foreground="#666666" FontSize="14" 
-                                Background="Transparent" BorderThickness="0" Cursor="Hand" Margin="8,0,0,0"
-                                Click="SettingsButton_Click" ToolTip="Settings"/>
-                    </StackPanel>
-                </Grid>
-                
-                <!-- ═══ SCROLLING NEWS TICKER ═══ -->
-                <Border Grid.Row="1" Style="{StaticResource AsciiBox}" ClipToBounds="True">
-                    <Canvas x:Name="TickerCanvas" Height="25">
-                        <TextBlock x:Name="TickerText" 
-                                   Text="📜 Loading quotes from journal..."
-                                   Foreground="#CCCCCC" FontSize="13" FontStyle="Italic"
-                                   Canvas.Top="3">
-                            <TextBlock.RenderTransform>
-                                <TranslateTransform x:Name="TickerTransform" X="0"/>
-                            </TextBlock.RenderTransform>
-                        </TextBlock>
-                    </Canvas>
-                </Border>
-                
-                <!-- ═══ KEGOMODORO + STATS ═══ -->
-                <Grid Grid.Row="2">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="15"/>
-                        <ColumnDefinition Width="*"/>
-                    </Grid.ColumnDefinitions>
-                    
-                    <!-- KEGOMODORO Widget -->
-                    <Border Grid.Column="0" Style="{StaticResource AsciiBox}">
-                        <StackPanel>
-                            <!-- Header -->
-                            <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
-                                <TextBlock Text="│" Foreground="#444444"/>
-                                <TextBlock Text=" KEGOMODORO" Foreground="#888888" FontWeight="Bold"/>
-                            </StackPanel>
-                            
-                            <!-- Timer Display -->
-                            <StackPanel HorizontalAlignment="Center" Margin="0,5,0,10">
-                                <Image x:Name="FireImage" Width="60" Height="60" Stretch="Uniform"
-                                       HorizontalAlignment="Center" Opacity="0.9"/>
-                                <TextBlock Text="25:00" Foreground="#FFFFFF" FontSize="28" FontWeight="Bold" 
-                                           HorizontalAlignment="Center" Margin="0,8,0,0"
-                                           FontFamily="Consolas" x:Name="TimerDisplay"/>
-                            </StackPanel>
-                            
-                            <!-- Buttons -->
-                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,15">
-                                <Button Style="{StaticResource BracketButton}" 
-                                        Content="▶ Start" Foreground="#87CEEB"
-                                        x:Name="StartFocusButton" Click="StartFocusButton_Click"/>
-                                <Button Style="{StaticResource BracketButton}" 
-                                        Content="⚙ Customize" Margin="10,0,0,0"
-                                        x:Name="CustomizeButton" Click="CustomizeButton_Click"/>
-                            </StackPanel>
+                    <!-- ═══ TOP BAR ═══ -->
+                    <Grid Grid.Row="0" Margin="0,0,0,15">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        
+                        <!-- Personal Symbol -->
+                        <TextBlock Text="KAÆ[Æß#" Foreground="#888888" FontSize="14" VerticalAlignment="Center"
+                                   x:Name="PersonalSymbol"/>
+                        
+                        <!-- User + Settings/Nexus -->
+                        <StackPanel Grid.Column="1" Orientation="Horizontal">
+                            <!-- Nexus Toggle -->
+                            <Button x:Name="NexusToggleButton" Content="[ ≠ Nexus ]" Foreground="#87CEEB" FontSize="11" 
+                                    Background="Transparent" BorderThickness="0" Cursor="Hand" Margin="0,0,12,0"
+                                    Click="NexusToggleButton_Click" ToolTip="Toggle Knowledge Nexus"/>
 
-                            <!-- Add Manual Time -->
-                            <Rectangle Height="1" Fill="#333333" Margin="10,0,10,12"/>
-                            <Button Style="{StaticResource BracketButton}" 
-                                    Content="⏱️ Add Manual Time" Foreground="#666666" 
-                                    HorizontalAlignment="Center" FontSize="11"
-                                    Click="AddManualTime_Click"/>
-
-                            <!-- Task Widget -->
-                            <comp:TaskWidget x:Name="DashboardTaskWidget" Margin="0,10,0,0"/>
+                            <TextBlock Text="👤" FontSize="14" Margin="0,0,5,0"/>
+                            <TextBlock Text="Kegan" Foreground="#CCCCCC" FontSize="14" VerticalAlignment="Center"
+                                       x:Name="UserDisplayName"/>
+                            <Button x:Name="SettingsButton" Content="⚙" Foreground="#666666" FontSize="14" 
+                                    Background="Transparent" BorderThickness="0" Cursor="Hand" Margin="8,0,0,0"
+                                    Click="SettingsButton_Click" ToolTip="Settings"/>
                         </StackPanel>
+                    </Grid>
+                    
+                    <!-- ═══ SCROLLING NEWS TICKER ═══ -->
+                    <Border Grid.Row="1" Style="{StaticResource AsciiBox}" ClipToBounds="True">
+                        <Canvas x:Name="TickerCanvas" Height="25">
+                            <TextBlock x:Name="TickerText" 
+                                       Text="📜 Loading quotes from journal..."
+                                       Foreground="#CCCCCC" FontSize="13" FontStyle="Italic"
+                                       Canvas.Top="3">
+                                <TextBlock.RenderTransform>
+                                    <TranslateTransform x:Name="TickerTransform" X="0"/>
+                                </TextBlock.RenderTransform>
+                            </TextBlock>
+                        </Canvas>
                     </Border>
                     
-                    <!-- Your Stats -->
-                    <Border Grid.Column="2" x:Name="StatsBox" Style="{StaticResource AsciiBox}" 
-                            Cursor="Arrow" Background="Transparent">
-                        <StackPanel>
-                            <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
-                                <TextBlock Text="📊" FontSize="12"/>
-                                <TextBlock Text=" Your Stats" Foreground="#888888" FontWeight="Bold"/>
-                            </StackPanel>
-                            
-                            <StackPanel x:Name="TimeStatsRegion" Background="Transparent" MouseLeftButtonDown="TimeStats_Click" Cursor="Hand">
-                                <Grid Margin="0,5,0,3">
-                                    <TextBlock Text="Today:" Foreground="#666666"/>
-                                    <TextBlock Text="0 hrs" HorizontalAlignment="Right" Foreground="#88CC88" x:Name="TodayHours"/>
-                                </Grid>
-                                <Grid Margin="0,3">
-                                    <TextBlock Text="Week:" Foreground="#666666"/>
-                                    <TextBlock Text="0 hrs" HorizontalAlignment="Right" Foreground="#88CC88" x:Name="WeekHours"/>
-                                </Grid>
-                                <Grid Margin="0,3,0,10">
-                                    <TextBlock Text="Total:" Foreground="#666666"/>
-                                    <TextBlock Text="0 hrs" HorizontalAlignment="Right" Foreground="#88CC88" FontWeight="Bold" x:Name="TotalHours"/>
-                                </Grid>
-                            </StackPanel>
+                    <!-- ═══ KEGOMODORO + STATS ═══ -->
+                    <Grid Grid.Row="2">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="15"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        
+                        <!-- KEGOMODORO Widget -->
+                        <Border Grid.Column="0" Style="{StaticResource AsciiBox}">
+                            <StackPanel>
+                                <!-- Header -->
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                                    <TextBlock Text="│" Foreground="#444444"/>
+                                    <TextBlock Text=" KEGOMODORO" Foreground="#888888" FontWeight="Bold"/>
+                                </StackPanel>
+                                
+                                <!-- Timer Display -->
+                                <StackPanel HorizontalAlignment="Center" Margin="0,5,0,10">
+                                    <Image x:Name="FireImage" Width="60" Height="60" Stretch="Uniform"
+                                           HorizontalAlignment="Center" Opacity="0.9"/>
+                                    <TextBlock Text="25:00" Foreground="#FFFFFF" FontSize="28" FontWeight="Bold" 
+                                               HorizontalAlignment="Center" Margin="0,8,0,0"
+                                               FontFamily="Consolas" x:Name="TimerDisplay"/>
+                                </StackPanel>
+                                
+                                <!-- Buttons -->
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,15">
+                                    <Button Style="{StaticResource BracketButton}" 
+                                            Content="▶ Start" Foreground="#87CEEB"
+                                            x:Name="StartFocusButton" Click="StartFocusButton_Click"/>
+                                    <Button Style="{StaticResource BracketButton}" 
+                                            Content="⚙ Customize" Margin="10,0,0,0"
+                                            x:Name="CustomizeButton" Click="CustomizeButton_Click"/>
+                                </StackPanel>
+                                <!-- Add Manual Time -->
+                                <Rectangle Height="1" Fill="#333333" Margin="10,0,10,12"/>
+                                <Button Style="{StaticResource BracketButton}" 
+                                        Content="⏱️ Add Manual Time" Foreground="#666666" 
+                                        HorizontalAlignment="Center" FontSize="11"
+                                        Click="AddManualTime_Click"/>
 
-                            <!-- XP & Level -->
-                            <Border x:Name="LevelRegion" Background="Transparent" Padding="8" CornerRadius="3" 
-                                    MouseLeftButtonDown="LevelStats_Click" Cursor="Hand" Margin="0,5,0,10"
-                                    BorderBrush="#333333" BorderThickness="1">
-                                <Border.Style>
-                                    <Style TargetType="Border">
-                                        <Style.Triggers>
-                                            <Trigger Property="IsMouseOver" Value="True">
-                                                <Setter Property="Background" Value="#15FFFFFF"/>
-                                            </Trigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </Border.Style>
-                                <StackPanel>
-                                    <Grid Margin="0,0,0,5">
-                                        <TextBlock x:Name="UserLevelText" Text="🏆 Level 12 • 2,350 XP" Foreground="#FFFFFF" FontSize="12" FontWeight="Bold"/>
+                                <!-- Task Widget -->
+                                <comp:TaskWidget x:Name="DashboardTaskWidget" Margin="0,10,0,0"/>
+                            </StackPanel>
+                        </Border>
+                        
+                        <!-- Your Stats -->
+                        <Border Grid.Column="2" x:Name="StatsBox" Style="{StaticResource AsciiBox}" 
+                                Cursor="Arrow" Background="Transparent">
+                            <StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                                    <TextBlock Text="📊" FontSize="12"/>
+                                    <TextBlock Text=" Your Stats" Foreground="#888888" FontWeight="Bold"/>
+                                </StackPanel>
+                                
+                                <StackPanel x:Name="TimeStatsRegion" Background="Transparent" MouseLeftButtonDown="TimeStats_Click" Cursor="Hand">
+                                    <Grid Margin="0,5,0,3">
+                                        <TextBlock Text="Today:" Foreground="#666666"/>
+                                        <TextBlock Text="0 hrs" HorizontalAlignment="Right" Foreground="#88CC88" x:Name="TodayHours"/>
                                     </Grid>
-                                    <!-- ASCII Progress Bar (using ░ as requested) -->
-                                    <TextBlock x:Name="UserXpBar" Text="░░░░░░░░░░░░░░░░...." Foreground="#88CC88" FontSize="14" Margin="0,3,0,0"/>
+                                    <Grid Margin="0,3">
+                                        <TextBlock Text="Week:" Foreground="#666666"/>
+                                        <TextBlock Text="0 hrs" HorizontalAlignment="Right" Foreground="#88CC88" x:Name="WeekHours"/>
+                                    </Grid>
+                                    <Grid Margin="0,3,0,10">
+                                        <TextBlock Text="Total:" Foreground="#666666"/>
+                                        <TextBlock Text="0 hrs" HorizontalAlignment="Right" Foreground="#88CC88" FontWeight="Bold" x:Name="TotalHours"/>
+                                    </Grid>
                                 </StackPanel>
-                            </Border>
 
-                            <!-- Streak Stats -->
-                            <Grid Margin="0,5,0,2">
-                                <TextBlock Text="🔥 Streak:" Foreground="#666666" FontSize="11"/>
-                                <TextBlock x:Name="CurrentStreakText" Text="7 days" HorizontalAlignment="Right" Foreground="#FFB347" FontSize="11"/>
-                            </Grid>
-                            <Grid Margin="0,0,0,10">
-                                <TextBlock Text="🏅 Best:" Foreground="#666666" FontSize="11"/>
-                                <TextBlock x:Name="BestStreakText" Text="23 days" HorizontalAlignment="Right" Foreground="#AAAAAA" FontSize="11"/>
-                            </Grid>
-                            
-                            
-                            <!-- Pixe.la Heatmap (WebView2 for modern Edge rendering) -->
-                            <Border x:Name="HeatmapBorder" BorderBrush="#333333" BorderThickness="1" Margin="0,5,0,0" 
-                                    Background="#0A0A0A" Padding="0" CornerRadius="3" Cursor="Hand">
-                                <Border.Style>
-                                    <Style TargetType="Border">
-                                        <Style.Triggers>
-                                            <Trigger Property="IsMouseOver" Value="True">
-                                                <Setter Property="BorderBrush" Value="#555555"/>
-                                                <Setter Property="Background" Value="#121212"/>
-                                            </Trigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </Border.Style>
-                                <wv2:WebView2 x:Name="PixelaHeatmapWebView" Height="80"
-                                              DefaultBackgroundColor="Transparent"/>
-                            </Border>
-                            <TextBlock x:Name="PixelaStatus" Text="📊 Click a pixel to edit" 
-                                       Foreground="#555555" FontSize="9" HorizontalAlignment="Center" 
-                                       Margin="0,5,0,0"/>
+                                <!-- XP & Level -->
+                                <Border x:Name="LevelRegion" Background="Transparent" Padding="8" CornerRadius="3" 
+                                        MouseLeftButtonDown="LevelStats_Click" Cursor="Hand" Margin="0,5,0,10"
+                                        BorderBrush="#333333" BorderThickness="1">
+                                    <Border.Style>
+                                        <Style TargetType="Border">
+                                            <Style.Triggers>
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter Property="Background" Value="#15FFFFFF"/>
+                                                </Trigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Border.Style>
+                                    <StackPanel>
+                                        <Grid Margin="0,0,0,5">
+                                            <TextBlock x:Name="UserLevelText" Text="🏆 Level 12 • 2,350 XP" Foreground="#FFFFFF" FontSize="12" FontWeight="Bold"/>
+                                        </Grid>
+                                        <!-- ASCII Progress Bar -->
+                                        <TextBlock x:Name="UserXpBar" Text="░░░░░░░░░░░░░░░░...." Foreground="#88CC88" FontSize="14" Margin="0,3,0,0"/>
+                                    </StackPanel>
+                                </Border>
 
-                            <!-- Quick Palette -->
-                            <Border BorderBrush="#333333" BorderThickness="1" Margin="0,8,0,0" Padding="8,6" CornerRadius="3">
-                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                                    <Button x:Name="ColorGreen" Tag="shibafu" Background="#70cc14" Width="20" Height="20" Margin="3,0" BorderThickness="0" Click="PaletteColor_Click" Cursor="Hand" ToolTip="Green"/>
-                                    <Button x:Name="ColorRed" Tag="momiji" Background="#f3591e" Width="20" Height="20" Margin="3,0" BorderThickness="0" Click="PaletteColor_Click" Cursor="Hand" ToolTip="Red"/>
-                                    <Button x:Name="ColorBlue" Tag="sora" Background="#00aced" Width="20" Height="20" Margin="3,0" BorderThickness="0" Click="PaletteColor_Click" Cursor="Hand" ToolTip="Blue"/>
-                                    <Button x:Name="ColorYellow" Tag="ichou" Background="#e4b41b" Width="20" Height="20" Margin="3,0" BorderThickness="0" Click="PaletteColor_Click" Cursor="Hand" ToolTip="Yellow"/>
-                                    <Button x:Name="ColorPurple" Tag="ajisai" Background="#7246df" Width="20" Height="20" Margin="3,0" BorderThickness="0" Click="PaletteColor_Click" Cursor="Hand" ToolTip="Purple"/>
-                                    <Button x:Name="ColorBlack" Tag="kuro" Background="#222222" Width="20" Height="20" Margin="3,0" BorderThickness="1" BorderBrush="#444444" Click="PaletteColor_Click" Cursor="Hand" ToolTip="Black"/>
-                                </StackPanel>
-                            </Border>
-                        </StackPanel>
+                                <!-- Streak Stats -->
+                                <Grid Margin="0,5,0,2">
+                                    <TextBlock Text="🔥 Streak:" Foreground="#666666" FontSize="11"/>
+                                    <TextBlock x:Name="CurrentStreakText" Text="7 days" HorizontalAlignment="Right" Foreground="#FFB347" FontSize="11"/>
+                                </Grid>
+                                <Grid Margin="0,0,0,10">
+                                    <TextBlock Text="🏅 Best:" Foreground="#666666" FontSize="11"/>
+                                    <TextBlock x:Name="BestStreakText" Text="23 days" HorizontalAlignment="Right" Foreground="#AAAAAA" FontSize="11"/>
+                                </Grid>
+                                
+                                <!-- Heatmap -->
+                                <Border x:Name="HeatmapBorder" BorderBrush="#333333" BorderThickness="1" Margin="0,5,0,0" 
+                                        Background="#0A0A0A" Padding="0" CornerRadius="3" Cursor="Hand">
+                                    <wv2:WebView2 x:Name="PixelaHeatmapWebView" Height="80" DefaultBackgroundColor="Transparent"/>
+                                </Border>
+                                <TextBlock x:Name="PixelaStatus" Text="📊 Click a pixel to edit" 
+                                           Foreground="#555555" FontSize="9" HorizontalAlignment="Center" 
+                                           Margin="0,5,0,0"/>
+                                
+                                <!-- Quick Palette -->
+                                <Border BorderBrush="#333333" BorderThickness="1" Margin="0,8,0,0" Padding="8,6" CornerRadius="3">
+                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                        <Button x:Name="ColorGreen" Background="#70cc14" Width="18" Height="18" Margin="2,0" BorderThickness="0" Click="PaletteColor_Click" Cursor="Hand"/>
+                                        <Button x:Name="ColorRed" Background="#f3591e" Width="18" Height="18" Margin="2,0" BorderThickness="0" Click="PaletteColor_Click" Cursor="Hand"/>
+                                        <Button x:Name="ColorBlue" Background="#00aced" Width="18" Height="18" Margin="2,0" BorderThickness="0" Click="PaletteColor_Click" Cursor="Hand"/>
+                                        <Button x:Name="ColorYellow" Background="#e4b41b" Width="18" Height="18" Margin="2,0" BorderThickness="0" Click="PaletteColor_Click" Cursor="Hand"/>
+                                        <Button x:Name="ColorBlack" Background="#222222" Width="18" Height="18" Margin="2,0" BorderThickness="1" BorderBrush="#444444" Click="PaletteColor_Click" Cursor="Hand"/>
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+                    
+                    <!-- ═══ JOURNAL ═══ -->
+                    <Border Grid.Row="3" Style="{StaticResource AsciiBox}">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+                            
+                            <TextBlock Text="│ What's on your mind?" Foreground="#888888" Margin="0,0,0,10"/>
+                            
+                            <TextBox Grid.Row="1" x:Name="JournalInput"
+                                     Background="Transparent" 
+                                     Foreground="#CCCCCC"
+                                     BorderBrush="#333333" BorderThickness="1"
+                                     Padding="10"
+                                     AcceptsReturn="True" TextWrapping="Wrap"
+                                     VerticalScrollBarVisibility="Auto"
+                                     CaretBrush="#CCCCCC"
+                                     GotFocus="JournalInput_GotFocus"
+                                     LostFocus="JournalInput_LostFocus"/>
+                            
+                            <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,15,0,0">
+                                <Button Style="{StaticResource BracketButton}" 
+                                        Content="💾 Save to Journal" Foreground="#AAAAAA"
+                                        x:Name="SaveJournalButton" Click="SaveJournalButton_Click"/>
+                                <Button Style="{StaticResource BracketButton}" 
+                                        Content="📂 Open File" Foreground="#FFB347" Margin="20,0,0,0"
+                                        x:Name="OpenNotepadButton" Click="OpenNotepadButton_Click"/>
+                            </StackPanel>
+                        </Grid>
                     </Border>
                 </Grid>
-                
-                <!-- ═══ JOURNAL ═══ -->
-                <Border Grid.Row="3" Style="{StaticResource AsciiBox}">
-                    <Grid>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="*"/>
-                            <RowDefinition Height="Auto"/>
-                        </Grid.RowDefinitions>
-                        
-                        <TextBlock Text="│ What's on your mind?" Foreground="#888888" Margin="0,0,0,10"/>
-                        
-                        <TextBox Grid.Row="1" x:Name="JournalInput"
-                                 Background="Transparent" 
-                                 Foreground="#CCCCCC"
-                                 BorderBrush="#333333" BorderThickness="1"
-                                 Padding="10"
-                                 AcceptsReturn="True" TextWrapping="Wrap"
-                                 VerticalScrollBarVisibility="Auto"
-                                 CaretBrush="#CCCCCC"
-                                 GotFocus="JournalInput_GotFocus"
-                                 LostFocus="JournalInput_LostFocus"/>
-                        
-                        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,15,0,0">
-                            <Button Style="{StaticResource BracketButton}" 
-                                    Content="💾 Save to Journal" Foreground="#AAAAAA"
-                                    x:Name="SaveJournalButton" Click="SaveJournalButton_Click"/>
-                            <Button Style="{StaticResource BracketButton}" 
-                                    Content="📂 Open File" Foreground="#FFB347" Margin="20,0,0,0"
-                                    x:Name="OpenNotepadButton" Click="OpenNotepadButton_Click"/>
-                        </StackPanel>
+
+                <!-- ═══ NEXUS PANEL (NeuralNotes) ═══ -->
+                <Border Grid.Column="1" x:Name="NexusPanel" 
+                        BorderBrush="#333333" BorderThickness="1,0,0,0" 
+                        Margin="15,0,0,0" Visibility="Collapsed" Width="380">
+                    <Grid Background="#0A0A0A">
+                        <comp:NexusWidget x:Name="NeuralNexusWidget"/>
                     </Grid>
                 </Border>
             </Grid>

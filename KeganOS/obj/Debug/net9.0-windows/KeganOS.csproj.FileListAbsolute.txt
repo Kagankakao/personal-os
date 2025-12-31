@@ -137,3 +137,6 @@ C:\Users\ariba\OneDrive\Documenti\Software Projects\AI Projects\personal-os\pers
 C:\Users\ariba\OneDrive\Documenti\Software Projects\AI Projects\personal-os\personal-os\KeganOS\obj\Debug\net9.0-windows\Views\PrometheusChatWindow.g.cs
 C:\Users\ariba\OneDrive\Documenti\Software Projects\AI Projects\personal-os\personal-os\KeganOS\obj\Debug\net9.0-windows\Views\Components\TaskWidget.baml
 C:\Users\ariba\OneDrive\Documenti\Software Projects\AI Projects\personal-os\personal-os\KeganOS\obj\Debug\net9.0-windows\Views\Components\TaskWidget.g.cs
+C:\Users\ariba\OneDrive\Documenti\Software Projects\AI Projects\personal-os\personal-os\KeganOS\obj\Debug\net9.0-windows\Views\Components\NexusWidget.baml
+C:\Users\ariba\OneDrive\Documenti\Software Projects\AI Projects\personal-os\personal-os\KeganOS\obj\Debug\net9.0-windows\Views\Components\NexusWidget.g.cs
+C:\Users\ariba\OneDrive\Documenti\Software Projects\AI Projects\personal-os\personal-os\KeganOS\obj\Debug\net9.0-windows\App.baml
