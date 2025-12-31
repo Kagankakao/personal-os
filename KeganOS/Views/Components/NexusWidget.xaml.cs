@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -22,10 +23,25 @@ namespace KeganOS.Views.Components
         private bool _isEditing = false;
         private bool _isSelectionMode = false;
         private HashSet<string> _selectedNoteIds = new HashSet<string>();
+        
+        // Auto-save timer (debounce)
+        private System.Windows.Threading.DispatcherTimer _autoSaveTimer;
+        private const int AUTO_SAVE_DELAY_MS = 1500;
+        private int _populatingCount = 0;
+        private bool IsPopulating => _populatingCount > 0;
 
         public NexusWidget()
         {
             InitializeComponent();
+            
+            // Initialize auto-save timer
+            _autoSaveTimer = new System.Windows.Threading.DispatcherTimer();
+            _autoSaveTimer.Interval = TimeSpan.FromMilliseconds(AUTO_SAVE_DELAY_MS);
+            _autoSaveTimer.Tick += AutoSaveTimer_Tick;
+            
+            // Hook up auto-save on content changes
+            DetailContent.TextChanged += OnNoteChanged;
+            DetailTitle.TextChanged += OnTitleChanged;
         }
 
         public void Initialize(INoteService noteService, IPrometheusService prometheusService)
@@ -122,67 +138,83 @@ namespace KeganOS.Views.Components
                 }
             }
 
-            // Show first image as thumbnail if available
+            // Show first image as large thumbnail if available
             if (note.ImagePaths?.Count > 0 && System.IO.File.Exists(note.ImagePaths[0]))
             {
                 try
                 {
                     var thumbImg = new System.Windows.Controls.Image
                     {
-                        Height = 60,
+                        Height = 120,
                         Stretch = Stretch.UniformToFill,
-                        Margin = new Thickness(0, 0, 0, 8),
                         HorizontalAlignment = System.Windows.HorizontalAlignment.Stretch
                     };
                     
                     var thumbBitmap = new BitmapImage();
                     thumbBitmap.BeginInit();
                     thumbBitmap.UriSource = new Uri(note.ImagePaths[0], UriKind.Absolute);
-                    thumbBitmap.DecodePixelWidth = 200;
+                    thumbBitmap.DecodePixelWidth = 280;
                     thumbBitmap.CacheOption = BitmapCacheOption.OnLoad;
                     thumbBitmap.EndInit();
                     thumbImg.Source = thumbBitmap;
                     
-                    stack.Children.Add(thumbImg);
+                    // Wrap in border for rounded corners
+                    var imgBorder = new Border
+                    {
+                        CornerRadius = new CornerRadius(6),
+                        ClipToBounds = true,
+                        Margin = new Thickness(0, 0, 0, 10),
+                        Child = thumbImg
+                    };
+                    
+                    stack.Children.Add(imgBorder);
                 }
                 catch { /* Skip if image fails to load */ }
             }
 
-            if (!string.IsNullOrEmpty(note.Title))
+            stack.Children.Add(new TextBlock
             {
-                stack.Children.Add(new TextBlock
-                {
-                    Text = note.Title,
-                    Foreground = System.Windows.Media.Brushes.White,
-                    FontWeight = FontWeights.Bold,
-                    FontSize = 14,
-                    Margin = new Thickness(0, 0, 0, 8),
-                    TextWrapping = TextWrapping.Wrap
-                });
-            }
+                Text = string.IsNullOrEmpty(note.Title) ? "Untitled" : note.Title,
+                Foreground = System.Windows.Media.Brushes.White,
+                FontWeight = FontWeights.Bold,
+                FontSize = 14,
+                Margin = new Thickness(0, 0, 0, 8),
+                TextWrapping = TextWrapping.Wrap
+            });
 
-            if (!string.IsNullOrEmpty(note.Content))
+            // Content preview or "No text"
+            var contentPreview = string.IsNullOrWhiteSpace(note.Content) ? "No text" : note.Content;
+            if (contentPreview.Length > 80) contentPreview = contentPreview.Substring(0, 77) + "...";
+            stack.Children.Add(new TextBlock
             {
-                stack.Children.Add(new TextBlock
-                {
-                    Text = note.Content,
-                    Foreground = new SolidColorBrush(System.Windows.Media.Color.FromRgb(170, 170, 170)),
-                    FontSize = 12,
-                    TextWrapping = TextWrapping.Wrap,
-                    MaxHeight = 100 
-                });
-            }
+                Text = contentPreview,
+                Foreground = new SolidColorBrush(System.Windows.Media.Color.FromRgb(170, 170, 170)),
+                FontSize = 12,
+                TextWrapping = TextWrapping.Wrap,
+                MaxHeight = 100
+            });
 
+            // Date + Pin row at bottom
+            var bottomRow = new StackPanel { Orientation = System.Windows.Controls.Orientation.Horizontal };
+            bottomRow.Children.Add(new TextBlock
+            {
+                Text = note.LastModified.ToString("MMM dd"),
+                Foreground = new SolidColorBrush(System.Windows.Media.Color.FromRgb(120, 120, 120)),
+                FontSize = 11,
+                VerticalAlignment = VerticalAlignment.Center
+            });
+            
             if (note.IsPinned)
             {
-                stack.Children.Add(new TextBlock
+                bottomRow.Children.Add(new TextBlock
                 {
-                    Text = "📌 Pinned",
-                    Foreground = new SolidColorBrush(System.Windows.Media.Color.FromRgb(255, 179, 71)),
-                    FontSize = 10,
-                    Margin = new Thickness(0, 8, 0, 0)
+                    Text = "  📌",
+                    Foreground = new SolidColorBrush(System.Windows.Media.Color.FromRgb(255, 200, 80)),
+                    FontSize = 12,
+                    VerticalAlignment = VerticalAlignment.Center
                 });
             }
+            stack.Children.Add(bottomRow);
 
             border.Child = stack;
             return border;
@@ -247,7 +279,6 @@ namespace KeganOS.Views.Components
         {
             _currentNote = new NoteItem { Category = "General" };
             ShowNoteDetail(_currentNote);
-            SetEditMode(true);
         }
 
         private void BackToGrid_Click(object sender, System.Windows.RoutedEventArgs e)
@@ -258,19 +289,164 @@ namespace KeganOS.Views.Components
 
         private void ShowNoteDetail(NoteItem note)
         {
-            _currentNote = note;
-            DetailTitle.Text = note.Title;
-            DetailContent.Text = note.Content;
-            DetailCategory.Text = note.Category.ToUpper();
-            DetailDate.Text = note.LastModified.ToString("yyyy-MM-dd HH:mm");
+            _populatingCount++;
+            try
+            {
+                _currentNote = note;
+                DetailTitle.Text = note.Title;
+                DetailCategory.Text = note.Category.ToUpper();
+                DetailDate.Text = note.LastModified.ToString("yyyy-MM-dd HH:mm");
+                
+                PinNoteButton.Content = note.IsPinned ? "[ 📌 Unpin ]" : "[ 📌 Pin ]";
+                
+                // Populate FlowDocument with content and images
+                PopulateFlowDocument(note);
+                
+                SetEditMode(true);  // Enter edit mode immediately
+                NoteDetailPanel.Visibility = System.Windows.Visibility.Visible;
+            }
+            finally
+            {
+                _populatingCount--;
+            }
+        }
+
+        private void PopulateFlowDocument(NoteItem note)
+        {
+            _populatingCount++;
+            try
+            {
+                DetailContent.Document.Blocks.Clear();
+                
+                // Add text content
+                if (!string.IsNullOrEmpty(note.Content))
+                {
+                    var para = new Paragraph(new Run(note.Content))
+                    {
+                        Foreground = new SolidColorBrush(System.Windows.Media.Color.FromRgb(204, 204, 204))
+                    };
+                    DetailContent.Document.Blocks.Add(para);
+                }
+                else
+                {
+                    // Add an empty paragraph so the user can start typing immediately
+                    DetailContent.Document.Blocks.Add(new Paragraph(new Run("")));
+                }
+                
+                // Add inline images
+                if (note.ImagePaths?.Count > 0)
+                {
+                    var imgPara = new Paragraph();
+                    imgPara.Inlines.Add(new Run(" ")); // Initial space
+                    
+                    foreach (var path in note.ImagePaths)
+                    {
+                        if (!System.IO.File.Exists(path)) continue;
+                        try
+                        {
+                            var img = CreateInlineImage(path);
+                            imgPara.Inlines.Add(new InlineUIContainer(img));
+                            imgPara.Inlines.Add(new Run(" ")); // Space between images
+                        }
+                        catch { }
+                    }
+                    
+                    if (imgPara.Inlines.Count > 1) // More than just the initial space
+                        DetailContent.Document.Blocks.Add(imgPara);
+                }
+            }
+            finally
+            {
+                _populatingCount--;
+            }
+        }
+
+        private UIElement CreateInlineImage(string path)
+        {
+            var bitmap = new BitmapImage();
+            bitmap.BeginInit();
+            bitmap.UriSource = new Uri(path, UriKind.Absolute);
+            bitmap.DecodePixelWidth = 300;
+            bitmap.CacheOption = BitmapCacheOption.OnLoad;
+            bitmap.EndInit();
             
-            PinNoteButton.Content = note.IsPinned ? "[ 📌 Unpin ]" : "[ 📌 Pin ]";
+            var img = new System.Windows.Controls.Image
+            {
+                Source = bitmap,
+                MaxWidth = 280,
+                MaxHeight = 200,
+                Stretch = Stretch.Uniform,
+                Cursor = System.Windows.Input.Cursors.Hand
+            };
             
-            // Populate images
-            RenderDetailImages();
+            // Click to view full size
+            img.MouseLeftButtonDown += (s, e) => 
+            {
+                if (e.ClickCount == 2) // Double-click to open
+                    System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(path) { UseShellExecute = true });
+            };
             
-            SetEditMode(false);
-            NoteDetailPanel.Visibility = System.Windows.Visibility.Visible;
+            // Delete button
+            var deleteBtn = new System.Windows.Controls.Button
+            {
+                Content = "✕",
+                FontSize = 12,
+                Width = 24,
+                Height = 24,
+                HorizontalAlignment = System.Windows.HorizontalAlignment.Right,
+                VerticalAlignment = VerticalAlignment.Top,
+                Background = new SolidColorBrush(System.Windows.Media.Color.FromArgb(200, 200, 50, 50)),
+                Foreground = System.Windows.Media.Brushes.White,
+                BorderThickness = new Thickness(0),
+                Cursor = System.Windows.Input.Cursors.Hand,
+                Margin = new Thickness(0, 2, 2, 0),
+                Visibility = Visibility.Collapsed
+            };
+            
+            deleteBtn.Click += async (s, e) =>
+            {
+                _populatingCount++;
+                try
+                {
+                    _currentNote.ImagePaths.Remove(path);
+                    _currentNote.LastModified = DateTime.Now;
+                    
+                    // Update local _notes list too
+                    var existingNote = _notes.FirstOrDefault(n => n.Id == _currentNote.Id);
+                    if (existingNote != null)
+                    {
+                        existingNote.ImagePaths = new List<string>(_currentNote.ImagePaths);
+                        existingNote.LastModified = _currentNote.LastModified;
+                    }
+                    
+                    // Save to database
+                    await _noteService.SaveNoteAsync(_currentUser.Id, _currentNote);
+                    
+                    // Refresh display
+                    PopulateFlowDocument(_currentNote);
+                    RenderNotes();
+                }
+                finally
+                {
+                    _populatingCount--;
+                }
+            };
+            
+            // Container grid
+            var container = new Grid
+            {
+                Margin = new Thickness(0, 5, 10, 5),
+                Background = System.Windows.Media.Brushes.Transparent, // Essential for hover detection
+                Tag = path // Store path for extraction during auto-save
+            };
+            container.Children.Add(img);
+            container.Children.Add(deleteBtn);
+            
+            // Show delete button on hover
+            container.MouseEnter += (s, e) => deleteBtn.Visibility = Visibility.Visible;
+            container.MouseLeave += (s, e) => deleteBtn.Visibility = Visibility.Collapsed;
+            
+            return container;
         }
 
         private void EditNote_Click(object sender, System.Windows.RoutedEventArgs e)
@@ -281,7 +457,10 @@ namespace KeganOS.Views.Components
         private async void SaveNote_Click(object sender, System.Windows.RoutedEventArgs e)
         {
             _currentNote.Title = DetailTitle.Text;
-            _currentNote.Content = DetailContent.Text;
+            
+            // Extract text from FlowDocument
+            var textRange = new TextRange(DetailContent.Document.ContentStart, DetailContent.Document.ContentEnd);
+            _currentNote.Content = textRange.Text.Trim();
             _currentNote.LastModified = DateTime.Now;
 
             await _noteService.SaveNoteAsync(_currentUser.Id, _currentNote);
@@ -303,91 +482,144 @@ namespace KeganOS.Views.Components
             _isEditing = editing;
             DetailTitle.IsReadOnly = !editing;
             DetailContent.IsReadOnly = !editing;
-            
-            SaveNoteButton.Visibility = editing ? Visibility.Visible : Visibility.Collapsed;
-            EditNoteButton.Visibility = editing ? Visibility.Collapsed : Visibility.Visible;
-            AddImageBtn.Visibility = editing ? Visibility.Visible : Visibility.Collapsed;
-        }
-
-        private void RenderDetailImages()
-        {
-            DetailImagesPanel.Children.Clear();
-            
-            if (_currentNote?.ImagePaths == null || _currentNote.ImagePaths.Count == 0)
-            {
-                ImagesLabel.Visibility = Visibility.Collapsed;
-                return;
-            }
-
-            ImagesLabel.Visibility = Visibility.Visible;
-            
-            foreach (var path in _currentNote.ImagePaths)
-            {
-                if (!System.IO.File.Exists(path)) continue;
-
-                try
-                {
-                    var img = new System.Windows.Controls.Image
-                    {
-                        Width = 120,
-                        Height = 90,
-                        Stretch = Stretch.UniformToFill,
-                        Margin = new Thickness(0, 0, 8, 8),
-                        Cursor = System.Windows.Input.Cursors.Hand,
-                        Tag = path
-                    };
-                    
-                    var bitmap = new BitmapImage();
-                    bitmap.BeginInit();
-                    bitmap.UriSource = new Uri(path, UriKind.Absolute);
-                    bitmap.DecodePixelWidth = 240; // Thumbnail optimization
-                    bitmap.CacheOption = BitmapCacheOption.OnLoad;
-                    bitmap.EndInit();
-                    img.Source = bitmap;
-                    
-                    // Click to view full size (future: lightbox)
-                    img.MouseLeftButtonDown += (s, e) => System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(path) { UseShellExecute = true });
-                    
-                    var border = new Border
-                    {
-                        BorderBrush = new SolidColorBrush(System.Windows.Media.Color.FromRgb(51, 51, 51)),
-                        BorderThickness = new Thickness(1),
-                        CornerRadius = new CornerRadius(4),
-                        Child = img,
-                        Margin = new Thickness(0, 0, 8, 8)
-                    };
-                    
-                    DetailImagesPanel.Children.Add(border);
-                }
-                catch { /* Skip invalid images */ }
-            }
-        }
-
-        private void AddImage_Click(object sender, RoutedEventArgs e)
-        {
-            var dialog = new Microsoft.Win32.OpenFileDialog
-            {
-                Title = "Select Image",
-                Filter = "Image files (*.png;*.jpg;*.jpeg;*.gif;*.bmp)|*.png;*.jpg;*.jpeg;*.gif;*.bmp",
-                Multiselect = true
-            };
-
-            if (dialog.ShowDialog() == true)
-            {
-                foreach (var file in dialog.FileNames)
-                {
-                    if (!_currentNote.ImagePaths.Contains(file))
-                    {
-                        _currentNote.ImagePaths.Add(file);
-                    }
-                }
-                RenderDetailImages();
-            }
         }
 
         private void OnNoteChanged(object sender, TextChangedEventArgs e)
         {
-            // Optional: Auto-save or visual feedback
+            if (IsPopulating) return;
+
+            // Restart auto-save timer on each change (debounce)
+            if (_isEditing && _currentNote != null)
+            {
+                _autoSaveTimer.Stop();
+                _autoSaveTimer.Start();
+            }
+        }
+
+        private void OnTitleChanged(object sender, TextChangedEventArgs e)
+        {
+            if (IsPopulating) return;
+
+            // Same logic - restart auto-save timer
+            if (_isEditing && _currentNote != null)
+            {
+                _autoSaveTimer.Stop();
+                _autoSaveTimer.Start();
+            }
+        }
+
+        private async void AutoSaveTimer_Tick(object sender, EventArgs e)
+        {
+            _autoSaveTimer.Stop();
+            
+            if (_currentNote == null || _currentUser == null || _noteService == null) return;
+            
+            // Save current state
+            _currentNote.Title = DetailTitle.Text;
+            var textRange = new TextRange(DetailContent.Document.ContentStart, DetailContent.Document.ContentEnd);
+            _currentNote.Content = textRange.Text.Trim();
+            
+            // Sync ImagePaths from document (handles keyboard deletion)
+            var currentImages = new List<string>();
+            foreach (var block in DetailContent.Document.Blocks)
+            {
+                if (block is Paragraph para)
+                {
+                    foreach (var inline in para.Inlines)
+                    {
+                        if (inline is InlineUIContainer container && container.Child is FrameworkElement element && element.Tag is string path)
+                        {
+                            currentImages.Add(path);
+                        }
+                    }
+                }
+            }
+            _currentNote.ImagePaths = currentImages;
+            
+            _currentNote.LastModified = DateTime.Now;
+            
+            await _noteService.SaveNoteAsync(_currentUser.Id, _currentNote);
+            
+            // Update the local _notes list and refresh the preview
+            var existingNote = _notes.FirstOrDefault(n => n.Id == _currentNote.Id);
+            if (existingNote != null)
+            {
+                existingNote.Title = _currentNote.Title;
+                existingNote.Content = _currentNote.Content;
+                existingNote.LastModified = _currentNote.LastModified;
+                existingNote.ImagePaths = _currentNote.ImagePaths;
+            }
+            else
+            {
+                // New note! Add it to the local cache so it appears in the grid
+                _notes.Insert(0, _currentNote);
+            }
+            RenderNotes();
+        }
+
+        private void DetailContent_DragOver(object sender, System.Windows.DragEventArgs e)
+        {
+            if (!_isEditing)
+            {
+                e.Effects = System.Windows.DragDropEffects.None;
+                e.Handled = true;
+                return;
+            }
+
+            if (e.Data.GetDataPresent(System.Windows.DataFormats.FileDrop))
+            {
+                var files = (string[])e.Data.GetData(System.Windows.DataFormats.FileDrop);
+                bool hasImage = files.Any(f => IsImageFile(f));
+                e.Effects = hasImage ? System.Windows.DragDropEffects.Copy : System.Windows.DragDropEffects.None;
+            }
+            else
+            {
+                e.Effects = System.Windows.DragDropEffects.None;
+            }
+            e.Handled = true;
+        }
+
+        private void DetailContent_Drop(object sender, System.Windows.DragEventArgs e)
+        {
+            if (!_isEditing || _currentNote == null) return;
+
+            if (e.Data.GetDataPresent(System.Windows.DataFormats.FileDrop))
+            {
+                var files = (string[])e.Data.GetData(System.Windows.DataFormats.FileDrop);
+                
+                // Get drop position
+                var dropPoint = e.GetPosition(DetailContent);
+                TextPointer insertPosition = DetailContent.GetPositionFromPoint(dropPoint, true);
+                
+                foreach (var file in files)
+                {
+                    if (IsImageFile(file))
+                    {
+                        // Add to image paths for persistence
+                        if (!_currentNote.ImagePaths.Contains(file))
+                            _currentNote.ImagePaths.Add(file);
+                        
+                        // Insert image inline at drop position
+                        try
+                        {
+                            var img = CreateInlineImage(file);
+                            var container = new InlineUIContainer(img, insertPosition);
+                            insertPosition = container.ContentEnd;
+                            
+                            // Add a space after the image
+                            insertPosition.InsertTextInRun(" ");
+                        }
+                        catch { }
+                    }
+                }
+            }
+            e.Handled = true;
+        }
+
+        private bool IsImageFile(string path)
+        {
+            var ext = System.IO.Path.GetExtension(path)?.ToLower();
+            return ext == ".png" || ext == ".jpg" || ext == ".jpeg" || ext == ".gif" || ext == ".bmp" || ext == ".webp";
         }
 
         private void NexusSearchInput_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)

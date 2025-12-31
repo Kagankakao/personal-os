@@ -1007,7 +1007,7 @@ public partial class MainWindow : System.Windows.Window
         UserXpBar.Foreground = UserLevelText.Foreground; // Match progress bar to level color
     }
 
-    public void ShowToast(string title, string message, string icon = "💡", string color = "#5DADE2")
+    public void ShowToast(string message, string icon = "📖", string color = "#44CC44", string header = "Saved to Journal")
     {
         Dispatcher.Invoke(() =>
         {
@@ -1020,10 +1020,7 @@ public partial class MainWindow : System.Windows.Window
                 System.Windows.Controls.Grid.SetRow(toast, 1);
                 
                 RootGrid.Children.Add(toast);
-                toast.Show(title, icon, 0, color); // Reusing icon for the 'message' or similar
-                // Note: The ToastNotification.Show currently takes (name, icon, xp, color)
-                // We'll adapt it to show the title and 'message' logic if possible, 
-                // but for now, we'll map title -> name.
+                toast.ShowMessage(message, icon, color, header);
             }
             catch (Exception ex)
             {

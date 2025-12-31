@@ -125,12 +125,6 @@
                     <Button Content="[ ← Back ]" Style="{StaticResource TitleBarButton}" 
                             Click="BackToGrid_Click" 
                             Foreground="#87CEEB"/>
-                    <Button x:Name="EditNoteButton" Content="[ ✎ Edit ]" Style="{StaticResource TitleBarButton}" 
-                            Margin="10,0,0,0" Click="EditNote_Click" 
-                            Foreground="#FFB347"/>
-                    <Button x:Name="SaveNoteButton" Content="[ ✔ Save ]" Style="{StaticResource TitleBarButton}" 
-                            Margin="10,0,0,0" Click="SaveNote_Click" 
-                            Foreground="#98FB98" Visibility="Collapsed"/>
                     <Button x:Name="PinNoteButton" Content="[ 📌 Pin ]" Style="{StaticResource TitleBarButton}" 
                             Margin="10,0,0,0" Click="PinNote_Click" 
                             Foreground="#AAAAAA"/>
@@ -150,22 +144,15 @@
                 </StackPanel>
 
                 <ScrollViewer Grid.Row="3" VerticalScrollBarVisibility="Auto" Margin="0,0,0,10">
-                    <StackPanel>
-                        <TextBox x:Name="DetailContent" Foreground="#CCCCCC" Background="Transparent" 
-                                 BorderThickness="0" TextWrapping="Wrap" FontSize="14" 
-                                 AcceptsReturn="True" IsReadOnly="True"
-                                 TextChanged="OnNoteChanged"/>
-                        
-                        <!-- Image Gallery -->
-                        <TextBlock x:Name="ImagesLabel" Text="Attachments" Foreground="#666666" FontSize="11" 
-                                   Margin="0,15,0,8" Visibility="Collapsed"/>
-                        <WrapPanel x:Name="DetailImagesPanel" Orientation="Horizontal" Margin="0,0,0,10"/>
-                        
-                        <!-- Add Image Button (Edit Mode Only) -->
-                        <Button x:Name="AddImageBtn" Content="[ + ADD IMAGE ]" Style="{StaticResource TitleBarButton}" 
-                                Foreground="#87CEEB" HorizontalAlignment="Left" Margin="0,5,0,0"
-                                Click="AddImage_Click" Visibility="Collapsed"/>
-                    </StackPanel>
+                    <RichTextBox x:Name="DetailContent" Foreground="#CCCCCC" Background="Transparent" 
+                                 BorderThickness="0" FontSize="14" CaretBrush="#87CEEB"
+                                 AcceptsReturn="True" IsReadOnly="False"
+                                 AllowDrop="True"
+                                 Drop="DetailContent_Drop" 
+                                 DragOver="DetailContent_DragOver"
+                                 PreviewDragOver="DetailContent_DragOver">
+                        <FlowDocument x:Name="DetailDocument" PagePadding="0"/>
+                    </RichTextBox>
                 </ScrollViewer>
 
                 <!-- Detail Footer Actions -->

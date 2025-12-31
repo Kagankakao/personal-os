@@ -229,19 +229,19 @@ public partial class KegomoDoroSettingsWindow : System.Windows.Window
             // Validate inputs
             if (!int.TryParse(WorkDurationInput.Text, out var workDuration) || workDuration <= 0)
             {
-                mainWindow?.ShowToast("Invalid work duration.", "⚠️", "#FFCC00");
+                mainWindow?.ShowToast("Invalid work duration.", "⚠️", "#FFCC00", "Warning");
                 return;
             }
 
             if (!int.TryParse(ShortBreakInput.Text, out var shortBreak) || shortBreak <= 0)
             {
-                mainWindow?.ShowToast("Invalid short break duration.", "⚠️", "#FFCC00");
+                mainWindow?.ShowToast("Invalid short break duration.", "⚠️", "#FFCC00", "Warning");
                 return;
             }
 
             if (!int.TryParse(LongBreakInput.Text, out var longBreak) || longBreak <= 0)
             {
-                mainWindow?.ShowToast("Invalid long break duration.", "⚠️", "#FFCC00");
+                mainWindow?.ShowToast("Invalid long break duration.", "⚠️", "#FFCC00", "Warning");
                 return;
             }
 
@@ -271,7 +271,7 @@ public partial class KegomoDoroSettingsWindow : System.Windows.Window
                 _logger.Information("Floating image updated: {Source} -> {Dest}", _newFloatingImagePath, destPath);
             }
 
-            mainWindow?.ShowToast("Settings saved successfully!", "⚙️", "#44CC44");
+            mainWindow?.ShowToast("Settings saved successfully!", "⚙️", "#44CC44", "Settings Saved");
             
             DialogResult = true;
             Close();

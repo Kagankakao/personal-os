@@ -50,9 +50,9 @@ public partial class ToastNotification : System.Windows.Controls.UserControl
     /// <summary>
     /// Show a simple message toast (success, info, warning)
     /// </summary>
-    public void ShowMessage(string message, string icon = "✓", string color = "#44CC44")
+    public void ShowMessage(string message, string icon = "✓", string color = "#44CC44", string header = "Saved to Journal")
     {
-        HeaderText.Text = "[!] SUCCESS";
+        HeaderText.Text = $"[!] {header.ToUpper()}";
         HeaderText.Foreground = new System.Windows.Media.SolidColorBrush(
             (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(color));
         TitleText.Text = message;
