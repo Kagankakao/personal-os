@@ -43,7 +43,8 @@
                         </Grid.ColumnDefinitions>
                         <TextBox x:Name="NexusSearchInput" Background="Transparent" BorderThickness="0" 
                                  Foreground="#CCCCCC" CaretBrush="#CCCCCC" VerticalAlignment="Center"
-                                 KeyDown="NexusSearchInput_KeyDown"/>
+                                 KeyDown="NexusSearchInput_KeyDown"
+                                 TextChanged="NexusSearchInput_TextChanged"/>
                         <TextBlock IsHitTestVisible="False" Text="Search or ask AI..." Foreground="#555555" 
                                    VerticalAlignment="Center" Margin="5,0,0,0">
                             <TextBlock.Style>
@@ -62,13 +63,26 @@
                     </Grid>
                 </Border>
 
-                <!-- Tags Filter -->
-                <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,10,0,15">
-                    <TextBlock Text="[All]" Foreground="#87CEEB" Cursor="Hand" Margin="0,0,10,0"/>
-                    <TextBlock Text="#Ideas" Foreground="#666666" Cursor="Hand" Margin="0,0,10,0"/>
-                    <TextBlock Text="#Life" Foreground="#666666" Cursor="Hand" Margin="0,0,10,0"/>
-                    <TextBlock Text="#Project" Foreground="#666666" Cursor="Hand"/>
-                </StackPanel>
+                <!-- Tags Filter & Bulk Mode -->
+                <Grid Grid.Row="1" Margin="0,10,0,15">
+                    <StackPanel Orientation="Horizontal" x:Name="TagsPanel">
+                        <TextBlock Text="[All]" Foreground="#87CEEB" Cursor="Hand" Margin="0,0,10,0"/>
+                        <TextBlock Text="#Ideas" Foreground="#666666" Cursor="Hand" Margin="0,0,10,0"/>
+                        <TextBlock Text="#Life" Foreground="#666666" Cursor="Hand" Margin="0,0,10,0"/>
+                        <TextBlock Text="#Project" Foreground="#666666" Cursor="Hand"/>
+                    </StackPanel>
+
+                    <Button x:Name="SelectModeBtn" Content="[ SELECT ]" Style="{StaticResource TitleBarButton}" 
+                            HorizontalAlignment="Right" Foreground="#AAAAAA" Click="SelectMode_Click"/>
+
+                    <!-- Bulk Actions Panel (Hidden by default) -->
+                    <StackPanel x:Name="BulkActionsPanel" Orientation="Horizontal" HorizontalAlignment="Right" Visibility="Collapsed">
+                        <Button x:Name="DeleteSelectedBtn" Content="[ DELETE ]" Style="{StaticResource TitleBarButton}" 
+                                Foreground="#FF6B6B" Click="DeleteSelected_Click"/>
+                        <Button x:Name="CancelSelectBtn" Content="[ CANCEL ]" Style="{StaticResource TitleBarButton}" 
+                                Margin="10,0,0,0" Foreground="#AAAAAA" Click="CancelSelect_Click"/>
+                    </StackPanel>
+                </Grid>
 
                 <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" VerticalAlignment="Top">
                     <Grid x:Name="NotesGridContainer" VerticalAlignment="Top">
@@ -103,20 +117,22 @@
                     <RowDefinition Height="Auto"/> <!-- Title -->
                     <RowDefinition Height="Auto"/> <!-- Metadata/Tags -->
                     <RowDefinition Height="*"/>    <!-- Content -->
+                    <RowDefinition Height="Auto"/> <!-- Footer Actions -->
+                    <RowDefinition Height="Auto"/> <!-- Images -->
                 </Grid.RowDefinitions>
 
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" Margin="0,0,0,20">
                     <Button Content="[ ← Back ]" Style="{StaticResource TitleBarButton}" 
-                            Width="80" Click="BackToGrid_Click" 
+                            Click="BackToGrid_Click" 
                             Foreground="#87CEEB"/>
                     <Button x:Name="EditNoteButton" Content="[ ✎ Edit ]" Style="{StaticResource TitleBarButton}" 
-                            Width="80" Margin="10,0,0,0" Click="EditNote_Click" 
+                            Margin="10,0,0,0" Click="EditNote_Click" 
                             Foreground="#FFB347"/>
                     <Button x:Name="SaveNoteButton" Content="[ ✔ Save ]" Style="{StaticResource TitleBarButton}" 
-                            Width="80" Margin="10,0,0,0" Click="SaveNote_Click" 
+                            Margin="10,0,0,0" Click="SaveNote_Click" 
                             Foreground="#98FB98" Visibility="Collapsed"/>
                     <Button x:Name="PinNoteButton" Content="[ 📌 Pin ]" Style="{StaticResource TitleBarButton}" 
-                            Width="70" Margin="10,0,0,0" Click="PinNote_Click" 
+                            Margin="10,0,0,0" Click="PinNote_Click" 
                             Foreground="#AAAAAA"/>
                 </StackPanel>
 
@@ -133,12 +149,29 @@
                                Margin="10,0,0,0" VerticalAlignment="Center"/>
                 </StackPanel>
 
-                <ScrollViewer Grid.Row="3" VerticalScrollBarVisibility="Auto">
-                    <TextBox x:Name="DetailContent" Foreground="#CCCCCC" Background="Transparent" 
-                             BorderThickness="0" TextWrapping="Wrap" FontSize="14" 
-                             AcceptsReturn="True" IsReadOnly="True"
-                             TextChanged="OnNoteChanged"/>
+                <ScrollViewer Grid.Row="3" VerticalScrollBarVisibility="Auto" Margin="0,0,0,10">
+                    <StackPanel>
+                        <TextBox x:Name="DetailContent" Foreground="#CCCCCC" Background="Transparent" 
+                                 BorderThickness="0" TextWrapping="Wrap" FontSize="14" 
+                                 AcceptsReturn="True" IsReadOnly="True"
+                                 TextChanged="OnNoteChanged"/>
+                        
+                        <!-- Image Gallery -->
+                        <TextBlock x:Name="ImagesLabel" Text="Attachments" Foreground="#666666" FontSize="11" 
+                                   Margin="0,15,0,8" Visibility="Collapsed"/>
+                        <WrapPanel x:Name="DetailImagesPanel" Orientation="Horizontal" Margin="0,0,0,10"/>
+                        
+                        <!-- Add Image Button (Edit Mode Only) -->
+                        <Button x:Name="AddImageBtn" Content="[ + ADD IMAGE ]" Style="{StaticResource TitleBarButton}" 
+                                Foreground="#87CEEB" HorizontalAlignment="Left" Margin="0,5,0,0"
+                                Click="AddImage_Click" Visibility="Collapsed"/>
+                    </StackPanel>
                 </ScrollViewer>
+
+                <!-- Detail Footer Actions -->
+                <Button x:Name="DeleteNoteButton" Grid.Row="4" HorizontalAlignment="Right"
+                        Content="[ DELETE NOTE ]" Style="{StaticResource TitleBarButton}" 
+                        Foreground="#FF6B6B" Click="DeleteDetailNote_Click"/>
             </Grid>
         </Border>
     </Grid>

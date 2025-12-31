@@ -10,6 +10,7 @@ namespace KeganOS.Core.Interfaces
         Task<NoteItem> GetNoteByIdAsync(string noteId);
         Task SaveNoteAsync(int userId, NoteItem note);
         Task DeleteNoteAsync(string noteId);
+        Task DeleteNotesAsync(IEnumerable<string> noteIds);
         Task<List<NoteItem>> SearchNotesAsync(int userId, string query);
         Task<List<NoteItem>> GetPinnedNotesAsync(int userId);
     }

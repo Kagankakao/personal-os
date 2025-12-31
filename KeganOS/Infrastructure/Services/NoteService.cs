@@ -142,32 +142,97 @@ namespace KeganOS.Infrastructure.Services
             }
         }
 
-        public async Task<List<NoteItem>> SearchNotesAsync(int userId, string query)
+        public async Task DeleteNotesAsync(IEnumerable<string> noteIds)
         {
-            var notes = new List<NoteItem>();
             try
             {
                 using var connection = _dbContext.GetConnection();
+                using var transaction = connection.BeginTransaction();
+                
                 var command = connection.CreateCommand();
-                command.CommandText = @"
-                    SELECT * FROM Notes 
-                    WHERE UserId = @userId AND IsDeleted = 0 
-                    AND (Title LIKE @query OR Content LIKE @query OR Category LIKE @query OR Tags LIKE @query)
-                    ORDER BY IsPinned DESC, LastModified DESC";
-                command.Parameters.AddWithValue("@userId", userId);
-                command.Parameters.AddWithValue("@query", $"%{query}%");
+                command.Transaction = transaction;
+                command.CommandText = "UPDATE Notes SET IsDeleted = 1 WHERE Id = @id";
+                var idParam = command.Parameters.Add("@id", SqliteType.Text);
 
-                using var reader = await command.ExecuteReaderAsync();
-                while (await reader.ReadAsync())
+                foreach (var id in noteIds)
                 {
-                    notes.Add(MapReaderToNote(reader));
+                    idParam.Value = id;
+                    await command.ExecuteNonQueryAsync();
                 }
+
+                transaction.Commit();
+                int count = 0;
+                foreach (var id in noteIds) count++;
+                _logger.Information("Successfully bulk soft-deleted {Count} notes", count);
             }
             catch (Exception ex)
             {
-                _logger.Error(ex, "Error searching notes for user {UserId}", userId);
+                _logger.Error(ex, "Error during bulk soft-delete");
             }
-            return notes;
+        }
+
+        public async Task<List<NoteItem>> SearchNotesAsync(int userId, string query)
+        {
+            var allNotes = await GetNotesAsync(userId);
+            if (string.IsNullOrWhiteSpace(query))
+                return allNotes;
+
+            // Tokenize query into words (lowercase)
+            var queryWords = query.ToLower()
+                                  .Split(new[] { ' ', ',', '.', '-', '_' }, StringSplitOptions.RemoveEmptyEntries)
+                                  .Where(w => w.Length > 1) // Ignore single characters
+                                  .ToList();
+
+            if (queryWords.Count == 0)
+                return allNotes;
+
+            // Score each note
+            var scoredNotes = allNotes.Select(note =>
+            {
+                double score = 0;
+                string titleLower = note.Title?.ToLower() ?? "";
+                string contentLower = note.Content?.ToLower() ?? "";
+                string categoryLower = note.Category?.ToLower() ?? "";
+                string tagsLower = string.Join(" ", note.Tags ?? new List<string>()).ToLower();
+
+                foreach (var word in queryWords)
+                {
+                    // Exact word match (higher weight)
+                    if (titleLower.Contains(word)) score += 10;
+                    if (contentLower.Contains(word)) score += 3;
+                    if (categoryLower.Contains(word)) score += 5;
+                    if (tagsLower.Contains(word)) score += 7;
+
+                    // Fuzzy/partial match (lower weight) - check if any word starts with query word
+                    var titleWords = titleLower.Split(' ');
+                    var contentWords = contentLower.Split(' ');
+                    
+                    if (titleWords.Any(tw => tw.StartsWith(word) && tw != word)) score += 4;
+                    if (contentWords.Any(cw => cw.StartsWith(word) && cw != word)) score += 1;
+                    
+                    // Levenshtein-like proximity: if query word is very close to title words
+                    foreach (var tw in titleWords)
+                    {
+                        if (tw.Length > 2 && word.Length > 2)
+                        {
+                            int common = tw.Zip(word, (a, b) => a == b ? 1 : 0).Sum();
+                            if (common >= Math.Min(tw.Length, word.Length) * 0.7) score += 2;
+                        }
+                    }
+                }
+
+                // Boost pinned notes slightly
+                if (note.IsPinned) score += 2;
+
+                return new { Note = note, Score = score };
+            })
+            .Where(x => x.Score > 0)
+            .OrderByDescending(x => x.Score)
+            .ThenByDescending(x => x.Note.LastModified)
+            .Select(x => x.Note)
+            .ToList();
+
+            return scoredNotes;
         }
 
         public async Task<List<NoteItem>> GetPinnedNotesAsync(int userId)
