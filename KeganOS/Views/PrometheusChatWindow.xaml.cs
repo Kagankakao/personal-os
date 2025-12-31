@@ -13,6 +13,8 @@ public partial class PrometheusChatWindow : Window
     private readonly IPrometheusService _prometheusService;
     private readonly int? _userId;
     private bool _isProcessing;
+
+    public event Action<string> NotesSearchRequested;
     
     // Conversation history for context (last 5 exchanges)
     private readonly List<(string Role, string Message)> _conversationHistory = new();
@@ -222,9 +224,24 @@ public partial class PrometheusChatWindow : Window
                 AddSystemMessage("Available commands:");
                 AddSystemMessage("  /clear   - Clear chat history");
                 AddSystemMessage("  /new     - Start new conversation");
+                AddSystemMessage("  /notes   - Find/Bridge to NeuralNotes (e.g., /notes space game)");
                 AddSystemMessage("  /history - Show conversation summary");
                 AddSystemMessage("  /help    - Show this help");
                 AddSystemMessage("─────────────────────────────────────────");
+                break;
+                
+            case string s when s.StartsWith("/notes"):
+                var query = s.Replace("/notes", "").Trim();
+                if (string.IsNullOrEmpty(query))
+                {
+                    AddSystemMessage("Usage: /notes [your search or finding request]");
+                }
+                else
+                {
+                    AddSystemMessage($"AI Searching for: {query}...");
+                    NotesSearchRequested?.Invoke(query);
+                    AddAIMessage($"I've updated your NeuralNotes panel to show matches for '{query}'. Take a look!");
+                }
                 break;
                 
             case "/new":

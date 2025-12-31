@@ -24,10 +24,11 @@ public partial class MainWindow : System.Windows.Window
     private readonly IMotivationalMessageService _motivationalService;
     private readonly IPrometheusService _prometheusService;
 
-    private readonly IUserService _userService;
-    private readonly IBackupService _backupService;
     private readonly IAchievementService _achievementService;
     private readonly IAnalyticsService _analyticsService;
+    private readonly INoteService _noteService;
+    private readonly IUserService _userService;
+    private readonly IBackupService _backupService;
     private User? _currentUser;
     private List<ChatMessage> _chatHistory = [];
     
@@ -46,7 +47,8 @@ public partial class MainWindow : System.Windows.Window
         IBackupService backupService,
         IAchievementService achievementService,
         IAnalyticsService analyticsService,
-        IPrometheusService prometheusService)
+        IPrometheusService prometheusService,
+        INoteService noteService)
     {
         InitializeComponent();
         _kegomoDoroService = kegomoDoroService;
@@ -59,6 +61,15 @@ public partial class MainWindow : System.Windows.Window
         _achievementService = achievementService;
         _analyticsService = analyticsService;
         _prometheusService = prometheusService;
+        _noteService = noteService;
+        
+        // Pass NoteService and User to the Nexus widget
+        NeuralNexusWidget.Initialize(_noteService, _prometheusService);
+        NeuralNexusWidget.PrometheusRequested += (query) => 
+        {
+            AskPrometheusButton_Click(null, null);
+            // Optional: Pass the query to the new chat window if needed
+        };
         
         // Subscribe to achievements
         _achievementService.OnAchievementUnlocked += OnAchievementUnlocked;
@@ -346,6 +357,9 @@ public partial class MainWindow : System.Windows.Window
         UserDisplayName.Text = user.DisplayName;
         
         UpdateXpDisplay();
+        
+        // Pass user to the Nexus widget
+        NeuralNexusWidget.SetUser(user);
         
         // Load user-specific data
         LoadUserDataAsync();
@@ -900,6 +914,18 @@ public partial class MainWindow : System.Windows.Window
         // Open the Prometheus chat window
         var chatWindow = new Views.PrometheusChatWindow(_prometheusService, _currentUser?.Id);
         chatWindow.Owner = this;
+        
+        // Handle AI-Nexus Bridge
+        chatWindow.NotesSearchRequested += async (query) => 
+        {
+            // Open nexus if closed
+            if (NexusPanel.Visibility == System.Windows.Visibility.Collapsed)
+                NexusToggleButton_Click(null, null);
+
+            // Trigger search in Nexus
+            await NeuralNexusWidget.SearchNotesAsync(query);
+        };
+
         chatWindow.Show();
     }
 

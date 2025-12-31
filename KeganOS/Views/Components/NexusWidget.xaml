@@ -3,6 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:comp="clr-namespace:KeganOS.Views.Components"
              mc:Ignorable="d" 
              d:DesignHeight="800" d:DesignWidth="350"
              FontFamily="Consolas" Background="#0A0A0A">
@@ -17,65 +18,82 @@
         </Grid.RowDefinitions>
 
         <!-- Tabs -->
-        <UniformGrid Rows="1" Margin="0,0,0,15">
-            <Button Content="TASKS" Style="{StaticResource TitleBarButton}" Click="TaskTab_Click" Foreground="#AAAAAA"/>
-            <Button Content="NEURAL" Style="{StaticResource TitleBarButton}" Click="NeuralTab_Click" Foreground="#87CEEB"/>
+        <UniformGrid x:Name="TabHeader" Rows="1" Margin="0,0,0,15">
+            <Button x:Name="TasksTabBtn" Content="TASKS" Style="{StaticResource TitleBarButton}" Click="TaskTab_Click" Foreground="#AAAAAA"/>
+            <Button x:Name="NeuralTabBtn" Content="NEURAL" Style="{StaticResource TitleBarButton}" Click="NeuralTab_Click" Foreground="#87CEEB"/>
         </UniformGrid>
 
-        <!-- NeuralNotes Search (AI Powered) -->
-        <Border Grid.Row="1" Background="#1A1A1A" BorderBrush="#333333" BorderThickness="1" Padding="8" CornerRadius="4">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
-                <TextBox x:Name="NexusSearchInput" Background="Transparent" BorderThickness="0" 
-                         Foreground="#CCCCCC" CaretBrush="#CCCCCC" VerticalAlignment="Center"
-                         KeyDown="NexusSearchInput_KeyDown"/>
-                <TextBlock IsHitTestVisible="False" Text="Search or ask AI..." Foreground="#555555" 
-                           VerticalAlignment="Center" Margin="5,0,0,0">
-                    <TextBlock.Style>
-                        <Style TargetType="TextBlock">
-                            <Setter Property="Visibility" Value="Collapsed"/>
-                            <Style.Triggers>
-                                <DataTrigger Binding="{Binding Text, ElementName=NexusSearchInput}" Value="">
-                                    <Setter Property="Visibility" Value="Visible"/>
-                                </DataTrigger>
-                            </Style.Triggers>
-                        </Style>
-                    </TextBlock.Style>
-                </TextBlock>
-                <Button Grid.Column="1" Content="↑" Foreground="#87CEEB" Background="Transparent" 
-                        BorderThickness="0" Cursor="Hand" Click="NeuralAsk_Click"/>
+        <!-- Container for Content -->
+        <Grid Grid.Row="1" Grid.RowSpan="4">
+            <!-- Neural View -->
+            <Grid x:Name="NeuralView">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/> <!-- Search -->
+                    <RowDefinition Height="Auto"/> <!-- Tags -->
+                    <RowDefinition Height="*"/>    <!-- Masonry Grid -->
+                    <RowDefinition Height="Auto"/> <!-- Bottom Actions -->
+                </Grid.RowDefinitions>
+
+                <!-- NeuralNotes Search (AI Powered) -->
+                <Border Grid.Row="0" Background="#1A1A1A" BorderBrush="#333333" BorderThickness="1" Padding="8" CornerRadius="4">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBox x:Name="NexusSearchInput" Background="Transparent" BorderThickness="0" 
+                                 Foreground="#CCCCCC" CaretBrush="#CCCCCC" VerticalAlignment="Center"
+                                 KeyDown="NexusSearchInput_KeyDown"/>
+                        <TextBlock IsHitTestVisible="False" Text="Search or ask AI..." Foreground="#555555" 
+                                   VerticalAlignment="Center" Margin="5,0,0,0">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Text, ElementName=NexusSearchInput}" Value="">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                        <Button Grid.Column="1" Content="↑" Foreground="#87CEEB" Background="Transparent" 
+                                BorderThickness="0" Cursor="Hand" Click="NeuralAsk_Click"/>
+                    </Grid>
+                </Border>
+
+                <!-- Tags Filter -->
+                <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,10,0,15">
+                    <TextBlock Text="[All]" Foreground="#87CEEB" Cursor="Hand" Margin="0,0,10,0"/>
+                    <TextBlock Text="#Ideas" Foreground="#666666" Cursor="Hand" Margin="0,0,10,0"/>
+                    <TextBlock Text="#Life" Foreground="#666666" Cursor="Hand" Margin="0,0,10,0"/>
+                    <TextBlock Text="#Project" Foreground="#666666" Cursor="Hand"/>
+                </StackPanel>
+
+                <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" VerticalAlignment="Top">
+                    <Grid x:Name="NotesGridContainer" VerticalAlignment="Top">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        
+                        <StackPanel x:Name="Column1" Grid.Column="0" Margin="0,0,5,0" VerticalAlignment="Top"/>
+                        <StackPanel x:Name="Column2" Grid.Column="1" Margin="5,0,0,0" VerticalAlignment="Top"/>
+                    </Grid>
+                </ScrollViewer>
+
+                <!-- New Note Action -->
+                <Button Grid.Row="3" Style="{StaticResource BracketButton}" 
+                        Content="+ New Neural Note" Foreground="#AAAAAA" 
+                        HorizontalAlignment="Center" Margin="0,15,0,0"
+                        Click="NewNote_Click"/>
             </Grid>
-        </Border>
 
-        <!-- Tags Filter -->
-        <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,10,0,15">
-            <TextBlock Text="[All]" Foreground="#87CEEB" Cursor="Hand" Margin="0,0,10,0"/>
-            <TextBlock Text="#Ideas" Foreground="#666666" Cursor="Hand" Margin="0,0,10,0"/>
-            <TextBlock Text="#Life" Foreground="#666666" Cursor="Hand" Margin="0,0,10,0"/>
-            <TextBlock Text="#Project" Foreground="#666666" Cursor="Hand"/>
-        </StackPanel>
-
-        <!-- Masonry Grid (Simulated with multiple StackPanels for dynamic height) -->
-        <ScrollViewer Grid.Row="3" VerticalScrollBarVisibility="Auto">
-            <Grid x:Name="NotesGridContainer">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="*"/>
-                </Grid.ColumnDefinitions>
-                
-                <StackPanel x:Name="Column1" Grid.Column="0" Margin="0,0,5,0"/>
-                <StackPanel x:Name="Column2" Grid.Column="1" Margin="5,0,0,0"/>
+            <!-- Task View -->
+            <Grid x:Name="TaskView" Visibility="Collapsed">
+                <comp:TaskWidget x:Name="NexusTaskWidget"/>
             </Grid>
-        </ScrollViewer>
-
-        <!-- New Note Action -->
-        <Button Grid.Row="4" Style="{StaticResource BracketButton}" 
-                Content="+ New Neural Note" Foreground="#AAAAAA" 
-                HorizontalAlignment="Center" Margin="0,15,0,0"
-                Click="NewNote_Click"/>
+        </Grid>
 
         <!-- Note Detail Panel (Overlay) -->
         <Border x:Name="NoteDetailPanel" Grid.RowSpan="5" Background="#0A0A0A" Visibility="Collapsed" Padding="20">
@@ -87,16 +105,28 @@
                     <RowDefinition Height="*"/>    <!-- Content -->
                 </Grid.RowDefinitions>
 
-                <Button Content="[ ← Back ]" Style="{StaticResource TitleBarButton}" 
-                        HorizontalAlignment="Left" Width="80" Click="BackToGrid_Click" 
-                        Foreground="#87CEEB" Margin="0,0,0,20"/>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" Margin="0,0,0,20">
+                    <Button Content="[ ← Back ]" Style="{StaticResource TitleBarButton}" 
+                            Width="80" Click="BackToGrid_Click" 
+                            Foreground="#87CEEB"/>
+                    <Button x:Name="EditNoteButton" Content="[ ✎ Edit ]" Style="{StaticResource TitleBarButton}" 
+                            Width="80" Margin="10,0,0,0" Click="EditNote_Click" 
+                            Foreground="#FFB347"/>
+                    <Button x:Name="SaveNoteButton" Content="[ ✔ Save ]" Style="{StaticResource TitleBarButton}" 
+                            Width="80" Margin="10,0,0,0" Click="SaveNote_Click" 
+                            Foreground="#98FB98" Visibility="Collapsed"/>
+                    <Button x:Name="PinNoteButton" Content="[ 📌 Pin ]" Style="{StaticResource TitleBarButton}" 
+                            Width="70" Margin="10,0,0,0" Click="PinNote_Click" 
+                            Foreground="#AAAAAA"/>
+                </StackPanel>
 
                 <TextBox x:Name="DetailTitle" Grid.Row="1" FontSize="20" FontWeight="Bold" 
                          Foreground="White" Background="Transparent" BorderThickness="0"
-                         TextWrapping="Wrap" Margin="0,0,0,10" IsReadOnly="True"/>
+                         TextWrapping="Wrap" Margin="0,0,0,10" IsReadOnly="True"
+                         TextChanged="OnNoteChanged"/>
 
                 <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,0,0,20">
-                    <Border Background="#1A1A1A" Padding="8,4" CornerRadius="4">
+                    <Border x:Name="CategoryBadge" Background="#1A1A1A" Padding="8,4" CornerRadius="4">
                         <TextBlock x:Name="DetailCategory" Foreground="#87CEEB" FontSize="10"/>
                     </Border>
                     <TextBlock x:Name="DetailDate" Foreground="#555555" FontSize="10" 
@@ -106,7 +136,8 @@
                 <ScrollViewer Grid.Row="3" VerticalScrollBarVisibility="Auto">
                     <TextBox x:Name="DetailContent" Foreground="#CCCCCC" Background="Transparent" 
                              BorderThickness="0" TextWrapping="Wrap" FontSize="14" 
-                             AcceptsReturn="True" IsReadOnly="True"/>
+                             AcceptsReturn="True" IsReadOnly="True"
+                             TextChanged="OnNoteChanged"/>
                 </ScrollViewer>
             </Grid>
         </Border>

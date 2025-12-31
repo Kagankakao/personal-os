@@ -28,6 +28,12 @@ namespace KeganOS.Views.Components
             Loaded += TaskWidget_Loaded;
         }
 
+        public void SetCurrentUser(User user)
+        {
+            _userName = user.DisplayName;
+            InitializePersistence();
+        }
+
         private void TaskWidget_Loaded(object sender, RoutedEventArgs e)
         {
             // Resolve user name from parent or global context
@@ -95,15 +101,23 @@ namespace KeganOS.Views.Components
             var filtered = _allTasks.Where(t => t.Category == _currentTab).ToList();
             TasksList.ItemsSource = filtered;
             
-            // Update Add button placeholder
+            // Update Add button and Flush button visibility
             if (_currentTab == "Done")
             {
                 NewTaskInput.Visibility = Visibility.Collapsed;
+                FlushDailyBtn.Visibility = Visibility.Visible;
             }
-            else
+            else if (_currentTab == "LongTerm")
             {
                 NewTaskInput.Visibility = Visibility.Visible;
-                NewTaskInput.Text = $"[ + Add {_currentTab} Task ]";
+                NewTaskInput.Text = "[ + Add Long Term Task ]";
+                FlushDailyBtn.Visibility = Visibility.Collapsed;
+            }
+            else // Daily
+            {
+                NewTaskInput.Visibility = Visibility.Visible;
+                NewTaskInput.Text = "[ + Add Daily Task ]";
+                FlushDailyBtn.Visibility = Visibility.Visible;
             }
         }
 
@@ -157,6 +171,25 @@ namespace KeganOS.Views.Components
             if (task != null)
             {
                 _allTasks.Remove(task);
+                SaveTasks();
+                RefreshView();
+            }
+        }
+
+        private void FlushDaily_Click(object sender, RoutedEventArgs e)
+        {
+            string categoryToFlush = _currentTab;
+            if (categoryToFlush == "LongTerm") return; // Safety check
+
+            var result = System.Windows.MessageBox.Show($"Are you sure you want to flush ALL {categoryToFlush} tasks?", "Confirm Flush", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+            if (result == MessageBoxResult.Yes)
+            {
+                var toRemove = _allTasks.Where(t => t.Category == categoryToFlush).ToList();
+                foreach (var task in toRemove)
+                {
+                    _allTasks.Remove(task);
+                }
+                
                 SaveTasks();
                 RefreshView();
             }

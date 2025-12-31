@@ -80,6 +80,36 @@ public class AppDbContext
             -- Create indexes for better performance
             CREATE INDEX IF NOT EXISTS idx_journal_user ON JournalEntries(UserId);
             CREATE INDEX IF NOT EXISTS idx_journal_date ON JournalEntries(Date);
+            
+            -- NeuralNotes table
+            CREATE TABLE IF NOT EXISTS Notes (
+                Id TEXT PRIMARY KEY,
+                UserId INTEGER REFERENCES Users(Id),
+                Title TEXT,
+                Content TEXT,
+                Category TEXT DEFAULT 'General',
+                Tags TEXT, -- Stored as comma-separated or JSON
+                ImagePaths TEXT, -- Stored as JSON or comma-separated
+                IsPinned INTEGER DEFAULT 0,
+                IsDeleted INTEGER DEFAULT 0,
+                CreatedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+                LastModified DATETIME DEFAULT CURRENT_TIMESTAMP
+            );
+
+            -- Note History for Backups
+            CREATE TABLE IF NOT EXISTS NoteHistory (
+                Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                NoteId TEXT REFERENCES Notes(Id),
+                Title TEXT,
+                Content TEXT,
+                Category TEXT,
+                Tags TEXT,
+                ImagePaths TEXT,
+                ArchivedAt DATETIME DEFAULT CURRENT_TIMESTAMP
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_notes_user ON Notes(UserId);
+            CREATE INDEX IF NOT EXISTS idx_notes_pin ON Notes(IsPinned);
 
 
         ";

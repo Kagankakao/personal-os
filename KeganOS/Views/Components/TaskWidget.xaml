@@ -120,6 +120,10 @@
                              Foreground="#888888" Text="[ + Add Task ]" Padding="2"
                              GotFocus="NewTaskInput_GotFocus" LostFocus="NewTaskInput_LostFocus"
                              KeyDown="NewTaskInput_KeyDown"/>
+
+                    <Button x:Name="FlushDailyBtn" Grid.Column="1" Content="[ FLUSH ]" 
+                            Style="{StaticResource TabButton}" Foreground="#FF6B6B"
+                            Click="FlushDaily_Click" ToolTip="Clear all Daily tasks"/>
                 </Grid>
             </Border>
         </Grid>
