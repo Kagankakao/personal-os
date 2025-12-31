@@ -201,6 +201,9 @@
                                     Content="⏱️ Add Manual Time" Foreground="#666666" 
                                     HorizontalAlignment="Center" FontSize="11"
                                     Click="AddManualTime_Click"/>
+
+                            <!-- Task Widget -->
+                            <comp:TaskWidget x:Name="DashboardTaskWidget" Margin="0,10,0,0"/>
                         </StackPanel>
                     </Border>
                     

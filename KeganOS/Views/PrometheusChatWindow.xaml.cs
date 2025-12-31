@@ -35,7 +35,7 @@ public partial class PrometheusChatWindow : Window
         AddSystemMessage("Prometheus Terminal v1.0");
         AddSystemMessage("Type your message and press Enter to chat.");
         AddSystemMessage("─────────────────────────────────────────");
-        AddAIMessage("Hey! :D I'm Prometheus. I remember everything about our conversations and your journey. What's on your mind?");
+        AddAIMessage("Hey! I'm Prometheus. I remember everything about our conversations and your journey. What's on your mind?");
         
         InputBox.Focus();
     }
@@ -107,14 +107,27 @@ public partial class PrometheusChatWindow : Window
         AddUserMessage(message);
 
         // Create AI message block for streaming
-        var (aiPanel, aiContent) = CreateStreamingAIMessage();
+        var (aiPanel, aiContent, thinkingIndicator) = CreateStreamingAIMessage();
         var fullResponse = new System.Text.StringBuilder();
+        bool firstChunk = true;
+        
+        // Start animated thinking dots
+        var animationCts = new System.Threading.CancellationTokenSource();
+        _ = AnimateThinkingDotsAsync(thinkingIndicator, animationCts.Token);
 
         try
         {
             // Stream response from Prometheus with typewriter effect
             await foreach (var chunk in _prometheusService.ConsultStreamingAsync(message, _userId, _conversationHistory))
             {
+                // Stop animation and hide thinking indicator on first chunk
+                if (firstChunk)
+                {
+                    animationCts.Cancel();
+                    thinkingIndicator.Text = "";
+                    firstChunk = false;
+                }
+                
                 fullResponse.Append(chunk);
                 
                 // Typewriter effect: add characters one by one with small delay
@@ -149,6 +162,29 @@ public partial class PrometheusChatWindow : Window
         {
             _isProcessing = false;
             InputBox.Focus();
+        }
+    }
+    
+    private async Task AnimateThinkingDotsAsync(Run thinkingIndicator, System.Threading.CancellationToken ct)
+    {
+        var frames = new[] { " thinking.", " thinking..", " thinking..." };
+        int i = 0;
+        
+        try
+        {
+            while (!ct.IsCancellationRequested)
+            {
+                await Dispatcher.InvokeAsync(() =>
+                {
+                    thinkingIndicator.Text = frames[i % frames.Length];
+                });
+                i++;
+                await Task.Delay(300, ct);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // Expected when cancelled
         }
     }
     
@@ -197,7 +233,7 @@ public partial class PrometheusChatWindow : Window
                 AddSystemMessage("Prometheus Terminal v1.0");
                 AddSystemMessage("New conversation started.");
                 AddSystemMessage("─────────────────────────────────────────");
-                AddAIMessage("Hey! :) Ready for a fresh start. What's on your mind?");
+                AddAIMessage("Ready for a fresh start. What's on your mind?");
                 break;
                 
             case "/history":
@@ -316,13 +352,13 @@ public partial class PrometheusChatWindow : Window
         ChatScrollViewer.ScrollToEnd();
     }
 
-    private (StackPanel Panel, System.Windows.Controls.TextBox Content) CreateStreamingAIMessage()
+    private (StackPanel Panel, System.Windows.Controls.TextBox Content, Run ThinkingIndicator) CreateStreamingAIMessage()
     {
         var timestamp = DateTime.Now.ToString("HH:mm");
         
         var panel = new StackPanel { Margin = new Thickness(0, 8, 0, 0) };
         
-        // Timestamp + prompt
+        // Timestamp + prompt with thinking indicator
         var header = new TextBlock
         {
             FontSize = 12,
@@ -331,6 +367,10 @@ public partial class PrometheusChatWindow : Window
         };
         header.Inlines.Add(new Run($"[{timestamp}] ") { Foreground = TerminalDim });
         header.Inlines.Add(new Run("prometheus") { Foreground = TerminalYellow, FontWeight = FontWeights.Bold });
+        
+        // Thinking indicator (shown while waiting, hidden when content arrives)
+        var thinkingIndicator = new Run(" thinking...") { Foreground = TerminalDim, FontStyle = FontStyles.Italic };
+        header.Inlines.Add(thinkingIndicator);
         
         panel.Children.Add(header);
         
@@ -353,14 +393,14 @@ public partial class PrometheusChatWindow : Window
         ChatPanel.Children.Add(panel);
         ChatScrollViewer.ScrollToEnd();
         
-        return (panel, content);
+        return (panel, content, thinkingIndicator);
     }
 
     private void AddErrorMessage(string text)
     {
         var block = new TextBlock
         {
-            Text = $"⚠ {text}",
+            Text = $"Error: {text}",
             Foreground = new SolidColorBrush(System.Windows.Media.Color.FromRgb(255, 68, 68)),
             FontSize = 12,
             Margin = new Thickness(0, 4, 0, 0),
@@ -376,12 +416,13 @@ public partial class PrometheusChatWindow : Window
         
         var text = new TextBlock
         {
-            Text = "prometheus is thinking",
+            Text = "prometheus is typing",
             Foreground = TerminalDim,
-            FontSize = 12,
             FontStyle = FontStyles.Italic,
+            FontSize = 12,
             FontFamily = new System.Windows.Media.FontFamily("Cascadia Mono, Consolas, monospace")
         };
+        panel.Children.Add(text);
         
         var dots = new TextBlock
         {
@@ -390,9 +431,8 @@ public partial class PrometheusChatWindow : Window
             FontSize = 12,
             FontFamily = new System.Windows.Media.FontFamily("Cascadia Mono, Consolas, monospace")
         };
-        
-        panel.Children.Add(text);
         panel.Children.Add(dots);
+        
         ChatPanel.Children.Add(panel);
         ChatScrollViewer.ScrollToEnd();
         

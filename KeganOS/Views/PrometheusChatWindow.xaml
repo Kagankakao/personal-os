@@ -12,7 +12,7 @@
         FontFamily="Cascadia Mono, Consolas, monospace">
     
     <Window.Resources>
-        <!-- Terminal green color -->
+        <!-- Terminal colors -->
         <SolidColorBrush x:Key="TerminalGreen" Color="#00FF41"/>
         <SolidColorBrush x:Key="TerminalCyan" Color="#00D9FF"/>
         <SolidColorBrush x:Key="TerminalYellow" Color="#FFD700"/>

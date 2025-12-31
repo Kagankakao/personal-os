@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("KeganOS")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+12b413c522d46054e678c68e1ffd981be24f65b1")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+890147db20dbb4de5669785baf05dbb56ede62a3")]
 [assembly: System.Reflection.AssemblyProductAttribute("KeganOS")]
 [assembly: System.Reflection.AssemblyTitleAttribute("KeganOS")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
