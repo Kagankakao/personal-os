@@ -76,14 +76,51 @@ namespace KeganOS.Views.Components
             Column1.Children.Clear();
             Column2.Children.Clear();
 
-            int count = 0;
+            double col1Height = 0;
+            double col2Height = 0;
+
             foreach (var note in _notes)
             {
                 var card = CreateNoteCard(note);
-                if (count % 2 == 0) Column1.Children.Add(card);
-                else Column2.Children.Add(card);
-                count++;
+                double estimatedHeight = GetEstimateHeight(note);
+
+                // Add to the shorter column
+                if (col1Height <= col2Height)
+                {
+                    Column1.Children.Add(card);
+                    col1Height += estimatedHeight;
+                }
+                else
+                {
+                    Column2.Children.Add(card);
+                    col2Height += estimatedHeight;
+                }
             }
+        }
+
+        private double GetEstimateHeight(NoteItem note)
+        {
+            double height = 40; // Base padding + date row
+
+            // Thumbnail
+            if (note.ImagePaths?.Count > 0 && System.IO.File.Exists(note.ImagePaths[0]))
+                height += 130; // Image height + margin
+
+            // Title
+            if (!string.IsNullOrEmpty(note.Title))
+            {
+                // Approx 20 units per 20 chars
+                height += 25 + (Math.Min(note.Title.Length, 100) / 20.0 * 15);
+            }
+
+            // Content Preview
+            if (!string.IsNullOrEmpty(note.Content))
+            {
+                int previewLen = Math.Min(note.Content.Length, 80);
+                height += 15 + (previewLen / 30.0 * 15);
+            }
+
+            return height;
         }
 
         private Border CreateNoteCard(NoteItem note)

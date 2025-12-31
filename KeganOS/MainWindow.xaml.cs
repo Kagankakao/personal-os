@@ -7,6 +7,8 @@ using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Collections.Generic;
+using System.Windows;
+using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
 
 namespace KeganOS;
@@ -1031,14 +1033,23 @@ public partial class MainWindow : System.Windows.Window
 
     private void NexusToggleButton_Click(object sender, System.Windows.RoutedEventArgs e)
     {
-        bool isOpening = NexusPanel.Visibility == System.Windows.Visibility.Collapsed;
-        double targetWidth = isOpening ? 980 : 600;
+        bool isOpening = NexusPanel.Width < 100; // Check current width state
+        
+        // Math fix: 560 (dashboard) + 380 (panel) + 15 (gap) + 40 (window margins) = 995
+        double targetWindowWidth = isOpening ? 995 : 600;
+        double targetPanelWidth = isOpening ? 380 : 0;
+        Thickness targetMargin = isOpening ? new Thickness(15, 0, 0, 0) : new Thickness(0);
 
+        // Lock dashboard layout during animation to prevent WebView2 flickering
         if (isOpening)
         {
+            // 1. Lock the internal container width
+            DashboardContainer.Width = DashboardContainer.ActualWidth;
+            
+            // 2. Lock the parent Column width (important to prevent layout passes)
+            MainContentColumn.Width = new GridLength(MainContentColumn.ActualWidth);
+
             _logger.Information("Opening Nexus Side Panel (Expanding window)");
-            NexusPanel.Visibility = System.Windows.Visibility.Visible;
-            NexusColumn.Width = new System.Windows.GridLength(380);
             NexusToggleButton.Content = "[ ✕ Close ]";
             
             // Re-render notes when opening to ensure Masonry is fresh
@@ -1046,17 +1057,33 @@ public partial class MainWindow : System.Windows.Window
         }
         else
         {
+            // Lock during closing too
+            DashboardContainer.Width = DashboardContainer.ActualWidth;
+            MainContentColumn.Width = new GridLength(MainContentColumn.ActualWidth);
+
             _logger.Information("Closing Nexus Side Panel (Shrinking window)");
-            NexusPanel.Visibility = System.Windows.Visibility.Collapsed;
-            NexusColumn.Width = new System.Windows.GridLength(0);
             NexusToggleButton.Content = "[ ≠ Nexus ]";
         }
 
-        // Animate Window Width
-        var anim = new System.Windows.Media.Animation.DoubleAnimation(targetWidth, TimeSpan.FromMilliseconds(300))
+        var duration = TimeSpan.FromMilliseconds(400);
+        var easing = new System.Windows.Media.Animation.CubicEase { EasingMode = System.Windows.Media.Animation.EasingMode.EaseInOut };
+
+        // 1. Animate Window Width
+        var winAnim = new System.Windows.Media.Animation.DoubleAnimation(targetWindowWidth, duration) { EasingFunction = easing };
+        winAnim.Completed += (s, e) => 
         {
-            EasingFunction = new System.Windows.Media.Animation.QuadraticEase { EasingMode = System.Windows.Media.Animation.EasingMode.EaseInOut }
+            // Unlock everything after animation is 100% done
+            DashboardContainer.Width = double.NaN; // Auto
+            MainContentColumn.Width = new GridLength(1, GridUnitType.Star); // *
         };
-        this.BeginAnimation(WidthProperty, anim);
+        this.BeginAnimation(WidthProperty, winAnim);
+
+        // 2. Animate NexusPanel Width (The Border)
+        var panelAnim = new System.Windows.Media.Animation.DoubleAnimation(targetPanelWidth, duration) { EasingFunction = easing };
+        NexusPanel.BeginAnimation(WidthProperty, panelAnim);
+
+        // 3. Animate Margin (for that extra smooth gap)
+        var marginAnim = new System.Windows.Media.Animation.ThicknessAnimation(targetMargin, duration) { EasingFunction = easing };
+        NexusPanel.BeginAnimation(MarginProperty, marginAnim);
     }
 }

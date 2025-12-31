@@ -74,7 +74,7 @@
             <Grid Grid.Row="1" Margin="20,10,20,20">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" x:Name="MainContentColumn"/>
-                    <ColumnDefinition Width="0" x:Name="NexusColumn"/>
+                    <ColumnDefinition Width="Auto" x:Name="NexusColumn"/>
                 </Grid.ColumnDefinitions>
                 
                 <!-- ═══ DASHBOARD AREA ═══ -->
@@ -292,8 +292,8 @@
                 <!-- ═══ NEXUS PANEL (NeuralNotes) ═══ -->
                 <Border Grid.Column="1" x:Name="NexusPanel" 
                         BorderBrush="#333333" BorderThickness="1,0,0,0" 
-                        Margin="15,0,0,0" Visibility="Collapsed" Width="380">
-                    <Grid Background="#0A0A0A">
+                        Margin="0,0,0,0" Width="0" ClipToBounds="True">
+                    <Grid Background="#0A0A0A" Width="380">
                         <comp:NexusWidget x:Name="NeuralNexusWidget"/>
                     </Grid>
                 </Border>
