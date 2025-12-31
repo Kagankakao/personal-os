@@ -45,6 +45,27 @@ public class GeminiProvider : IAIProvider, IDisposable
         catch (Exception ex) { return $"Error: {ex.Message}"; }
     }
 
+    public async IAsyncEnumerable<string> GenerateResponseStreamingAsync(string prompt)
+    {
+        CheckDisposed();
+        if (!IsAvailable)
+        {
+            yield return "AI not configured. Add API key in settings.";
+            yield break;
+        }
+        
+        // Use GenerateContentStream for streaming
+        var streamResponse = _model!.GenerateContentStream(prompt);
+        
+        await foreach (var chunk in streamResponse)
+        {
+            if (!string.IsNullOrEmpty(chunk.Text))
+            {
+                yield return chunk.Text;
+            }
+        }
+    }
+
     public Task<float[]> GenerateEmbeddingAsync(string text)
     {
         CheckDisposed();

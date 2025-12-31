@@ -7,6 +7,7 @@ public interface IAIProvider
     bool IsAvailable { get; }
     void Configure(string apiKey);
     Task<string> GenerateResponseAsync(string prompt, IEnumerable<ChatMessage>? history = null);
+    IAsyncEnumerable<string> GenerateResponseStreamingAsync(string prompt);
     Task<float[]> GenerateEmbeddingAsync(string text);
     Task<string> InterpretQuoteAsync(string quote, string context);
 }

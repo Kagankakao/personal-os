@@ -1,0 +1,116 @@
+<Window x:Class="KeganOS.Views.PrometheusChatWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Prometheus Terminal" 
+        Height="650" Width="600"
+        WindowStartupLocation="CenterScreen"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        ResizeMode="CanResizeWithGrip"
+        Background="#0C0C0C"
+        Foreground="#CCCCCC"
+        FontFamily="Cascadia Mono, Consolas, monospace">
+    
+    <Window.Resources>
+        <!-- Terminal green color -->
+        <SolidColorBrush x:Key="TerminalGreen" Color="#00FF41"/>
+        <SolidColorBrush x:Key="TerminalCyan" Color="#00D9FF"/>
+        <SolidColorBrush x:Key="TerminalYellow" Color="#FFD700"/>
+        <SolidColorBrush x:Key="TerminalRed" Color="#FF4444"/>
+        <SolidColorBrush x:Key="TerminalDim" Color="#666666"/>
+        <SolidColorBrush x:Key="TerminalBg" Color="#0C0C0C"/>
+        <SolidColorBrush x:Key="TerminalBgAlt" Color="#1A1A1A"/>
+    </Window.Resources>
+    
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        
+        <!-- Terminal Header Bar (draggable) -->
+        <Border Grid.Row="0" Background="#1A1A1A" Padding="12,8" BorderBrush="#333333" BorderThickness="0,0,0,1"
+                MouseLeftButtonDown="Header_MouseDown">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                
+                <!-- Terminal dots (macOS style) -->
+                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Ellipse x:Name="CloseBtn" Width="12" Height="12" Fill="#FF5F56" Margin="0,0,6,0" 
+                             Cursor="Hand" MouseEnter="CloseBtn_MouseEnter" MouseLeave="CloseBtn_MouseLeave"
+                             MouseLeftButtonDown="CloseBtn_Click" ToolTip="Close"/>
+                    <Ellipse Width="12" Height="12" Fill="#FFBD2E" Margin="0,0,6,0" ToolTip="Minimize" Cursor="Hand"/>
+                    <Ellipse Width="12" Height="12" Fill="#27C93F" ToolTip="Maximize" Cursor="Hand"/>
+                </StackPanel>
+                
+                <!-- Title -->
+                <TextBlock Grid.Column="1" Text="prometheus@keganos:~" 
+                           Foreground="#888888" FontSize="12" 
+                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                
+                <!-- Status -->
+                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Ellipse x:Name="StatusDot" Width="8" Height="8" Fill="#27C93F" Margin="0,0,6,0"/>
+                    <TextBlock x:Name="StatusText" Text="connected" Foreground="#666666" FontSize="11"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+        
+        <!-- Chat Scroll Area -->
+        <ScrollViewer Grid.Row="1" x:Name="ChatScrollViewer" 
+                      VerticalScrollBarVisibility="Auto"
+                      Background="#0C0C0C"
+                      Padding="15,10">
+            <StackPanel x:Name="ChatPanel"/>
+        </ScrollViewer>
+        
+        <!-- Input Area -->
+        <Border Grid.Row="2" Background="#1A1A1A" Padding="12" BorderBrush="#333333" BorderThickness="0,1,0,0">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                
+                <!-- Prompt symbol -->
+                <TextBlock Grid.Column="0" Text="❯" Foreground="#00FF41" FontSize="16" 
+                           FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                
+                <!-- Input with placeholder -->
+                <Grid Grid.Column="1">
+                    <TextBox x:Name="InputBox" 
+                             Background="Transparent"
+                             Foreground="#FFFFFF"
+                             CaretBrush="#00FF41"
+                             BorderThickness="0"
+                             Padding="0,8"
+                             FontSize="14"
+                             FontFamily="Cascadia Mono, Consolas, monospace"
+                             VerticalContentAlignment="Center"
+                             KeyDown="InputBox_KeyDown"
+                             TextChanged="InputBox_TextChanged"/>
+                    <TextBlock x:Name="PlaceholderText" 
+                               Text="Type a message or /help for commands..." 
+                               Foreground="#555555"
+                               FontSize="14"
+                               FontFamily="Cascadia Mono, Consolas, monospace"
+                               VerticalAlignment="Center"
+                               Padding="0,8"
+                               IsHitTestVisible="False"/>
+                </Grid>
+                
+                <!-- Send indicator -->
+                <TextBlock x:Name="SendHint" Grid.Column="2" 
+                           Text="[Enter]" 
+                           Foreground="#444444" FontSize="11" 
+                           VerticalAlignment="Center" Margin="10,0,0,0"/>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>

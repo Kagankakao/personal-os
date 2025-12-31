@@ -22,7 +22,11 @@ public class PrometheusService : IPrometheusService, IDisposable
     public PrometheusService(IAIProvider aiProvider)
     {
         _aiProvider = aiProvider;
-        _httpClient = new HttpClient { BaseAddress = new Uri("http://127.0.0.1:8080") };
+        _httpClient = new HttpClient 
+        { 
+            BaseAddress = new Uri("http://127.0.0.1:8080"),
+            Timeout = TimeSpan.FromMinutes(5) // Increased timeout for long AI responses
+        };
         _prometheusPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "..", "prometheus");
         
         // Ensure absolute path
@@ -136,6 +140,112 @@ public class PrometheusService : IPrometheusService, IDisposable
         catch (Exception ex)
         {
             _logger.Warning(ex, "Failed to save conversation to memory");
+        }
+    }
+
+    public async IAsyncEnumerable<string> ConsultStreamingAsync(string question, int? userId = null, IEnumerable<(string Role, string Message)>? conversationHistory = null)
+    {
+        CheckDisposed();
+        _logger.Information("Consulting Prometheus (streaming) for question: {Question}", question);
+
+        // Build prompt with context - move to separate async method to avoid yield in try-catch
+        var (fullPrompt, error) = await BuildStreamingPromptAsync(question, userId, conversationHistory);
+        
+        if (error != null)
+        {
+            yield return error;
+            yield break;
+        }
+
+        // Stream the response (outside try-catch)
+        var fullResponse = new System.Text.StringBuilder();
+        await foreach (var chunk in _aiProvider.GenerateResponseStreamingAsync(fullPrompt!))
+        {
+            fullResponse.Append(chunk);
+            yield return chunk;
+        }
+
+        // Remember conversation after streaming is complete
+        _ = RememberConversation(question, fullResponse.ToString(), userId);
+    }
+
+    private async Task<(string? Prompt, string? Error)> BuildStreamingPromptAsync(string question, int? userId, IEnumerable<(string Role, string Message)>? conversationHistory = null)
+    {
+        try
+        {
+            if (!await IsHealthyAsync())
+            {
+                if (!await StartServerAsync())
+                {
+                    return (null, $"Prometheus server failed to start: {GetLastError()}");
+                }
+            }
+
+            var request = new { question = question, limit = 10, user_id = userId };
+            var response = await _httpClient.PostAsJsonAsync("/ask", request);
+            
+            if (!response.IsSuccessStatusCode)
+            {
+                return (null, $"Prometheus search failed: {response.ReasonPhrase}");
+            }
+
+            var jsonResult = await response.Content.ReadFromJsonAsync<JsonElement>();
+            var contextItems = jsonResult.GetProperty("context");
+            
+            var memoryContext = "";
+            if (jsonResult.TryGetProperty("memory", out var memoryItems) && memoryItems.GetArrayLength() > 0)
+            {
+                memoryContext = "\n\nYou also remember these past conversations:\n";
+                foreach (var mem in memoryItems.EnumerateArray())
+                {
+                    var prevQuestion = mem.TryGetProperty("question", out var q) ? q.GetString() : "";
+                    var prevText = mem.GetProperty("text").GetString();
+                    memoryContext += $"- When asked '{prevQuestion}', {prevText}\n";
+                }
+            }
+
+            var currentDate = DateTime.Now.ToString("MMMM d, yyyy");
+            var currentTime = DateTime.Now.ToString("h:mm tt");
+            
+            var contextText = "";
+            if (contextItems.GetArrayLength() > 0)
+            {
+                contextText = "From your journal:\n";
+                foreach (var item in contextItems.EnumerateArray())
+                {
+                    var date = item.GetProperty("date").GetString();
+                    var text = item.GetProperty("text").GetString();
+                    contextText += $"- [{date}] {text}\n";
+                }
+            }
+            
+            // Build conversation history context
+            var conversationContext = "";
+            if (conversationHistory != null && conversationHistory.Any())
+            {
+                conversationContext = "\n\nRecent conversation:\n";
+                foreach (var (role, msg) in conversationHistory)
+                {
+                    var label = role == "user" ? "User" : "You";
+                    conversationContext += $"{label}: {msg}\n";
+                }
+            }
+
+            var fullPrompt = $"You are Prometheus, a warm and supportive AI companion who knows the user personally. " +
+                             $"Speak casually like a close friend. Be encouraging and occasionally playful.\n\n" +
+                             $"IMPORTANT RULES:\n" +
+                             $"- Use ASCII emoticons like :D, :), :(, :P, ;), >:C, :-O, <3 instead of Unicode emojis\n" +
+                             $"- Never use emoji characters like 👋 🔥 😊 etc.\n\n" +
+                             $"Today is {currentDate}, current time is {currentTime}.\n\n" +
+                             $"{contextText}{memoryContext}{conversationContext}\n\n" +
+                             $"User's question: {question}\n\n" +
+                             $"Respond conversationally:";
+            
+            return (fullPrompt, null);
+        }
+        catch (Exception ex)
+        {
+            return (null, $"Error: {ex.Message}");
         }
     }
 

@@ -133,3 +133,5 @@ C:\Users\ariba\OneDrive\Documenti\Software Projects\AI Projects\personal-os\pers
 C:\Users\ariba\OneDrive\Documenti\Software Projects\AI Projects\personal-os\personal-os\KeganOS\bin\Debug\net9.0-windows\KeganOS.pdb
 C:\Users\ariba\OneDrive\Documenti\Software Projects\AI Projects\personal-os\personal-os\KeganOS\obj\Debug\net9.0-windows\KeganOS.genruntimeconfig.cache
 C:\Users\ariba\OneDrive\Documenti\Software Projects\AI Projects\personal-os\personal-os\KeganOS\obj\Debug\net9.0-windows\ref\KeganOS.dll
+C:\Users\ariba\OneDrive\Documenti\Software Projects\AI Projects\personal-os\personal-os\KeganOS\obj\Debug\net9.0-windows\Views\PrometheusChatWindow.baml
+C:\Users\ariba\OneDrive\Documenti\Software Projects\AI Projects\personal-os\personal-os\KeganOS\obj\Debug\net9.0-windows\Views\PrometheusChatWindow.g.cs

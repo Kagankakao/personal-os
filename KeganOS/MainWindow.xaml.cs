@@ -67,6 +67,27 @@ public partial class MainWindow : System.Windows.Window
         
         // Load KEGOMODORO images
         LoadKegomoDoroImages();
+        
+        // Register keyboard shortcuts
+        KeyDown += MainWindow_KeyDown;
+    }
+
+    private void MainWindow_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+    {
+        // Ctrl+P - Open Prometheus Chat
+        if (e.Key == System.Windows.Input.Key.P && 
+            (System.Windows.Input.Keyboard.Modifiers & System.Windows.Input.ModifierKeys.Control) == System.Windows.Input.ModifierKeys.Control)
+        {
+            AskPrometheusButton_Click(sender, e);
+            e.Handled = true;
+        }
+        // Ctrl+J - Focus Journal Input
+        else if (e.Key == System.Windows.Input.Key.J && 
+                 (System.Windows.Input.Keyboard.Modifiers & System.Windows.Input.ModifierKeys.Control) == System.Windows.Input.ModifierKeys.Control)
+        {
+            JournalInput?.Focus();
+            e.Handled = true;
+        }
     }
 
     private void OnAchievementUnlocked(object? sender, Achievement achievement)
@@ -857,9 +878,9 @@ public partial class MainWindow : System.Windows.Window
         LoadUserDataAsync();
     }
 
-    private async void AskPrometheusButton_Click(object sender, System.Windows.RoutedEventArgs e)
+    private void AskPrometheusButton_Click(object sender, System.Windows.RoutedEventArgs e)
     {
-        _logger.Information("Ask Prometheus button clicked");
+        _logger.Information("Ask Prometheus button clicked - opening chat window");
 
         // Check if AI is configured
         if (!_aiProvider.IsAvailable)
@@ -869,34 +890,10 @@ public partial class MainWindow : System.Windows.Window
             return;
         }
 
-        // Simple input dialog for question
-        var inputDialog = new Views.TextInputDialog("Ask Prometheus", "What would you like to know about your journey?");
-        if (inputDialog.ShowDialog() != true || string.IsNullOrWhiteSpace(inputDialog.ResponseText))
-        {
-            return;
-        }
-
-        var question = inputDialog.ResponseText;
-        _logger.Information("Prometheus question: {Question}", question);
-
-        try
-        {
-            // Consult Prometheus with full semantic RAG context
-            var response = await _prometheusService.ConsultAsync(question, _currentUser?.Id);
-            
-            // Add response to history
-            _chatHistory.Add(new ChatMessage("assistant", response));
-
-            // Show response
-            System.Windows.MessageBox.Show(response, "🔥 Prometheus", 
-                System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
-        }
-        catch (Exception ex)
-        {
-            _logger.Error(ex, "Failed to get Prometheus response");
-            System.Windows.MessageBox.Show($"Failed to consult Prometheus: {ex.Message}", 
-                "Error", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Warning);
-        }
+        // Open the Prometheus chat window
+        var chatWindow = new Views.PrometheusChatWindow(_prometheusService, _currentUser?.Id);
+        chatWindow.Owner = this;
+        chatWindow.Show();
     }
 
     private void JournalInput_GotFocus(object sender, System.Windows.RoutedEventArgs e)

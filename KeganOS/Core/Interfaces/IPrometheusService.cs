@@ -17,6 +17,11 @@ public interface IPrometheusService
     Task<string> ConsultAsync(string question, int? userId = null);
 
     /// <summary>
+    /// Consult Prometheus with streaming response for real-time display
+    /// </summary>
+    IAsyncEnumerable<string> ConsultStreamingAsync(string question, int? userId = null, IEnumerable<(string Role, string Message)>? conversationHistory = null);
+
+    /// <summary>
     /// Trigger a synchronization between the primary database and the semantic index
     /// </summary>
     /// <returns>True if sync was successful</returns>
