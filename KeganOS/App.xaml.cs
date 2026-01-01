@@ -101,6 +101,7 @@ public partial class App : System.Windows.Application
                 var analyticsService = _host.Services.GetRequiredService<IAnalyticsService>();
                 var prometheusService = _host.Services.GetRequiredService<IPrometheusService>();
                 var noteService = _host.Services.GetRequiredService<INoteService>();
+                var chatHistoryService = _host.Services.GetRequiredService<IChatHistoryService>();
                 
                 var mainWindow = new MainWindow(
                     kegomoDoroService, 
@@ -113,7 +114,8 @@ public partial class App : System.Windows.Application
                     achievementService, 
                     analyticsService,
                     prometheusService,
-                    noteService);
+                    noteService,
+                    chatHistoryService);
                 mainWindow.SetCurrentUser(selectedUser!);
                 
                 // Set as main window and switch shutdown mode
@@ -161,6 +163,7 @@ public partial class App : System.Windows.Application
         services.AddSingleton<IPrometheusService, PrometheusService>();
         services.AddSingleton<IMotivationalMessageService, MotivationalMessageService>();
         services.AddSingleton<INoteService, NoteService>();
+        services.AddSingleton<IChatHistoryService, ChatHistoryService>();
 
 
         Log.Debug("Services configured successfully");

@@ -28,9 +28,10 @@ async def startup_event():
         ingestor = JournalIngestor(db_path, engine)
         memory = ConversationMemory()
         
-        # Auto-sync on startup
-        logger.info("Auto-syncing journal entries...")
-        ingestor.sync()
+        # Auto-sync on startup (Non-blocking background sync)
+        import asyncio
+        logger.info("Scheduling background journal sync...")
+        asyncio.create_task(asyncio.to_thread(ingestor.sync))
         logger.info(f"Prometheus ready. Memory contains {len(memory.metadata)} past conversations.")
     except Exception as e:
         logger.error(f"Startup failed: {e}")

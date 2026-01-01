@@ -21,6 +21,9 @@ public class Theme
     public string MainImagePath { get; set; } = string.Empty;
     public string FloatingImagePath { get; set; } = string.Empty;
     
+    // Pixe.la Integration
+    public string PixelaColor { get; set; } = "shibafu";
+    
     // Metadata
     public bool IsCustom { get; set; } = false;
     public bool IsDark { get; set; } = true;

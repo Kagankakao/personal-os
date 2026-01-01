@@ -244,11 +244,11 @@
                                 <!-- Quick Palette -->
                                 <Border BorderBrush="#333333" BorderThickness="1" Margin="0,8,0,0" Padding="8,6" CornerRadius="3">
                                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                                        <Button x:Name="ColorGreen" Background="#70cc14" Width="18" Height="18" Margin="2,0" BorderThickness="0" Click="PaletteColor_Click" Cursor="Hand"/>
-                                        <Button x:Name="ColorRed" Background="#f3591e" Width="18" Height="18" Margin="2,0" BorderThickness="0" Click="PaletteColor_Click" Cursor="Hand"/>
-                                        <Button x:Name="ColorBlue" Background="#00aced" Width="18" Height="18" Margin="2,0" BorderThickness="0" Click="PaletteColor_Click" Cursor="Hand"/>
-                                        <Button x:Name="ColorYellow" Background="#e4b41b" Width="18" Height="18" Margin="2,0" BorderThickness="0" Click="PaletteColor_Click" Cursor="Hand"/>
-                                        <Button x:Name="ColorBlack" Background="#222222" Width="18" Height="18" Margin="2,0" BorderThickness="1" BorderBrush="#444444" Click="PaletteColor_Click" Cursor="Hand"/>
+                                        <Button x:Name="ColorGreen" Background="#70cc14" Tag="shibafu" Width="18" Height="18" Margin="2,0" BorderThickness="0" Click="PaletteColor_Click" Cursor="Hand"/>
+                                        <Button x:Name="ColorRed" Background="#f3591e" Tag="momiji" Width="18" Height="18" Margin="2,0" BorderThickness="0" Click="PaletteColor_Click" Cursor="Hand"/>
+                                        <Button x:Name="ColorBlue" Background="#00aced" Tag="sora" Width="18" Height="18" Margin="2,0" BorderThickness="0" Click="PaletteColor_Click" Cursor="Hand"/>
+                                        <Button x:Name="ColorYellow" Background="#e4b41b" Tag="ichigyo" Width="18" Height="18" Margin="2,0" BorderThickness="0" Click="PaletteColor_Click" Cursor="Hand"/>
+                                        <Button x:Name="ColorBlack" Background="#222222" Tag="kuro" Width="18" Height="18" Margin="2,0" BorderThickness="1" BorderBrush="#444444" Click="PaletteColor_Click" Cursor="Hand"/>
                                     </StackPanel>
                                 </Border>
                             </StackPanel>

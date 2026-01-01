@@ -47,6 +47,7 @@ public class User
     public string? PixelaUsername { get; set; }
     public string? PixelaToken { get; set; }
     public string? PixelaGraphId { get; set; }
+    public string? PixelaGraphColor { get; set; } = "shibafu";
     
     // AI integration
     public string? GeminiApiKey { get; set; }

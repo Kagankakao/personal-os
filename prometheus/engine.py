@@ -98,7 +98,7 @@ class PrometheusEngine:
         return results
 
     def upsert_entries(self, entries):
-        """Upsert journal entries into local store"""
+        """Upsert journal entries into local store with incremental logic"""
         # entries: list of dicts {id, text, metadata}
         new_vectors = []
         new_metadata = []
@@ -106,25 +106,43 @@ class PrometheusEngine:
         # Build map for existing IDs to allow updates
         id_to_idx = { m.get("id"): i for i, m in enumerate(self.metadata) }
         
+        skipped_count = 0
+        updated_count = 0
+        added_count = 0
+
         for entry in entries:
             text = entry['text']
-            vec = self.embedder.get_dense_embeddings(text)[0]
-            
             eid = entry.get('id')
+            
             if eid in id_to_idx:
                 idx = id_to_idx[eid]
-                # Update existing
+                # Compare text to avoid redundant embedding calls
+                existing_text = self.metadata[idx].get("text", "")
+                
+                if text == existing_text:
+                    skipped_count += 1
+                    continue
+                
+                # If text changed, re-embed
+                logger.info(f"Updating changed entry: {eid}")
+                vec = self.embedder.get_dense_embeddings(text)[0]
                 if self.vectors is not None:
                     self.vectors[idx] = vec
                 self.metadata[idx] = entry['metadata']
                 self.metadata[idx]["id"] = eid
+                updated_count += 1
             else:
                 # Add new
+                vec = self.embedder.get_dense_embeddings(text)[0]
                 new_vectors.append(vec)
                 meta = entry['metadata']
                 meta["id"] = eid
                 new_metadata.append(meta)
+                added_count += 1
         
+        if skipped_count > 0:
+            logger.info(f"Skipped {skipped_count} unchanged entries")
+            
         if new_vectors:
             if self.vectors is None:
                 self.vectors = np.array(new_vectors)

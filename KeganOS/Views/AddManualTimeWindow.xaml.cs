@@ -66,9 +66,7 @@ public partial class AddManualTimeWindow : Window
             var kegomoDoroService = ((App)System.Windows.Application.Current).Services.GetRequiredService<IKegomoDoroService>();
             if (kegomoDoroService.IsAnyInstanceRunning)
             {
-                System.Windows.MessageBox.Show(
-                    "Please close KEGOMODORO before adding manual time.\n\nThe stopwatch must be stopped to avoid data conflicts.",
-                    "KEGOMODORO Running", MessageBoxButton.OK, MessageBoxImage.Warning);
+                ShowToast("Close KEGOMODORO first!", "⚠️", "#FFBD2E");
                 return;
             }
 
@@ -95,9 +93,7 @@ public partial class AddManualTimeWindow : Window
                 else
                 {
                     _logger.Warning("Failed to update Pixe.la");
-                    // Keep this warning as it's important feedback
-                    System.Windows.MessageBox.Show("Time added locally, but failed to update Pixe.la graph.", "Warning",
-                        MessageBoxButton.OK, MessageBoxImage.Warning);
+                    ShowToast("Local sync OK, Pixe.la failed.", "⚠️", "#FFBD2E");
                 }
             }
             else if (UpdatePixelaCheckBox.IsChecked == true)
@@ -140,8 +136,7 @@ public partial class AddManualTimeWindow : Window
         catch (Exception ex)
         {
             _logger.Error(ex, "Failed to add manual time");
-            System.Windows.MessageBox.Show($"Failed to add time: {ex.Message}", "Error",
-                MessageBoxButton.OK, MessageBoxImage.Error);
+            ShowToast($"Error: {ex.Message}", "❌", "#FF4444");
         }
         finally
         {
@@ -159,8 +154,7 @@ public partial class AddManualTimeWindow : Window
         // Validate date
         if (!DateInput.SelectedDate.HasValue)
         {
-            System.Windows.MessageBox.Show("Please select a date.", "Validation Error",
-                MessageBoxButton.OK, MessageBoxImage.Warning);
+            ShowToast("Select a date.", "📅", "#FFBD2E");
             return false;
         }
 
@@ -168,30 +162,26 @@ public partial class AddManualTimeWindow : Window
 
         if (date > DateTime.Today)
         {
-            System.Windows.MessageBox.Show("Date cannot be in the future.", "Validation Error",
-                MessageBoxButton.OK, MessageBoxImage.Warning);
+            ShowToast("No future dates!", "📅", "#FFBD2E");
             return false;
         }
 
         // Validate duration
         if (!int.TryParse(HoursInput.Text, out var hours) || hours < 0 || hours > 24)
         {
-            System.Windows.MessageBox.Show("Hours must be between 0 and 24.", "Validation Error",
-                MessageBoxButton.OK, MessageBoxImage.Warning);
+            ShowToast("Hours: 0-24", "🕒", "#FFBD2E");
             return false;
         }
 
         if (!int.TryParse(MinutesInput.Text, out var minutes) || minutes < 0 || minutes > 59)
         {
-            System.Windows.MessageBox.Show("Minutes must be between 0 and 59.", "Validation Error",
-                MessageBoxButton.OK, MessageBoxImage.Warning);
+            ShowToast("Minutes: 0-59", "🕒", "#FFBD2E");
             return false;
         }
 
         if (!int.TryParse(SecondsInput.Text, out var seconds) || seconds < 0 || seconds > 59)
         {
-            System.Windows.MessageBox.Show("Seconds must be between 0 and 59.", "Validation Error",
-                MessageBoxButton.OK, MessageBoxImage.Warning);
+            ShowToast("Seconds: 0-59", "🕒", "#FFBD2E");
             return false;
         }
 
@@ -199,8 +189,7 @@ public partial class AddManualTimeWindow : Window
 
         if (duration == TimeSpan.Zero)
         {
-            System.Windows.MessageBox.Show("Duration must be greater than 0.", "Validation Error",
-                MessageBoxButton.OK, MessageBoxImage.Warning);
+            ShowToast("Time cannot be zero.", "🕒", "#FFBD2E");
             return false;
         }
 
@@ -213,6 +202,14 @@ public partial class AddManualTimeWindow : Window
         }
 
         return true;
+    }
+
+    private void ShowToast(string message, string icon, string color)
+    {
+        if (Owner is MainWindow main)
+        {
+            main.ShowToast(message, icon, color);
+        }
     }
 
     /// <summary>

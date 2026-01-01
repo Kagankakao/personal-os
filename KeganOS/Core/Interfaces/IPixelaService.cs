@@ -91,6 +91,7 @@ public interface IPixelaService
         string? name = null, 
         string? color = null, 
         string? unit = null, 
+        string? type = null,
         bool? isEnablePng = null,
         bool? startOnMonday = null);
 }

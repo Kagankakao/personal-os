@@ -23,6 +23,7 @@ namespace KeganOS.Views.Components
         private bool _isEditing = false;
         private bool _isSelectionMode = false;
         private HashSet<string> _selectedNoteIds = new HashSet<string>();
+        private string _activeTagFilterValue = null; // null means "All"
         
         // Auto-save timer (debounce)
         private System.Windows.Threading.DispatcherTimer _autoSaveTimer;
@@ -68,7 +69,55 @@ namespace KeganOS.Views.Components
             _notes = notes.OrderByDescending(n => n.IsPinned)
                           .ThenByDescending(n => n.LastModified)
                           .ToList();
+            
+            UpdateGlobalTagsList();
             RenderNotes();
+        }
+
+        private void UpdateGlobalTagsList()
+        {
+            if (TagsPanel == null) return;
+            TagsPanel.Children.Clear();
+
+            // "All" filter
+            AddTagFilterChip(null);
+
+            // Get all unique tags from notes
+            var allTags = _notes.Where(n => n.Tags != null)
+                                .SelectMany(n => n.Tags)
+                                .Distinct()
+                                .OrderBy(t => t)
+                                .ToList();
+
+            foreach (var tag in allTags)
+            {
+                AddTagFilterChip(tag);
+            }
+        }
+
+        private void AddTagFilterChip(string tagValue)
+        {
+            var isAll = tagValue == null;
+            var isActive = _activeTagFilterValue == tagValue;
+
+            var text = new TextBlock
+            {
+                Text = isAll ? "[All]" : (tagValue.StartsWith("#") ? tagValue : "#" + tagValue),
+                Foreground = isActive ? new SolidColorBrush(System.Windows.Media.Color.FromRgb(135, 206, 235)) : new SolidColorBrush(System.Windows.Media.Color.FromRgb(102, 102, 102)),
+                Cursor = System.Windows.Input.Cursors.Hand,
+                Margin = new Thickness(0, 0, 10, 5),
+                FontSize = 11,
+                FontWeight = isActive ? FontWeights.Bold : FontWeights.Normal
+            };
+
+            text.MouseLeftButtonDown += (s, e) =>
+            {
+                _activeTagFilterValue = tagValue;
+                UpdateGlobalTagsList(); // Refresh highlighting
+                RenderNotes();
+            };
+
+            TagsPanel.Children.Add(text);
         }
 
         public void RenderNotes()
@@ -79,7 +128,12 @@ namespace KeganOS.Views.Components
             double col1Height = 0;
             double col2Height = 0;
 
-            foreach (var note in _notes)
+            // Filter notes by active tag
+            var filteredNotes = _activeTagFilterValue == null 
+                ? _notes 
+                : _notes.Where(n => n.Tags != null && n.Tags.Contains(_activeTagFilterValue)).ToList();
+
+            foreach (var note in filteredNotes)
             {
                 var card = CreateNoteCard(note);
                 double estimatedHeight = GetEstimateHeight(note);
@@ -238,7 +292,7 @@ namespace KeganOS.Views.Components
                 Text = note.LastModified.ToString("MMM dd"),
                 Foreground = new SolidColorBrush(System.Windows.Media.Color.FromRgb(120, 120, 120)),
                 FontSize = 11,
-                VerticalAlignment = VerticalAlignment.Center
+                VerticalAlignment = System.Windows.VerticalAlignment.Center
             });
             
             if (note.IsPinned)
@@ -248,7 +302,7 @@ namespace KeganOS.Views.Components
                     Text = "  📌",
                     Foreground = new SolidColorBrush(System.Windows.Media.Color.FromRgb(255, 200, 80)),
                     FontSize = 12,
-                    VerticalAlignment = VerticalAlignment.Center
+                    VerticalAlignment = System.Windows.VerticalAlignment.Center
                 });
             }
             stack.Children.Add(bottomRow);
@@ -260,8 +314,8 @@ namespace KeganOS.Views.Components
         // --- Tab Management ---
         private void TaskTab_Click(object sender, System.Windows.RoutedEventArgs e)
         {
-            TaskView.Visibility = Visibility.Visible;
-            NeuralView.Visibility = Visibility.Collapsed;
+            TaskView.Visibility = System.Windows.Visibility.Visible;
+            NeuralView.Visibility = System.Windows.Visibility.Collapsed;
             
             TasksTabBtn.Foreground = new SolidColorBrush(System.Windows.Media.Color.FromRgb(135, 206, 235));
             NeuralTabBtn.Foreground = new SolidColorBrush(System.Windows.Media.Color.FromRgb(170, 170, 170));
@@ -269,8 +323,8 @@ namespace KeganOS.Views.Components
 
         private void NeuralTab_Click(object sender, System.Windows.RoutedEventArgs e)
         {
-            TaskView.Visibility = Visibility.Collapsed;
-            NeuralView.Visibility = Visibility.Visible;
+            TaskView.Visibility = System.Windows.Visibility.Collapsed;
+            NeuralView.Visibility = System.Windows.Visibility.Visible;
             
             NeuralTabBtn.Foreground = new SolidColorBrush(System.Windows.Media.Color.FromRgb(135, 206, 235));
             TasksTabBtn.Foreground = new SolidColorBrush(System.Windows.Media.Color.FromRgb(170, 170, 170));
@@ -339,6 +393,7 @@ namespace KeganOS.Views.Components
                 // Populate FlowDocument with content and images
                 PopulateFlowDocument(note);
                 
+                RenderDetailTags(note);
                 SetEditMode(true);  // Enter edit mode immediately
                 NoteDetailPanel.Visibility = System.Windows.Visibility.Visible;
             }
@@ -431,13 +486,13 @@ namespace KeganOS.Views.Components
                 Width = 24,
                 Height = 24,
                 HorizontalAlignment = System.Windows.HorizontalAlignment.Right,
-                VerticalAlignment = VerticalAlignment.Top,
+                VerticalAlignment = System.Windows.VerticalAlignment.Top,
                 Background = new SolidColorBrush(System.Windows.Media.Color.FromArgb(200, 200, 50, 50)),
                 Foreground = System.Windows.Media.Brushes.White,
                 BorderThickness = new Thickness(0),
                 Cursor = System.Windows.Input.Cursors.Hand,
                 Margin = new Thickness(0, 2, 2, 0),
-                Visibility = Visibility.Collapsed
+                Visibility = System.Windows.Visibility.Collapsed
             };
             
             deleteBtn.Click += async (s, e) =>
@@ -480,8 +535,8 @@ namespace KeganOS.Views.Components
             container.Children.Add(deleteBtn);
             
             // Show delete button on hover
-            container.MouseEnter += (s, e) => deleteBtn.Visibility = Visibility.Visible;
-            container.MouseLeave += (s, e) => deleteBtn.Visibility = Visibility.Collapsed;
+            container.MouseEnter += (s, e) => deleteBtn.Visibility = System.Windows.Visibility.Visible;
+            container.MouseLeave += (s, e) => deleteBtn.Visibility = System.Windows.Visibility.Collapsed;
             
             return container;
         }
@@ -694,9 +749,9 @@ namespace KeganOS.Views.Components
         {
             _isSelectionMode = true;
             _selectedNoteIds.Clear();
-            TagsPanel.Visibility = Visibility.Collapsed;
-            SelectModeBtn.Visibility = Visibility.Collapsed;
-            BulkActionsPanel.Visibility = Visibility.Visible;
+            TagsPanel.Visibility = System.Windows.Visibility.Collapsed;
+            SelectModeBtn.Visibility = System.Windows.Visibility.Collapsed;
+            BulkActionsPanel.Visibility = System.Windows.Visibility.Visible;
             RenderNotes();
         }
 
@@ -704,9 +759,9 @@ namespace KeganOS.Views.Components
         {
             _isSelectionMode = false;
             _selectedNoteIds.Clear();
-            TagsPanel.Visibility = Visibility.Visible;
-            SelectModeBtn.Visibility = Visibility.Visible;
-            BulkActionsPanel.Visibility = Visibility.Collapsed;
+            TagsPanel.Visibility = System.Windows.Visibility.Visible;
+            SelectModeBtn.Visibility = System.Windows.Visibility.Visible;
+            BulkActionsPanel.Visibility = System.Windows.Visibility.Collapsed;
             RenderNotes();
         }
 
@@ -728,8 +783,8 @@ namespace KeganOS.Views.Components
         {
             if (_selectedNoteIds.Count == 0) return;
 
-            var result = System.Windows.MessageBox.Show($"Delete {_selectedNoteIds.Count} notes permanently?", "Confirm Delete", MessageBoxButton.YesNo, MessageBoxImage.Warning);
-            if (result == MessageBoxResult.Yes)
+            var result = System.Windows.MessageBox.Show($"Delete {_selectedNoteIds.Count} notes permanently?", "Confirm Delete", System.Windows.MessageBoxButton.YesNo, System.Windows.MessageBoxImage.Warning);
+            if (result == System.Windows.MessageBoxResult.Yes)
             {
                 await _noteService.DeleteNotesAsync(_selectedNoteIds);
                 _isSelectionMode = false;
@@ -747,12 +802,89 @@ namespace KeganOS.Views.Components
         {
             if (_currentNote == null) return;
 
-            var result = System.Windows.MessageBox.Show("Delete this note permanently?", "Confirm Delete", MessageBoxButton.YesNo, MessageBoxImage.Warning);
-            if (result == MessageBoxResult.Yes)
+            var result = System.Windows.MessageBox.Show("Delete this note permanently?", "Confirm Delete", System.Windows.MessageBoxButton.YesNo, System.Windows.MessageBoxImage.Warning);
+            if (result == System.Windows.MessageBoxResult.Yes)
             {
                 await _noteService.DeleteNoteAsync(_currentNote.Id);
-                NoteDetailPanel.Visibility = Visibility.Collapsed;
+                NoteDetailPanel.Visibility = System.Windows.Visibility.Collapsed;
                 await RefreshNotes();
+            }
+        }
+        private void RenderDetailTags(NoteItem note)
+        {
+            if (DetailTagsPanel == null) return;
+            DetailTagsPanel.Children.Clear();
+
+            if (note.Tags == null) note.Tags = new List<string>();
+
+            foreach (var tag in note.Tags)
+            {
+                var chip = new Border
+                {
+                    Background = new SolidColorBrush(System.Windows.Media.Color.FromRgb(26, 26, 26)),
+                    BorderBrush = new SolidColorBrush(System.Windows.Media.Color.FromRgb(51, 51, 51)),
+                    BorderThickness = new Thickness(1),
+                    Padding = new Thickness(8, 3, 5, 3),
+                    CornerRadius = new CornerRadius(3),
+                    Margin = new Thickness(0, 0, 5, 5)
+                };
+
+                var stack = new StackPanel { Orientation = System.Windows.Controls.Orientation.Horizontal };
+                
+                stack.Children.Add(new TextBlock 
+                { 
+                    Text = tag.StartsWith("#") ? tag : "#" + tag, 
+                    Foreground = new SolidColorBrush(System.Windows.Media.Color.FromRgb(135, 206, 235)),
+                    FontSize = 10,
+                    VerticalAlignment = System.Windows.VerticalAlignment.Center
+                });
+
+                var deleteBtn = new System.Windows.Controls.Button
+                {
+                    Content = "×",
+                    Foreground = new SolidColorBrush(System.Windows.Media.Color.FromRgb(170, 170, 170)),
+                    Background = System.Windows.Media.Brushes.Transparent,
+                    BorderThickness = new Thickness(0),
+                    FontSize = 12,
+                    Margin = new Thickness(5, -2, 0, 0),
+                    Cursor = System.Windows.Input.Cursors.Hand,
+                    VerticalAlignment = System.Windows.VerticalAlignment.Center
+                };
+
+                string tagToRemove = tag;
+                deleteBtn.Click += async (s, e) =>
+                {
+                    note.Tags.Remove(tagToRemove);
+                    RenderDetailTags(note);
+                    UpdateGlobalTagsList(); // Refresh main categories
+                    await _noteService.SaveNoteAsync(_currentUser.Id, note);
+                };
+
+                stack.Children.Add(deleteBtn);
+                chip.Child = stack;
+                DetailTagsPanel.Children.Add(chip);
+            }
+        }
+
+        private async void AddTagInput_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+        {
+            if (e.Key == System.Windows.Input.Key.Enter)
+            {
+                string tag = AddTagInput.Text.Trim();
+                if (string.IsNullOrWhiteSpace(tag)) return;
+
+                if (!tag.StartsWith("#")) tag = "#" + tag;
+
+                if (_currentNote.Tags == null) _currentNote.Tags = new List<string>();
+
+                if (!_currentNote.Tags.Contains(tag))
+                {
+                    _currentNote.Tags.Add(tag);
+                    AddTagInput.Text = "";
+                    RenderDetailTags(_currentNote);
+                    UpdateGlobalTagsList();
+                    await _noteService.SaveNoteAsync(_currentUser.Id, _currentNote);
+                }
             }
         }
     }

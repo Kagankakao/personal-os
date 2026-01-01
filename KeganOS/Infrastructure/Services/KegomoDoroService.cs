@@ -261,10 +261,11 @@ public class KegomoDoroService : IKegomoDoroService
             var userConfigPath = Path.Combine(_kegomoDoroPath, "user_config.json");
             var userConfig = new
             {
-                username = user.DisplayName,
-                pixela_username = user.PixelaUsername ?? "",
-                pixela_token = user.PixelaToken ?? "",
-                pixela_graph_id = user.PixelaGraphId ?? "",
+                username = user.DisplayName.Trim(),
+                pixela_username = (user.PixelaUsername ?? "").Trim(),
+                pixela_token = (user.PixelaToken ?? "").Trim(),
+                pixela_graph_id = (user.PixelaGraphId ?? "").Trim(),
+                pixela_color = (user.PixelaGraphColor ?? "shibafu").Trim(),
                 data_folder = $"dependencies/texts/Users/{user.DisplayName}/",
                 journey_file = user.JournalFileName ?? $"KA\u00c6[\u00c6\u00df#.txt"
             };

@@ -5,6 +5,9 @@ using System.Net.Http;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System;
+using System.IO;
+using System.Globalization;
 
 namespace KeganOS.Infrastructure.Services;
 
@@ -23,6 +26,30 @@ public class PixelaService : IPixelaService, IDisposable
     private string? _cachedLatestDate;
     private DateTime _lastCacheTime = DateTime.MinValue;
     private static readonly TimeSpan CacheExpiry = TimeSpan.FromMinutes(15);
+    private const string PixelaLogFile = "pixela_keganos.log";
+
+    private void LogPixela(string message)
+    {
+        try
+        {
+            var timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+            var logLine = $"[{timestamp}] [KeganOS] {message}{Environment.NewLine}";
+            
+            // Write to C# app log
+            var logPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, PixelaLogFile);
+            File.AppendAllText(logPath, logLine);
+            
+            // Also write to KEGOMODORO debug log for unified view
+            var kegomoDoroLogPath = Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "..", "..", "kegomodoro", "pixela_debug.log"));
+            if (Directory.Exists(Path.GetDirectoryName(kegomoDoroLogPath)))
+            {
+                File.AppendAllText(kegomoDoroLogPath, logLine);
+            }
+            
+            _logger.Debug("Pixela Diagnostic: {Message}", message);
+        }
+        catch { /* Ignore logging errors */ }
+    }
 
     public PixelaService()
     {
@@ -251,6 +278,7 @@ public class PixelaService : IPixelaService, IDisposable
     /// </summary>
     public async Task<(bool success, string? error)> RegisterUserAsync(string username, string token)
     {
+        LogPixela($"--- Register User Started: {username} ---");
         _logger.Information("Registering Pixe.la user: {Username}", username);
 
         const int maxRetries = 10;
@@ -266,8 +294,11 @@ public class PixelaService : IPixelaService, IDisposable
                 var json = JsonSerializer.Serialize(payload);
                 var content = new StringContent(json, Encoding.UTF8, "application/json");
 
+                LogPixela($"POST {BaseUrl} (Register User)");
                 var response = await _httpClient.PostAsync(BaseUrl, content);
                 var responseBody = await response.Content.ReadAsStringAsync();
+                
+                LogPixela($"Response: {response.StatusCode} - {responseBody}");
                 
                 if (response.IsSuccessStatusCode)
                 {
@@ -316,6 +347,7 @@ public class PixelaService : IPixelaService, IDisposable
 
     public async Task<bool> CreateGraphAsync(User user, string graphId, string graphName)
     {
+        LogPixela($"--- Create Graph Started: {graphId} ({graphName}) ---");
         _logger.Information("Creating Pixe.la graph: {GraphId}", graphId);
 
         try
@@ -327,7 +359,11 @@ public class PixelaService : IPixelaService, IDisposable
             request.Headers.Add("X-USER-TOKEN", user.PixelaToken);
             request.Content = new StringContent(json, Encoding.UTF8, "application/json");
 
+            LogPixela($"POST {BaseUrl}/{user.PixelaUsername}/graphs");
             var response = await _httpClient.SendAsync(request);
+            var responseBody = await response.Content.ReadAsStringAsync();
+            LogPixela($"Response: {response.StatusCode} - {responseBody}");
+            
             var success = response.IsSuccessStatusCode;
             
             _logger.Information("Graph creation {Status}", success ? "succeeded" : "failed");
@@ -356,6 +392,7 @@ public class PixelaService : IPixelaService, IDisposable
         string? name = null, 
         string? color = null, 
         string? unit = null, 
+        string? type = null,
         bool? isEnablePng = null,
         bool? startOnMonday = null)
     {
@@ -371,6 +408,7 @@ public class PixelaService : IPixelaService, IDisposable
             if (!string.IsNullOrEmpty(name)) payload["name"] = name;
             if (!string.IsNullOrEmpty(color)) payload["color"] = color;
             if (!string.IsNullOrEmpty(unit)) payload["unit"] = unit;
+            if (!string.IsNullOrEmpty(type)) payload["type"] = type;
             if (isEnablePng != null) payload["isEnablePng"] = isEnablePng.Value;
             if (startOnMonday != null) payload["startOnMonday"] = startOnMonday.Value;
 
@@ -383,6 +421,8 @@ public class PixelaService : IPixelaService, IDisposable
             var json = JsonSerializer.Serialize(payload);
             var url = $"{BaseUrl}/{user.PixelaUsername}/graphs/{user.PixelaGraphId}";
             
+            LogPixela($"--- UpdateGraph Started: PUT {url} ---");
+            LogPixela($"Payload: {json}");
             _logger.Information("Updating Pixe.la graph: PUT {Url} with payload: {Payload}", url, json);
             _logger.Debug("Using credentials - Username: {Username}, Token: {TokenPrefix}...", 
                 user.PixelaUsername, 
@@ -401,6 +441,7 @@ public class PixelaService : IPixelaService, IDisposable
                 var response = await _httpClient.SendAsync(request);
                 var responseBody = await response.Content.ReadAsStringAsync();
                 
+                LogPixela($"UpdateGraph Response (attempt {attempt}): {response.StatusCode} - {responseBody}");
                 _logger.Debug("Pixe.la response (attempt {Attempt}): {Status} - {Body}", attempt, response.StatusCode, responseBody);
                 
                 // Check for rate limit rejection
@@ -452,48 +493,75 @@ public class PixelaService : IPixelaService, IDisposable
     {
         if (!IsConfigured(user)) return 0;
 
-        _logger.Information("Fetching pixel for {Date:yyyyMMdd}", date);
+        var dateStr = date.ToString("yyyyMMdd");
+        var url = $"{BaseUrl}/{user.PixelaUsername}/graphs/{user.PixelaGraphId}/{dateStr}";
+        
+        LogPixela($"--- Get Pixel Started: {dateStr} ---");
 
-        int retryCount = 0;
-        int maxRetries = 2;
-
-        while (retryCount <= maxRetries)
+        // Retry loop for rate limiting
+        int maxAttempts = 10;
+        int attempts = 0;
+        
+        while (attempts < maxAttempts)
         {
+            attempts++;
             try
             {
-                var url = $"{BaseUrl}/{user.PixelaUsername}/graphs/{user.PixelaGraphId}/{date:yyyyMMdd}";
                 var request = new HttpRequestMessage(HttpMethod.Get, url);
                 request.Headers.Add("X-USER-TOKEN", user.PixelaToken);
 
+                LogPixela($"GET {url} (Attempt {attempts})");
                 var response = await _httpClient.SendAsync(request);
+                var responseBody = await response.Content.ReadAsStringAsync();
                 
-                if (response.StatusCode == System.Net.HttpStatusCode.ServiceUnavailable || 
-                    (int)response.StatusCode == 503 || (int)response.StatusCode == 429)
+                // Check if rate limited
+                bool isRejected = false;
+                try {
+                    using var doc = JsonDocument.Parse(responseBody);
+                    if (doc.RootElement.TryGetProperty("isRejected", out var rejectedProp) && rejectedProp.GetBoolean())
+                        isRejected = true;
+                } catch { }
+
+                if (isRejected)
                 {
-                    _logger.Warning("Pixe.la rate limit hit for pixel (Attempt {Attempt})", retryCount + 1);
-                    retryCount++;
-                    await Task.Delay(1000 * retryCount);
+                    LogPixela("Rate limited (GET), waiting 500ms...");
+                    await Task.Delay(500);
                     continue;
                 }
 
-                if (!response.IsSuccessStatusCode) return 0;
+                LogPixela($"Response: {response.StatusCode}");
 
-                var json = await response.Content.ReadAsStringAsync();
-                using var doc = JsonDocument.Parse(json);
-                if (doc.RootElement.TryGetProperty("quantity", out var qtyProp))
+                if (response.StatusCode == System.Net.HttpStatusCode.OK)
                 {
-                    var qtyStr = qtyProp.GetString();
-                    return double.TryParse(qtyStr, out var q) ? q : 0;
+                    using var doc = JsonDocument.Parse(responseBody);
+                    if (doc.RootElement.TryGetProperty("quantity", out var quantityProp))
+                    {
+                        var quantityStr = quantityProp.GetString();
+                        if (double.TryParse(quantityStr, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var quantity))
+                        {
+                            LogPixela($"Found existing quantity: {quantity}");
+                            return quantity;
+                        }
+                    }
                 }
-                return 0;
+                else if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+                {
+                    LogPixela("Pixel not found (404) - assuming 0");
+                    return 0;
+                }
+                else
+                {
+                    LogPixela($"Error fetching pixel: {response.StatusCode} - {responseBody}");
+                    return 0;
+                }
             }
             catch (Exception ex)
             {
-                _logger.Error(ex, "Failed to fetch pixel for date {Date} (Attempt {Attempt})", date, retryCount + 1);
-                retryCount++;
-                await Task.Delay(500);
+                LogPixela($"Exception fetching pixel: {ex.Message}");
+                return 0;
             }
         }
+        
         return 0;
     }
 
@@ -615,38 +683,66 @@ public class PixelaService : IPixelaService, IDisposable
     }
 
     /// <summary>
-    /// Post a pixel value for a specific date using POST endpoint
-    /// POST /v1/users/{username}/graphs/{graphID}
-    /// Includes retry loop for Pixe.la rate limiting (isRejected:true)
+    /// Post or update (upsert) a pixel value for a specific date using PUT endpoint
+    /// PUT /v1/users/{username}/graphs/{graphID}/{yyyyMMdd}
+    /// Includes infinite retry loop with 500ms delay for Pixe.la rate limiting (isRejected:true)
     /// </summary>
     public async Task<bool> PostPixelAsync(User user, DateTime date, double quantity)
     {
-        if (!IsConfigured(user)) return false;
+        if (!IsConfigured(user)) 
+        {
+            LogPixela($"FAILED: User {user.DisplayName} is missing Pixe.la parameters (Username, Token, or GraphId).");
+            return false;
+        }
 
         var dateStr = date.ToString("yyyyMMdd");
-        var url = $"{BaseUrl}/{user.PixelaUsername}/graphs/{user.PixelaGraphId}";
+        var url = $"{BaseUrl}/{user.PixelaUsername}/graphs/{user.PixelaGraphId}/{dateStr}";
         
-        _logger.Information("Posting pixel: {Quantity}h on {Date} to {Url}", quantity, dateStr, url);
+        LogPixela($"--- Upsert Pixel Started: {dateStr} ({quantity}h) ---");
+        LogPixela($"Request: PUT {url}");
+        _logger.Information("Upserting pixel: {Quantity}h on {Date} to {Url}", quantity, dateStr, url);
 
-        int maxRetries = 10;
-        int retryDelayMs = 500;
+        bool attemptedMigration = false;
+        bool useIntegerMode = false;
+        int maxAttempts = 10;
+        int attempts = 0;
 
-        for (int attempt = 1; attempt <= maxRetries; attempt++)
+        while (attempts < maxAttempts)
         {
+            attempts++;
             try
             {
-                var payload = new { date = dateStr, quantity = quantity.ToString("F2") };
+                // Use Python-compatible formatting ('G' is similar to Python's ':g')
+                // If graph is int type and migration failed, round to integer
+                string qtyStr;
+                if (useIntegerMode)
+                {
+                    qtyStr = Math.Round(quantity).ToString("0", CultureInfo.InvariantCulture);
+                }
+                else
+                {
+                    qtyStr = quantity.ToString("G", CultureInfo.InvariantCulture);
+                }
+                
+                LogPixela($"Formatted Quantity String: '{qtyStr}' (from raw: {quantity}, intMode: {useIntegerMode})");
+                
+                var payload = new { quantity = qtyStr };
+                var jsonPayload = JsonSerializer.Serialize(payload);
+                LogPixela($"Full JSON Payload: {jsonPayload}");
+                
                 var content = new StringContent(
-                    JsonSerializer.Serialize(payload),
+                    jsonPayload,
                     Encoding.UTF8,
                     "application/json");
 
-                var request = new HttpRequestMessage(HttpMethod.Post, url);
+                var request = new HttpRequestMessage(HttpMethod.Put, url);
                 request.Headers.Add("X-USER-TOKEN", user.PixelaToken);
                 request.Content = content;
 
                 var response = await _httpClient.SendAsync(request);
                 var responseBody = await response.Content.ReadAsStringAsync();
+                
+                LogPixela($"Response: {response.StatusCode} - {responseBody}");
 
                 // Check for rate limit rejection
                 bool isRejected = false;
@@ -660,63 +756,109 @@ public class PixelaService : IPixelaService, IDisposable
                 }
                 catch { }
 
-                if (isRejected && attempt < maxRetries)
+                if (isRejected)
                 {
-                    _logger.Information("Rate limited by Pixe.la (isRejected:true), retrying in {Delay}ms (attempt {Attempt}/{Max})", 
-                        retryDelayMs, attempt, maxRetries);
-                    await Task.Delay(retryDelayMs);
-                    continue;
+                    _logger.Information("Rate limited by Pixe.la (free tier), waiting 500ms...");
+                    await Task.Delay(500);
+                    continue; // Retry in loop
                 }
 
-                if (response.IsSuccessStatusCode || response.StatusCode == System.Net.HttpStatusCode.OK)
+                if (response.IsSuccessStatusCode)
                 {
-                    _logger.Information("Pixel posted successfully: {Date} = {Quantity}h", dateStr, quantity);
+                    _logger.Information("Pixel upserted successfully: {Date} = {Quantity}h (intMode: {IntMode})", dateStr, qtyStr, useIntegerMode);
                     return true;
+                }
+                else if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+                {
+                    _logger.Warning("Graph not found (404). Attempting to create graph {GraphId} for {Username}...", 
+                        user.PixelaGraphId, user.PixelaUsername);
+                    
+                    bool graphCreated = await CreateGraphAsync(user, user.PixelaGraphId ?? "graph1", user.PixelaUsername ?? "user");
+                    if (!graphCreated)
+                    {
+                        _logger.Error("Failed to create graph after 404.");
+                        return false;
+                    }
+                    continue;
+                }
+                else if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized || 
+                         response.StatusCode == System.Net.HttpStatusCode.Forbidden)
+                {
+                    _logger.Error("Pixe.la authentication failed (401/403). Check your token for {Username}.", user.PixelaUsername);
+                    return false;
+                }
+                else if (response.StatusCode == System.Net.HttpStatusCode.BadRequest && 
+                         responseBody.Contains("Quantity is invalid"))
+                {
+                    // Graph is integer type - try migration once, then fall back to integer mode
+                    if (!attemptedMigration)
+                    {
+                        LogPixela("Graph appears to be integer type. Attempting migration to float...");
+                        _logger.Warning("Pixe.la rejected quantity - graph may be integer type. Migrating to float...");
+                        
+                        var (migrated, _) = await UpdateGraphAsync(user, unit: "hours", type: "float");
+                        attemptedMigration = true;
+                        
+                        if (migrated)
+                        {
+                            LogPixela("Graph migration returned success. Retrying with float...");
+                            continue;
+                        }
+                    }
+                    
+                    // Migration didn't work or already tried - fall back to integer mode
+                    if (!useIntegerMode)
+                    {
+                        LogPixela("Float format rejected. Falling back to integer mode...");
+                        _logger.Warning("Pixe.la graph appears to be permanently int type. Switching to integer mode.");
+                        useIntegerMode = true;
+                        continue;
+                    }
+                    else
+                    {
+                        // Even integer mode failed - give up
+                        LogPixela("Even integer format rejected. Sync failed.");
+                        _logger.Error("Failed to upsert pixel even in integer mode.");
+                        return false;
+                    }
                 }
                 else
                 {
-                    _logger.Warning("Failed to post pixel (attempt {Attempt}): {Status} - {Body}", attempt, response.StatusCode, responseBody);
-                    
-                    // Retry on 503 or 500
-                    if ((response.StatusCode == System.Net.HttpStatusCode.ServiceUnavailable || 
-                         response.StatusCode == System.Net.HttpStatusCode.InternalServerError) && attempt < maxRetries)
-                    {
-                        await Task.Delay(retryDelayMs * attempt);
-                        continue;
-                    }
-                    
+                    _logger.Warning("Failed to upsert pixel: {Status} - {Body}", response.StatusCode, responseBody);
                     return false;
                 }
             }
             catch (Exception ex)
             {
-                _logger.Error(ex, "Error posting pixel to Pixe.la (attempt {Attempt})", attempt);
-                if (attempt < maxRetries)
-                {
-                    await Task.Delay(retryDelayMs);
-                    continue;
-                }
+                _logger.Error(ex, "Error upserting pixel to Pixe.la");
                 return false;
             }
         }
         
-        _logger.Warning("Failed to post pixel after {MaxRetries} attempts", maxRetries);
+        LogPixela($"Max attempts ({maxAttempts}) reached. Sync failed.");
         return false;
     }
 
     /// <summary>
     /// Increment pixel value for a specific date (adds to existing value)
-    /// PUT /v1/users/{username}/graphs/{graphID}/{yyyyMMdd}/increment
     /// </summary>
     public async Task<bool> IncrementPixelAsync(User user, DateTime date, double quantity)
     {
-        if (!IsConfigured(user)) return false;
+        if (!IsConfigured(user)) 
+        {
+            LogPixela($"FAILED Increment: User {user.DisplayName} not configured.");
+            return false;
+        }
 
-        // First get current value, then add to it
-        var currentValue = await GetPixelByDateAsync(user, date);
-        var newValue = currentValue + quantity;
-
-        return await PostPixelAsync(user, date, newValue);
+        LogPixela($"--- Increment Pixel: +{quantity}h on {date:yyyyMMdd} ---");
+        _logger.Information("Incrementing pixel for {Date:yyyyMMdd} by {Quantity}h", date, quantity);
+        
+        // First get current value
+        var currentQty = await GetPixelByDateAsync(user, date);
+        var newQty = currentQty + quantity;
+        _logger.Information("Incrementing pixel for {Date}: {Current} + {Added} = {New}", 
+            date.ToString("yyyyMMdd"), currentQty, quantity, newQty);
+        return await PostPixelAsync(user, date, newQty);
     }
 
     // DTOs for JSON deserialization

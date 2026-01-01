@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
+using System.Runtime.InteropServices;
 
 namespace KeganOS;
 
@@ -29,6 +30,7 @@ public partial class MainWindow : System.Windows.Window
     private readonly IAchievementService _achievementService;
     private readonly IAnalyticsService _analyticsService;
     private readonly INoteService _noteService;
+    private readonly IChatHistoryService _chatHistoryService;
     private readonly IUserService _userService;
     private readonly IBackupService _backupService;
     private User? _currentUser;
@@ -50,7 +52,8 @@ public partial class MainWindow : System.Windows.Window
         IAchievementService achievementService,
         IAnalyticsService analyticsService,
         IPrometheusService prometheusService,
-        INoteService noteService)
+        INoteService noteService,
+        IChatHistoryService chatHistoryService)
     {
         InitializeComponent();
         _kegomoDoroService = kegomoDoroService;
@@ -64,6 +67,7 @@ public partial class MainWindow : System.Windows.Window
         _analyticsService = analyticsService;
         _prometheusService = prometheusService;
         _noteService = noteService;
+        _chatHistoryService = chatHistoryService;
         
         // Pass NoteService and User to the Nexus widget
         NeuralNexusWidget.Initialize(_noteService, _prometheusService);
@@ -160,12 +164,19 @@ public partial class MainWindow : System.Windows.Window
     {
         try
         {
-            var possiblePaths = new[]
+            var possiblePaths = new List<string>();
+            
+            // 1. User-specific path (High priority)
+            if (_currentUser != null)
             {
-                Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "..", "..", "kegomodoro", "dependencies", "images")),
-                Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "..", "kegomodoro", "dependencies", "images")),
-                @"C:\Users\ariba\OneDrive\Documenti\Software Projects\AI Projects\personal-os\personal-os\kegomodoro\dependencies\images"
-            };
+                possiblePaths.Add(Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "..", "kegomodoro", "dependencies", "images", "Users", _currentUser.DisplayName)));
+                possiblePaths.Add(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "kegomodoro", "dependencies", "images", "Users", _currentUser.DisplayName)); // Deployment path
+            }
+
+            // 2. Global fallback paths
+            possiblePaths.Add(Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "..", "kegomodoro", "dependencies", "images")));
+            possiblePaths.Add(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "kegomodoro", "dependencies", "images"));
+            possiblePaths.Add(@"C:\Users\ariba\OneDrive\Documenti\Software Projects\AI Projects\personal-os\personal-os\kegomodoro\dependencies\images");
 
             string? imagesPath = null;
             foreach (var path in possiblePaths)
@@ -217,7 +228,11 @@ public partial class MainWindow : System.Windows.Window
             }
             else
             {
-                DragMove();
+                // Smooth dragging fix: Use Win32 SendMessage instead of DragMove()
+                // to prevent UI thread blocking that pauses animations (like the ticker)
+                var helper = new System.Windows.Interop.WindowInteropHelper(this);
+                ReleaseCapture();
+                SendMessage(helper.Handle, WM_NCLBUTTONDOWN, (IntPtr)HTCAPTION, IntPtr.Zero);
             }
         }
     }
@@ -245,6 +260,15 @@ public partial class MainWindow : System.Windows.Window
         // This makes Ask Prometheus button visible again
         RootGrid.Focus();
     }
+
+    #region Native Methods for Smooth Dragging
+    [DllImport("user32.dll")]
+    public static extern IntPtr SendMessage(IntPtr hWnd, int Msg, IntPtr wParam, IntPtr lParam);
+    [DllImport("user32.dll")]
+    public static extern bool ReleaseCapture();
+    private const int WM_NCLBUTTONDOWN = 0xA1;
+    private const int HTCAPTION = 0x2;
+    #endregion
 
     private async void SettingsButton_Click(object sender, System.Windows.RoutedEventArgs e)
     {
@@ -365,6 +389,9 @@ public partial class MainWindow : System.Windows.Window
         
         // Load user-specific data
         LoadUserDataAsync();
+        
+        // Refresh branding images
+        LoadKegomoDoroImages();
     }
 
     private async void LoadUserDataAsync()
@@ -794,7 +821,12 @@ public partial class MainWindow : System.Windows.Window
             
             if (success)
             {
-                _ = LoadPixelaHeatmapAsync(); // Refresh
+                // Persistence: Update user object and DB
+                _currentUser.PixelaGraphColor = color;
+                await _userService.UpdateUserAsync(_currentUser);
+                _logger.Information("Saved Pixe.la color {Color} to user profile", color);
+                
+                _ = LoadPixelaHeatmapAsync(); // Refresh heatmap display
             }
             else
             {
@@ -821,7 +853,14 @@ public partial class MainWindow : System.Windows.Window
         StartFocusButton.Content = "⏳ Launching...";
         StartFocusButton.IsEnabled = false;
         
-        _kegomoDoroService.Launch();
+        if (_currentUser != null)
+        {
+            _kegomoDoroService.Launch(_currentUser);
+        }
+        else
+        {
+            _kegomoDoroService.Launch();
+        }
         
         // Wait a moment for process to start
         await System.Threading.Tasks.Task.Delay(1000);
@@ -914,7 +953,7 @@ public partial class MainWindow : System.Windows.Window
         }
 
         // Open the Prometheus chat window
-        var chatWindow = new Views.PrometheusChatWindow(_prometheusService, _currentUser?.Id);
+        var chatWindow = new Views.PrometheusChatWindow(_prometheusService, _chatHistoryService, _currentUser?.Id);
         chatWindow.Owner = this;
         
         // Handle AI-Nexus Bridge
@@ -1065,7 +1104,7 @@ public partial class MainWindow : System.Windows.Window
             NexusToggleButton.Content = "[ ≠ Nexus ]";
         }
 
-        var duration = TimeSpan.FromMilliseconds(400);
+        var duration = TimeSpan.FromMilliseconds(250);
         var easing = new System.Windows.Media.Animation.CubicEase { EasingMode = System.Windows.Media.Animation.EasingMode.EaseInOut };
 
         // 1. Animate Window Width

@@ -19,7 +19,6 @@ import atexit
 import sys
 
 # Lazy-loaded heavy modules (for faster startup)
-pd = None
 pygame = None
 pyautogui = None
 keyboard = None
@@ -27,13 +26,6 @@ requests = None
 Image = None
 ImageTk = None
 
-def _lazy_import_pandas():
-    """Lazy import pandas when first needed"""
-    global pd
-    if pd is None:
-        import pandas
-        pd = pandas
-    return pd
 
 def _lazy_import_pygame():
     """Lazy import pygame when first needed"""
@@ -199,6 +191,10 @@ check_single_instance()
 atexit.register(cleanup_lock_file)
 
 # ---------------------------- CONSTANTS AND SOME VARIABLES ------------------------------- #
+THEME_TEXT = "#feffff" # Default White
+THEME_BG = "#8B0000"   # Default Dark Red 
+THEME_ACCENT = "#EB5B00" # Default Orange
+
 BLACK = "#000000"
 WHITE = "#feffff"
 DEEP_GOLD_COLOR = "#EFB036"
@@ -209,6 +205,8 @@ DEEP_RED = "#cc2b33"
 FONT_NAME = "Courier"
 TOMATO_COLOR = "#f26849"
 DARK_GRAY = "#696969"
+
+# These will be overridden by theme if available
 BUTTON_BACKGROUND_COLOR = BLACK
 BUTTON_FOREGROUND_COLOR = WHITE
 RADIO_BACKGROUND_COLOR = DARK_RED
@@ -232,10 +230,11 @@ if USER_CONFIG_PATH.exists():
     except Exception as e:
         print(f"Warning: Failed to load user_config.json: {e}")
 
-# Use config values or defaults
+# These will be re-loaded on every sync in connect_to_pixela
 USERNAME = USER_CONFIG.get('pixela_username', 'kegan')
 TOKEN = USER_CONFIG.get('pixela_token', 'afhus8hj2phfb29nn821r')
 GRAPH_ID = USER_CONFIG.get('pixela_graph_id', 'graph1')
+PIXELA_COLOR = USER_CONFIG.get('pixela_color', 'shibafu')
 DATA_FOLDER = USER_CONFIG.get('data_folder', '')  # Empty = use default paths
 JOURNEY_FILE_NAME = USER_CONFIG.get('journey_file', 'KAÆ[Æß#.txt')
 
@@ -368,21 +367,26 @@ try:
 
         # Theme Integration: Override constants if theme columns exist
         if "THEME_TEXT" in config:
-            BLACK = config["THEME_TEXT"]
-            WHITE = config["THEME_BG"]
-            ORANGE = config["THEME_ACCENT"]
-            TOMATO_COLOR = config["THEME_ACCENT"]
+            THEME_TEXT = config["THEME_TEXT"]
+            THEME_BG = config["THEME_BG"]
+            THEME_ACCENT = config["THEME_ACCENT"]
+            
+            # Sync existing constants used in legacy UI parts
+            BLACK = THEME_TEXT
+            WHITE = THEME_BG
+            ORANGE = THEME_ACCENT
+            DARK_RED = THEME_BG
+            TOMATO_COLOR = THEME_ACCENT
 
             # Update dependent constants
-            BUTTON_BACKGROUND_COLOR = BLACK
-            BUTTON_FOREGROUND_COLOR = WHITE
-            SWITCH_BUTTON_DARK_BG_COLOR = BLACK
-            SWITCH_BUTTON_DARK_FG_COLOR = WHITE
-            SWITCH_BUTTON_LIGHT_BG_COLOR = WHITE
-            SWITCH_BUTTON_LIGHT_FG_COLOR = BLACK
-            RADIO_FOREGROUND_COLOR = BLACK
+            BUTTON_BACKGROUND_COLOR = "#000000" if THEME_BG != "#000000" else "#222222"
+            BUTTON_FOREGROUND_COLOR = THEME_TEXT
+            RADIO_BACKGROUND_COLOR = THEME_BG
+            RADIO_FOREGROUND_COLOR = THEME_TEXT
+            SWITCH_BUTTON_DARK_BG_COLOR = "#000000"
+            SWITCH_BUTTON_DARK_FG_COLOR = THEME_TEXT
             
-            print(f"Theme loaded: Text={BLACK}, Bg={WHITE}, Accent={ORANGE}")
+            print(f"Theme loaded: Text={THEME_TEXT}, Bg={THEME_BG}, Accent={THEME_ACCENT}")
 
 except Exception as e:
     # Fallback to defaults if reading fails
@@ -422,57 +426,131 @@ start_short_break= False
 start_long_break = False
 open_floating_window = False
 start_timer_checker_2 = False 
+# ------------------------------ LOGGING --------------------------------------- #
+PIXELA_LOG_PATH = "pixela_debug.log"
+
+def _log_pixela(message):
+    """Write Pixela debug info to a local file for the user to check"""
+    timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    log_entry = f"[{timestamp}] {message}\n"
+    print(message) # Keep console print for debugging
+    try:
+        with open(PIXELA_LOG_PATH, "a", encoding="utf-8") as f:
+            f.write(log_entry)
+    except:
+        pass
+
 # -------------------------- CONECTION WITH PIXELA ------------------------------- #
 def connect_to_pixela():
-    global hours
+    global hours, USERNAME, TOKEN, GRAPH_ID
+    _lazy_import_requests() # CRITICAL: Ensure requests is loaded before use
+
+    # RE-LOAD CONFIG EACH TIME to ensure we sync to the currently logged-in user in KeganOS
+    # This prevents 'stale credentials' if the user switched profiles without restarting the timer.
+    if USER_CONFIG_PATH.exists():
+        try:
+            with open(USER_CONFIG_PATH, 'r', encoding='utf-8') as f:
+                cfg = json.load(f)
+                USERNAME = cfg.get('pixela_username', USERNAME)
+                TOKEN = cfg.get('pixela_token', TOKEN)
+                GRAPH_ID = cfg.get('pixela_graph_id', GRAPH_ID)
+                PIXELA_COLOR = cfg.get('pixela_color', 'shibafu')
+        except Exception as e:
+            _log_pixela(f"Warning: Failed to re-load user_config.json during sync: {e}")
+            
+    if not USER_CONFIG:
+        _log_pixela("WARNING: No user_config.json found. Running with default fallback credentials.")
+    elif USERNAME == "kegan" and "pixela_username" not in USER_CONFIG:
+        _log_pixela("WARNING: pixela_username not found in config. Using default 'kegan'.")
+
+    _log_pixela(f"--- Pixela Sync Started for {USERNAME} ---")
+    
     params = {
-        "color": "momiji",
+        "color": PIXELA_COLOR,
         "token": TOKEN,
         "username": USERNAME,
         "agreeTermsOfService": "yes",
         "notMinor": "yes"
     }
-    # Creates user
-    response = requests.post(url=PIXELA_ENDPOINT, json=params)
+    # Attempt to create user (fails gracefully if already exists)
+    try:
+        response = requests.post(url=PIXELA_ENDPOINT, json=params)
+        _log_pixela(f"User check/create status: {response.status_code}")
+    except Exception as e:
+        _log_pixela(f"User check/create failed: {e}")
 
-
-    graphic_endpoint = f"{PIXELA_ENDPOINT}{USERNAME}/graphs"
+    graphic_endpoint = f"{PIXELA_ENDPOINT}/{USERNAME}/graphs"
     graphic_params = {
         "id": GRAPH_ID,
-        "name": USERNAME,
+        "name": "Focus Graph",
         "unit": "hours",
         "type": "float",
+        "color": PIXELA_COLOR
     }
+    # Added missing color parameter for graph creation
     headers = {
         "X-USER-TOKEN": TOKEN
     }
 
-    # Creates graph
-    graph_response = requests.post(url=graphic_endpoint, json=graphic_params, headers=headers)
-    add_pixel_endpoint = f"{PIXELA_ENDPOINT}/{USERNAME}/graphs/{GRAPH_ID}"
-    pixels_params = {
-        "date": DATE,
-        "quantity": str(hours),
-    }
-    pixel_response = requests.post(url=add_pixel_endpoint, json=pixels_params, headers=headers)
-    print(pixel_response.text)
-    print(len(pixel_response.text))
+    # Attempt to create graph (fails gracefully if already exists)
+    try:
+        response = requests.post(url=graphic_endpoint, json=graphic_params, headers=headers)
+        _log_pixela(f"Graph check/create status: {response.status_code}")
+    except Exception as e:
+        _log_pixela(f"Graph check/create failed: {e}")
+
+    # Upsert the pixel quantity using PUT
+    # URL: /v1/users/<username>/graphs/<graphID>/<yyyyMMdd>
     update_pixel_endpoint = f"{PIXELA_ENDPOINT}/{USERNAME}/graphs/{GRAPH_ID}/{DATE}"
+    
+    # Formatting as strict float string with 2 decimals
+    # Formatting as a clean float string (e.g., '2' or '2.5', avoiding '2.00')
+    qty_str = "{:g}".format(float(hours))
+        
     update_pixel_params = {
-        "quantity": str(hours),
+        "quantity": qty_str,
     }
-    # Updates the pixel quantity
-    update_pixel_response = requests.put(url=update_pixel_endpoint, json=update_pixel_params, headers=headers)
+    
+    _log_pixela(f"Upserting {qty_str}h on {DATE} for {USERNAME} to graph {GRAPH_ID}...")
 
-    delete_pixel_endpoint = f"{PIXELA_ENDPOINT}/{USERNAME}/graphs/{GRAPH_ID}/{DATE}"
-
-    # delete_pixel_response = requests.delete(url=delete_pixel_endpoint, headers=headers) 
-
-    # This happens because of the free version of pixela
-    if len(pixel_response.text) == 341:
-        print("Trying to connect to Pixela again...")
-        time.sleep(0.5)
-        start_multithread(connect_to_pixela)
+    # Infinite retry loop for free tier rate limiting as requested
+    max_attempts = 10 # Safety limit
+    attempts = 0
+    while attempts < max_attempts:
+        attempts += 1
+        try:
+            response = requests.put(url=update_pixel_endpoint, json=update_pixel_params, headers=headers)
+            response_json = response.json()
+            
+            # Check for free tier rejection
+            if response_json.get("isRejected"):
+                _log_pixela(f"Rate limit hit (attempt {attempts}), waiting 500ms...")
+                time.sleep(0.5)
+                continue
+            
+            if response.status_code == 200 or response_json.get("isSuccess"):
+                _log_pixela(f"Success: {response_json.get('message')}")
+                break
+            elif response.status_code == 404:
+                _log_pixela(f"Error 404: Graph {GRAPH_ID} not found. Attempting to re-create...")
+                # Try to create user and graph again
+                requests.post(url=PIXELA_ENDPOINT, json=params)
+                requests.post(url=graphic_endpoint, json=graphic_params, headers=headers)
+                # Loop will retry PUT next
+            elif response.status_code in [401, 403]:
+                _log_pixela(f"Error {response.status_code}: Authentication failed. Check your token for {USERNAME}.")
+                break
+            else:
+                _log_pixela(f"Error {response.status_code}: {response.text} | Payload: {update_pixel_params}")
+                break
+        except Exception as e:
+            _log_pixela(f"Connection error: {e}")
+            break
+    
+    if attempts >= max_attempts:
+        _log_pixela("Update failed after max attempts.")
+    
+    _log_pixela("--- Pixela Sync Finished ---")
 # ----------------------------MODS---------------------------- #
 def pomodoro_mode():
     global pomodoro_mode_activate, crono_mode_activate, hours, minute, second, reset_pass
@@ -500,15 +578,16 @@ def crono_mode():
             file.write("hours,minute,second\n")
             file.write(f"{hours},{minute},{second}\n")
     
-    # Read the saved time from CSV BEFORE resetting
+    # Read the saved time from CSV BEFORE resetting (Using native csv module for speed)
     saved_hours, saved_minute, saved_second = 0, 0, 0
     try:
-        _lazy_import_pandas()  # Ensure pandas is loaded
-        df = pd.read_csv(TIME_CSV_PATH)
-        if len(df) > 0:
-            saved_second = int(df['second'].iloc[-1])
-            saved_minute = int(df['minute'].iloc[-1])
-            saved_hours = int(df['hours'].iloc[-1])
+        if os.path.exists(TIME_CSV_PATH):
+            with open(TIME_CSV_PATH, "r") as file:
+                reader = csv.DictReader(file)
+                for row in reader:
+                    saved_second = int(row.get('second', 0))
+                    saved_minute = int(row.get('minute', 0))
+                    saved_hours = int(row.get('hours', 0))
             print(f"Loaded time from CSV: {saved_hours}:{saved_minute}:{saved_second}")
     except Exception as e:
         print(f"Error reading time.csv: {e}")
@@ -922,7 +1001,7 @@ def save_data():
         print(f"An error occurred: {e}")
 
 def start_multithread(function):
-    thread = threading.Thread(target=function)
+    thread = threading.Thread(target=function, daemon=True)
     thread.start()
 
 def center_window(window):

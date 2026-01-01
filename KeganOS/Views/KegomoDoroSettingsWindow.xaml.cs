@@ -306,7 +306,7 @@ public partial class KegomoDoroSettingsWindow : System.Windows.Window
         
         if (themeService != null)
         {
-            var gallery = new ThemeGalleryWindow(themeService);
+            var gallery = new ThemeGalleryWindow(themeService, _currentUser);
             gallery.Owner = this;
             gallery.ShowDialog();
         }

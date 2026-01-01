@@ -111,6 +111,27 @@ public class AppDbContext
             CREATE INDEX IF NOT EXISTS idx_notes_user ON Notes(UserId);
             CREATE INDEX IF NOT EXISTS idx_notes_pin ON Notes(IsPinned);
 
+            -- Prometheus Conversations
+            CREATE TABLE IF NOT EXISTS Conversations (
+                Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                UserId INTEGER REFERENCES Users(Id),
+                Title TEXT DEFAULT 'New Chat',
+                Preview TEXT,
+                CreatedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+                LastMessageAt DATETIME DEFAULT CURRENT_TIMESTAMP
+            );
+
+            -- Prometheus Chat Messages
+            CREATE TABLE IF NOT EXISTS ChatMessages (
+                Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                ConversationId INTEGER REFERENCES Conversations(Id) ON DELETE CASCADE,
+                Role TEXT NOT NULL, -- 'user' or 'assistant'
+                Content TEXT NOT NULL,
+                Timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_conversations_user ON Conversations(UserId);
+            CREATE INDEX IF NOT EXISTS idx_messages_conversation ON ChatMessages(ConversationId);
 
         ";
         

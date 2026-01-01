@@ -12,11 +12,13 @@ public partial class ThemeGalleryWindow : Window
     private readonly IThemeService _themeService;
     private List<Theme> _themes = new();
     private int _currentIndex = 0;
+    private readonly User? _currentUser;
 
-    public ThemeGalleryWindow(IThemeService themeService)
+    public ThemeGalleryWindow(IThemeService themeService, User? currentUser = null)
     {
         InitializeComponent();
         _themeService = themeService;
+        _currentUser = currentUser;
         
         LoadThemes();
     }
@@ -96,8 +98,8 @@ public partial class ThemeGalleryWindow : Window
             LoadingOverlay.Visibility = Visibility.Visible;
             ApplyButton.IsEnabled = false;
 
-            _logger.Information("Applying theme: {Name}", selectedTheme.Name);
-            bool success = await _themeService.ApplyThemeAsync(selectedTheme);
+            _logger.Information("Applying theme: {Name} for user: {User}", selectedTheme.Name, _currentUser?.DisplayName ?? "Global");
+            bool success = await _themeService.ApplyThemeAsync(selectedTheme, _currentUser);
 
             if (success)
             {
