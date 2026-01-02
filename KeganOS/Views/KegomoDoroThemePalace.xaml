@@ -1,0 +1,248 @@
+<Window x:Class="KeganOS.Views.KegomoDoroThemePalace"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="KEGOMODORO Theme Palace" 
+        Height="650" Width="900"
+        WindowStartupLocation="CenterOwner"
+        Background="Transparent"
+        AllowsTransparency="True"
+        WindowStyle="None"
+        FontFamily="Cascadia Mono, Consolas, monospace">
+
+    <Border Background="#121212" BorderBrush="#333333" BorderThickness="1" CornerRadius="12">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="40"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="60"/>
+            </Grid.RowDefinitions>
+
+            <!-- Title Bar -->
+            <Border Grid.Row="0" Background="#1A1A1A" CornerRadius="12,12,0,0" MouseDown="TitleBar_MouseDown">
+                <Grid>
+                <TextBlock Text="🏰 KEGOMODORO THEME PALACE" 
+                               Foreground="#00FFFF" FontWeight="Bold" 
+                               VerticalAlignment="Center" Margin="15,0,0,0"/>
+                <Button x:Name="BrowseMarketplaceBtn" Content="Marketplace" HorizontalAlignment="Right" 
+                        Margin="0,0,60,0" Width="100" Height="25" VerticalAlignment="Center"
+                        Background="#252525" Foreground="#00FFFF" BorderBrush="#00FFFF" BorderThickness="1"
+                        FontSize="10" Cursor="Hand" Click="BrowseMarketplace_Click"/>
+                <Button Content="✕" HorizontalAlignment="Right" Click="CloseButton_Click"
+                        Background="Transparent" Foreground="#FF4444" BorderThickness="0"
+                        Width="40" Cursor="Hand" FontSize="16"/>
+                </Grid>
+            </Border>
+
+            <!-- Main Content -->
+            <Grid Grid.Row="1" Margin="25">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="320"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Controls Column -->
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Grid.Column="0">
+                    <StackPanel Margin="0,0,20,0">
+                        <TextBlock Text="✧ Aesthetics" Foreground="#888888" FontSize="12" Margin="0,0,0,15"/>
+                        
+                        <!-- Theme Identity -->
+                        <Border Background="#1A1A1A" CornerRadius="8" Padding="15" Margin="0,0,0,20" BorderBrush="#252525" BorderThickness="1">
+                            <StackPanel>
+                                <TextBlock Text="Theme Identity" Foreground="#FFFFFF" FontWeight="Bold" Margin="0,0,0,15"/>
+                                <TextBlock Text="Theme Name" Foreground="#888888" FontSize="10" Margin="0,0,0,5"/>
+                                <TextBox x:Name="ThemeNameInput" Text="My Custom Theme" Background="#0D0D0D" 
+                                         Foreground="#FFFFFF" BorderBrush="#333333" Padding="8,5" Margin="0,0,0,10"/>
+                                <Button Content="✦ Save to Gallery" Background="#252525" Foreground="#88CC88" 
+                                        Padding="10,5" BorderThickness="0" Cursor="Hand" Click="SaveToGallery_Click"/>
+                            </StackPanel>
+                        </Border>
+                        
+                        <!-- Colors Section -->
+                        <Border Background="#1A1A1A" CornerRadius="8" Padding="15" Margin="0,0,0,20" BorderBrush="#252525" BorderThickness="1">
+                            <StackPanel>
+                                <TextBlock Text="Colors" Foreground="#FFFFFF" FontWeight="Bold" Margin="0,0,0,15"/>
+                                
+                                <Grid Margin="0,0,0,12">
+                                    <TextBlock Text="Background" Foreground="#CCCCCC" VerticalAlignment="Center"/>
+                                    <Button x:Name="BgColorBtn" Width="40" Height="25" HorizontalAlignment="Right" 
+                                            Background="#0D0D0D" BorderBrush="#444444" Click="ColorBtn_Click" Tag="BG"/>
+                                </Grid>
+                                
+                                <Grid Margin="0,0,0,12">
+                                    <TextBlock Text="Text / Numbers" Foreground="#CCCCCC" VerticalAlignment="Center"/>
+                                    <Button x:Name="TextColorBtn" Width="40" Height="25" HorizontalAlignment="Right" 
+                                            Background="#FFFFFF" BorderBrush="#444444" Click="ColorBtn_Click" Tag="Text"/>
+                                </Grid>
+                                
+                                <Grid>
+                                    <TextBlock Text="Accent Color" Foreground="#CCCCCC" VerticalAlignment="Center"/>
+                                    <Button x:Name="AccentColorBtn" Width="40" Height="25" HorizontalAlignment="Right" 
+                                            Background="#FF4444" BorderBrush="#444444" Click="ColorBtn_Click" Tag="Accent"/>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Guardian Asset Panel (Visible when Floating tab selected) -->
+                        <Border x:Name="GuardianAssetPanel" Background="#1A1A1A" CornerRadius="8" Padding="15" Margin="0,0,0,20" BorderBrush="#252525" BorderThickness="1">
+                            <StackPanel>
+                                <TextBlock Text="Edit Guardian Image" Foreground="#FFFFFF" FontWeight="Bold" Margin="0,0,0,10"/>
+                                <TextBlock Text="This image appears in the floating timer overlay." Foreground="#666666" FontSize="10" TextWrapping="Wrap" Margin="0,0,0,15"/>
+                                
+                                <!-- Current Image Preview -->
+                                <Grid Margin="0,0,0,15">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="60"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Border Background="#222222" CornerRadius="4" Width="50" Height="50">
+                                        <Image x:Name="GuardianThumbnail" Stretch="Uniform" Margin="5"/>
+                                    </Border>
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="10,0,0,0">
+                                        <TextBlock x:Name="GuardianFileName" Text="behelit.png" Foreground="#888888" FontSize="10"/>
+                                        <TextBlock Text="Current" Foreground="#555555" FontSize="9"/>
+                                    </StackPanel>
+                                </Grid>
+                                
+                                <Button Content="🖼️ Change Guardian Image" Background="#252525" Foreground="#CCCCCC" 
+                                        Padding="10,8" BorderThickness="0" Cursor="Hand"
+                                        Click="ChangeImage_Click" Tag="Guardian"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Heart Asset Panel (Visible when Main App tab selected) -->
+                        <Border x:Name="HeartAssetPanel" Background="#1A1A1A" CornerRadius="8" Padding="15" Margin="0,0,0,20" BorderBrush="#252525" BorderThickness="1" Visibility="Collapsed">
+                            <StackPanel>
+                                <TextBlock Text="Edit Heart Image" Foreground="#FFFFFF" FontWeight="Bold" Margin="0,0,0,10"/>
+                                <TextBlock Text="This image appears in the main timer window." Foreground="#666666" FontSize="10" TextWrapping="Wrap" Margin="0,0,0,15"/>
+                                
+                                <!-- Current Image Preview -->
+                                <Grid Margin="0,0,0,15">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="60"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Border Background="#222222" CornerRadius="4" Width="50" Height="50">
+                                        <Image x:Name="HeartThumbnail" Stretch="Uniform" Margin="5"/>
+                                    </Border>
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="10,0,0,0">
+                                        <TextBlock x:Name="HeartFileName" Text="main_image.png" Foreground="#888888" FontSize="10"/>
+                                        <TextBlock Text="Current" Foreground="#555555" FontSize="9"/>
+                                    </StackPanel>
+                                </Grid>
+                                
+                                <Button Content="🖼️ Change Heart Image" Background="#252525" Foreground="#CCCCCC" 
+                                        Padding="10,8" BorderThickness="0" Cursor="Hand"
+                                        Click="ChangeImage_Click" Tag="Heart"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Presets Section -->
+                        <TextBlock Text="Presets" Foreground="#FFFFFF" FontWeight="Bold" Margin="0,0,0,10"/>
+                        <ListBox x:Name="PresetsList" Background="Transparent" BorderThickness="0" SelectionChanged="PresetsList_SelectionChanged">
+                            <ListBox.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel/>
+                                </ItemsPanelTemplate>
+                            </ListBox.ItemsPanel>
+                            <!-- Preset items will be added in code behind -->
+                        </ListBox>
+                    </StackPanel>
+                </ScrollViewer>
+
+                <!-- Preview Column -->
+                <Border Grid.Column="1" Background="#0A0A0A" CornerRadius="12" BorderBrush="#252525" BorderThickness="1">
+                    <Grid>
+                        <TextBlock Text="LIVE PREVIEW" Foreground="#333333" FontWeight="Bold" 
+                                   HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,15,0,0"/>
+                        
+                        <TabControl x:Name="PreviewTabControl" Background="Transparent" BorderThickness="0" Margin="20,40,20,20" SelectionChanged="PreviewTab_SelectionChanged">
+                            <!-- Floating Preview -->
+                            <TabItem Header="Floating" Width="100" Style="{StaticResource {x:Type TabItem}}">
+                                <Grid x:Name="FloatingPreviewArea">
+                                    <Border x:Name="FloatingWindowBorder" Width="200" Height="200" 
+                                            Background="#FF00FF" BorderBrush="#444444" BorderThickness="1" 
+                                            VerticalAlignment="Center" HorizontalAlignment="Center">
+                                        <Grid>
+                                            <Image x:Name="GuardianPreview" Stretch="Uniform" Margin="10"/>
+                                            <TextBlock x:Name="FloatingTimerPreview" Text="25:00" Foreground="#FFFFFF" 
+                                                     FontSize="26" FontWeight="Bold" HorizontalAlignment="Center" 
+                                                     VerticalAlignment="Center" Margin="0,120,0,0"/>
+                                        </Grid>
+                                    </Border>
+                                    <TextBlock Text="Note: Magenta area is transparent on desktop" Foreground="#555555" 
+                                               FontSize="10" VerticalAlignment="Bottom" HorizontalAlignment="Center" Margin="0,0,0,10"/>
+                                </Grid>
+                            </TabItem>
+                            
+                            <!-- Main Preview -->
+                            <TabItem Header="Main App" Width="100" Style="{StaticResource {x:Type TabItem}}">
+                                <Border x:Name="MainAppBackground" Background="#8B0000" CornerRadius="8" 
+                                        Width="250" Height="350" VerticalAlignment="Center" HorizontalAlignment="Center">
+                                    <Grid>
+                                        <Image x:Name="HeartPreview" Stretch="Uniform" Margin="20" VerticalAlignment="Top" Height="150"/>
+                                        <TextBlock x:Name="MainTimerPreview" Text="25:00" Foreground="#FFFFFF" 
+                                                 FontSize="32" FontWeight="Bold" HorizontalAlignment="Center" 
+                                                 VerticalAlignment="Center" Margin="0,60,0,0"/>
+                                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,40">
+                                            <Border Background="#000000" Width="60" Height="25" CornerRadius="4" Margin="5">
+                                                <TextBlock Text="Start" Foreground="#FFFFFF" FontSize="10" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                            </Border>
+                                            <Border Background="#000000" Width="60" Height="25" CornerRadius="4" Margin="5">
+                                                <TextBlock Text="Reset" Foreground="#FFFFFF" FontSize="10" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                            </Border>
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+                            </TabItem>
+                        </TabControl>
+                    </Grid>
+                </Border>
+            </Grid>
+
+            <!-- Footer -->
+            <Border Grid.Row="2" Background="#161616" CornerRadius="0,0,12,12">
+                <Grid Margin="20,0">
+                    <TextBlock Foreground="#666666" FontSize="10" VerticalAlignment="Center">
+                        Changes will be saved to your profile configuration.
+                    </TextBlock>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                        <Button Content="Discard" Width="100" Height="32" Background="Transparent" 
+                                Foreground="#888888" BorderBrush="#333333" BorderThickness="1" 
+                                Margin="0,0,10,0" Click="CloseButton_Click" Cursor="Hand"/>
+                        <Button Content="✦ Ascend Theme" Width="150" Height="32" Background="#00FFFF" 
+                                Foreground="#000000" FontWeight="Bold" BorderThickness="0" 
+                                Click="SaveTheme_Click" Cursor="Hand"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </Grid>
+    </Border>
+
+    <Window.Resources>
+        <Style TargetType="TabItem">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="#666666"/>
+            <Setter Property="BorderThickness" Value="0,0,0,2"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="Padding" Value="10,5"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TabItem">
+                        <Border Background="{TemplateBinding Background}" 
+                                BorderBrush="{TemplateBinding BorderBrush}" 
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter ContentSource="Header" HorizontalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter Property="Foreground" Value="#00FFFF"/>
+                                <Setter Property="BorderBrush" Value="#00FFFF"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+</Window>

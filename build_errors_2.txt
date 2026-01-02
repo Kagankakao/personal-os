@@ -1,0 +1,11 @@
+﻿C:\Users\ariba\OneDrive\Documenti\Software Projects\AI Projects\personal-os\personal-os\KeganOS\MainWindow.xaml.cs(203,52): error CS0104: 'MouseEventArgs' is an ambiguous reference between 'System.Windows.Forms.MouseEventArgs' and 'System.Windows.Input.MouseEventArgs' [C:\Users\ariba\OneDrive\Documenti\Software Projects\AI Projects\personal-os\personal-os\KeganOS\KeganOS_ux5svpad_wpftmp.csproj]
+C:\Users\ariba\OneDrive\Documenti\Software Projects\AI Projects\personal-os\personal-os\KeganOS\MainWindow.xaml.cs(231,53): error CS0104: 'MouseEventArgs' is an ambiguous reference between 'System.Windows.Forms.MouseEventArgs' and 'System.Windows.Input.MouseEventArgs' [C:\Users\ariba\OneDrive\Documenti\Software Projects\AI Projects\personal-os\personal-os\KeganOS\KeganOS_ux5svpad_wpftmp.csproj]
+C:\Users\ariba\OneDrive\Documenti\Software Projects\AI Projects\personal-os\personal-os\KeganOS\MainWindow.xaml.cs(101,13): error CS0104: 'Point' is an ambiguous reference between 'System.Drawing.Point' and 'System.Windows.Point' [C:\Users\ariba\OneDrive\Documenti\Software Projects\AI Projects\personal-os\personal-os\KeganOS\KeganOS_ux5svpad_wpftmp.csproj]
+
+Build FAILED.
+    0 Warning(s)
+    3 Error(s)
+
+Time Elapsed 00:00:01.39
+
+Workload updates are available. Run `dotnet workload list` for more information.

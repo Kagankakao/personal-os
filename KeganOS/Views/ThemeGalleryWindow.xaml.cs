@@ -13,6 +13,7 @@ public partial class ThemeGalleryWindow : Window
     private List<Theme> _themes = new();
     private int _currentIndex = 0;
     private readonly User? _currentUser;
+    public bool ImageChanged { get; private set; }
 
     public ThemeGalleryWindow(IThemeService themeService, User? currentUser = null)
     {
@@ -127,7 +128,18 @@ public partial class ThemeGalleryWindow : Window
 
     private void CreateCustom_Click(object sender, RoutedEventArgs e)
     {
-        System.Windows.MessageBox.Show("Custom theme creator coming in Phase 15.5!", "Coming Soon");
+        // Open the Theme Palace for custom theme editing
+        var themePalace = new KegomoDoroThemePalace(_themeService, _currentUser);
+        themePalace.Owner = this;
+        themePalace.ShowDialog();
+        
+        if (themePalace.ImageChanged)
+        {
+            this.ImageChanged = true;
+        }
+        
+        // Refresh themes after Theme Palace closes
+        LoadThemes();
     }
 
     private void TitleBar_MouseDown(object sender, MouseButtonEventArgs e)

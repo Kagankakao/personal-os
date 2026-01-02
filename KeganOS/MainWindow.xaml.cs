@@ -13,6 +13,7 @@ using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
 using Cursor = System.Windows.Input.Cursor;
 using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 
 namespace KeganOS;
 
@@ -42,6 +43,11 @@ public partial class MainWindow : System.Windows.Window
     private List<string> _tickerQuotes = [];
     private int _tickerIndex = 0;
     private System.Windows.Media.Animation.Storyboard? _tickerStoryboard;
+    
+    // Prometheus opening delay
+    private bool _isFirstPrometheusOpen = true;
+    private bool _isPrometheusOpening = false;
+    private readonly Random _random = new();
 
     public MainWindow(
         IKegomoDoroService kegomoDoroService, 
@@ -945,17 +951,37 @@ public partial class MainWindow : System.Windows.Window
         LoadUserDataAsync();
     }
 
-    private void AskPrometheusButton_Click(object sender, System.Windows.RoutedEventArgs e)
+    private async void AskPrometheusButton_Click(object sender, System.Windows.RoutedEventArgs e)
     {
+        // Prevent multiple clicks while opening
+        if (_isPrometheusOpening) return;
+        _isPrometheusOpening = true;
+        
         _logger.Information("Ask Prometheus button clicked - opening chat window");
 
         // Check if AI is configured
         if (!_aiProvider.IsAvailable)
         {
+            _isPrometheusOpening = false;
             System.Windows.MessageBox.Show("Prometheus is not configured.\n\ngo settings and enter you're api key to awake prometheus",
                 "Prometheus Not Configured", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
             return;
         }
+
+        // Apply dynamic random delay: 2-3s for first open, 1-2s for subsequent
+        int delayMs;
+        if (_isFirstPrometheusOpen)
+        {
+            delayMs = _random.Next(2000, 3001); // 2000-3000ms
+            _isFirstPrometheusOpen = false;
+        }
+        else
+        {
+            delayMs = _random.Next(1000, 2001); // 1000-2000ms
+        }
+        
+        _logger.Information("Prometheus opening with {Delay}ms delay", delayMs);
+        await Task.Delay(delayMs);
 
         // Open the Prometheus chat window
         var chatWindow = new Views.PrometheusChatWindow(_prometheusService, _chatHistoryService, _currentUser?.Id);
@@ -973,6 +999,7 @@ public partial class MainWindow : System.Windows.Window
         };
 
         chatWindow.Show();
+        _isPrometheusOpening = false;
     }
 
     private void JournalInput_GotFocus(object sender, System.Windows.RoutedEventArgs e)
