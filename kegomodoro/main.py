@@ -232,11 +232,11 @@ if USER_CONFIG_PATH.exists():
 
 # These will be re-loaded on every sync in connect_to_pixela
 USERNAME = USER_CONFIG.get('pixela_username', 'kegan')
-TOKEN = USER_CONFIG.get('pixela_token', 'afhus8hj2phfb29nn821r')
+TOKEN = USER_CONFIG.get('pixela_token', 'YOUR_TOKEN_HERE')
 GRAPH_ID = USER_CONFIG.get('pixela_graph_id', 'graph1')
 PIXELA_COLOR = USER_CONFIG.get('pixela_color', 'shibafu')
 DATA_FOLDER = USER_CONFIG.get('data_folder', '')  # Empty = use default paths
-JOURNEY_FILE_NAME = USER_CONFIG.get('journey_file', 'KAÆ[Æß#.txt')
+JOURNEY_FILE_NAME = USER_CONFIG.get('journey_file', 'journey.txt')
 
 DEPENDENCIES = Path("dependencies/")
 IMAGES = f"{DEPENDENCIES}/images"
@@ -565,7 +565,7 @@ def pomodoro_mode():
     crono_mode_activate = False
     pomodoro_mode_activate = True
     canvas.itemconfig(timer, text=f"{WORK_MIN:02d}:00")
-    floating_timer_label.config(text=f"{WORK_MIN:02d}:00")
+    window.canvas.itemconfig(window.floating_timer_text, text=f"{WORK_MIN:02d}:00")
 
 
 def crono_mode():
@@ -609,12 +609,12 @@ def crono_mode():
     # Update the display
     if not show_hours:
         canvas.itemconfig(timer, text=f"{minute:02d}:{second:02d}")
-        floating_timer_label.config(text=f"{minute:02d}:{second:02d}", font=(FONT_NAME, FLOATING_MINUTE_FONT_SIZE, "bold"))
-        floating_timer_label.place(x=MINUTE_X, y=MINUTE_Y)
+        window.canvas.itemconfig(window.floating_timer_text, text=f"{minute:02d}:{second:02d}", font=(FONT_NAME, FLOATING_MINUTE_FONT_SIZE, "bold"))
+        window.canvas.coords(window.floating_timer_text, MINUTE_X, MINUTE_Y)
     if show_hours:
         canvas.itemconfig(timer, text=f"{hours:02d}:{minute:02d}:{second:02d}", font=(FONT_NAME, MAIN_HOUR_FONT_SIZE, "bold"))
-        floating_timer_label.config(text=f"{hours:02d}:{minute:02d}:{second:02d}", font=(FONT_NAME, FLOATING_HOUR_FONT_SIZE, "bold"))
-        floating_timer_label.place(x=HOURS_X, y=HOURS_Y)
+        window.canvas.itemconfig(window.floating_timer_text, text=f"{hours:02d}:{minute:02d}:{second:02d}", font=(FONT_NAME, FLOATING_HOUR_FONT_SIZE, "bold"))
+        window.canvas.coords(window.floating_timer_text, HOURS_X, HOURS_Y)
 def floating_window(**kwargs):
     global open_floating_window, checked_state
     if open_floating_window == "True" or open_floating_window == "False":
@@ -665,8 +665,8 @@ def reset():
         pause_pomodoro_mode = False
         pause_button.config(text=f"Pause")
         canvas.itemconfig(timer, text="00:00", font=(FONT_NAME, MAIN_MINUTE_FONT_SIZE, "bold"))
-        floating_timer_label.config(text="00:00", font=(FONT_NAME, FLOATING_MINUTE_FONT_SIZE, "bold"))
-        floating_timer_label.place(x=MINUTE_X, y=MINUTE_Y)
+        window.canvas.itemconfig(window.floating_timer_text, text="00:00", font=(FONT_NAME, FLOATING_MINUTE_FONT_SIZE, "bold"))
+        window.canvas.coords(window.floating_timer_text, MINUTE_X, MINUTE_Y)
     
 # ---------------------------- CRONOMETER MECHANISM ------------------------------- #
 def crono():
@@ -683,12 +683,12 @@ def crono():
         show_hours = True
     if show_hours:
         canvas.itemconfig(timer, text=f"{hours:02d}:{minute:02d}:{second:02d}", font=(FONT_NAME, MAIN_HOUR_FONT_SIZE, "bold"))
-        floating_timer_label.config(text=f"{hours:02d}:{minute:02d}:{second:02d}", font=(FONT_NAME, FLOATING_HOUR_FONT_SIZE, "bold"))
-        floating_timer_label.place(x=HOURS_X, y=HOURS_Y)
+        window.canvas.itemconfig(window.floating_timer_text, text=f"{hours:02d}:{minute:02d}:{second:02d}", font=(FONT_NAME, FLOATING_HOUR_FONT_SIZE, "bold"))
+        window.canvas.coords(window.floating_timer_text, HOURS_X, HOURS_Y)
     else:
         canvas.itemconfig(timer, text=f"{minute:02d}:{second:02d}")
-        floating_timer_label.config(text=f"{minute:02d}:{second:02d}", font=(FONT_NAME, FLOATING_MINUTE_FONT_SIZE, "bold")) #? IS THIS EVEN WORKING??
-        floating_timer_label.place(x=MINUTE_X, y=MINUTE_Y)
+        window.canvas.itemconfig(window.floating_timer_text, text=f"{minute:02d}:{second:02d}", font=(FONT_NAME, FLOATING_MINUTE_FONT_SIZE, "bold"))
+        window.canvas.coords(window.floating_timer_text, MINUTE_X, MINUTE_Y)
     if start_timer_checker_2:
         second +1
         start_timer_checker_2 = False
@@ -717,8 +717,8 @@ def start_timer():
                 condition_checker = temp
                 timer_label.config(text="Break", fg=DEEP_GOLD_COLOR)
                 canvas.itemconfig(timer, text=f"{LONG_BREAK_MIN:02d}:00")
-                floating_timer_label.config(text=f"{LONG_BREAK_MIN:02d}:00")
-                floating_timer_label.place(x=MINUTE_X, y=MINUTE_Y)
+                window.canvas.itemconfig(window.floating_timer_text, text=f"{LONG_BREAK_MIN:02d}:00")
+                window.canvas.coords(window.floating_timer_text, MINUTE_X, MINUTE_Y)
                 condition_checker = temp
                 check_mark.config(text="✔✔✔✔")
                 check_mark.place(x=60, y=290)
@@ -758,8 +758,8 @@ def start_timer():
                 condition_checker = temp
                 timer_label.config(text="Break", fg=DEEP_GOLD_COLOR)
                 canvas.itemconfig(timer, text=f"{SHORT_BREAK_MIN:02d}:00")
-                floating_timer_label.config(text=f"{SHORT_BREAK_MIN:02d}:00")
-                floating_timer_label.place(x=MINUTE_X, y=MINUTE_Y)
+                window.canvas.itemconfig(window.floating_timer_text, text=f"{SHORT_BREAK_MIN:02d}:00")
+                window.canvas.coords(window.floating_timer_text, MINUTE_X, MINUTE_Y)
                 reps += 1
     elif crono_mode_activate:
         start_timer_checker += 1
@@ -778,8 +778,8 @@ def count_down(count):
     second_int = count % 60
     minute_int = math.floor(count / 60)
     canvas.itemconfig(timer, text=f"{minute:02d}:{second:02d}")
-    floating_timer_label.config(text=f"{minute:02d}:{second:02d}")
-    floating_timer_label.place(x=MINUTE_X, y=MINUTE_Y)
+    window.canvas.itemconfig(window.floating_timer_text, text=f"{minute:02d}:{second:02d}")
+    window.canvas.coords(window.floating_timer_text, MINUTE_X, MINUTE_Y)
 
     second = second_int
     minute = minute_int
@@ -807,8 +807,8 @@ def pause_timer():
             paused = True
             resume += 1
             canvas.itemconfig(timer, text=f"{minute:02d}:{second:02d}")
-            floating_timer_label.config(text=f"{minute:02d}:{second:02d}", font=(FONT_NAME, FLOATING_MINUTE_FONT_SIZE, "bold"))
-            floating_timer_label.place(x=MINUTE_X, y=MINUTE_Y)
+            window.canvas.itemconfig(window.floating_timer_text, text=f"{minute:02d}:{second:02d}", font=(FONT_NAME, FLOATING_MINUTE_FONT_SIZE, "bold"))
+            window.canvas.coords(window.floating_timer_text, MINUTE_X, MINUTE_Y)
 
             second = second_int
             minute = minute_int
@@ -841,12 +841,12 @@ def pause_timer():
             resume += 1
             if show_hours:
                 canvas.itemconfig(timer, text=f"{hours:02d}:{minute:02d}:{second:02d}")
-                floating_timer_label.config(text=f"{hours:02d}:{minute:02d}:{second:02d}", font=(FONT_NAME, FLOATING_HOUR_FONT_SIZE, "bold"))
-                floating_timer_label.place(x=HOURS_X, y=HOURS_Y)
+                window.canvas.itemconfig(window.floating_timer_text, text=f"{hours:02d}:{minute:02d}:{second:02d}", font=(FONT_NAME, FLOATING_HOUR_FONT_SIZE, "bold"))
+                window.canvas.coords(window.floating_timer_text, HOURS_X, HOURS_Y)
             elif not show_hours:
                 canvas.itemconfig(timer, text=f"{minute:02d}:{second:02d}")
-                floating_timer_label.config(text=f"{minute:02d}:{second:02d}", font=(FONT_NAME, FLOATING_MINUTE_FONT_SIZE, "bold"))
-                floating_timer_label.place(x=MINUTE_X, y=MINUTE_Y)
+                window.canvas.itemconfig(window.floating_timer_text, text=f"{minute:02d}:{second:02d}", font=(FONT_NAME, FLOATING_MINUTE_FONT_SIZE, "bold"))
+                window.canvas.coords(window.floating_timer_text, MINUTE_X, MINUTE_Y)
             else:
                 print("Error: There's a problem with the show_hours")
                 return
@@ -864,7 +864,7 @@ def pause_pomodoro():
     pause_pomodoro_mode = not pause_pomodoro_mode
     timer_label.config(text=f"Work", fg=BLACK)
     canvas.itemconfig(timer, text=f"{WORK_MIN:02d}:00")
-    floating_timer_label.config(text=f"{WORK_MIN:02d}:00")
+    window.canvas.itemconfig(window.floating_timer_text, text=f"{WORK_MIN:02d}:00")
     pause_button.config(text=f"Resume")
 
 # To see save data in note editor
@@ -1062,14 +1062,31 @@ class DraggableWindow(Toplevel):
         self.bind("<B1-Motion>", self.on_drag)
         
         # Load the image and keep a reference to it
-        self.image = ImageTk.PhotoImage(Image.open(FLOATING_IMAGE_PATH))
-        label = Label(self, image=self.image, bg='#FF00FF', highlightthickness=0)  # Magenta for transparency
+        img = Image.open(FLOATING_IMAGE_PATH)
+        self.image = ImageTk.PhotoImage(img)
+        
+        # Create Canvas matching image size
+        self.canvas = Canvas(self, width=img.width, height=img.height, bg='#FF00FF', highlightthickness=0)
+        self.canvas.pack()
+        
+        # Draw image on Canvas
+        self.canvas.create_image(img.width//2, img.height//2, image=self.image, anchor="center")
+        
+        # Add Timer Text directly to Canvas for perfect layering
+        self.floating_timer_text = self.canvas.create_text(
+            MINUTE_X, MINUTE_Y, 
+            text="00:00", 
+            font=(FONT_NAME, FLOATING_MINUTE_FONT_SIZE, "bold"), 
+            fill=WHITE,
+            anchor="nw"
+        )
+
         self.overrideredirect(True)
         self.geometry("+250+250")
         self.lift()
         self.wm_attributes("-topmost", True)
         self.wm_attributes("-transparentcolor", "#FF00FF")  # Magenta as transparent color
-        label.pack()
+        self.config(bg="#FF00FF")
 
         self.start_x = 0
         self.start_y = 0
@@ -1096,16 +1113,9 @@ class DraggableWindow(Toplevel):
 
 # Create the window
 window = DraggableWindow()  # Hide the main window
-window.configure(bg='')
 window.overrideredirect(True)
 window.resizable(False, False)
 window.geometry("+1150+440")
-
-# Floating timer label - using magenta background which is set as transparent in window
-# This makes the timer text appear without visible background, overlaying the image
-floating_timer_label = Label(window, text="00:00", font=(FONT_NAME, FLOATING_MINUTE_FONT_SIZE, "bold"), foreground=WHITE, bg='#FF00FF')
-floating_timer_label.pack()
-floating_timer_label.place(x=MINUTE_X, y=MINUTE_Y)
 
 # KEGAN Software signature
 logo = Canvas(width=600, height=224, bg=DARK_RED, highlightthickness=0)

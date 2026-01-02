@@ -8,8 +8,10 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using System.Collections.Generic;
 using System.Windows;
+using System.Windows.Input;
 using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
+using Cursor = System.Windows.Input.Cursor;
 using System.Runtime.InteropServices;
 
 namespace KeganOS;
@@ -304,6 +306,9 @@ public partial class MainWindow : System.Windows.Window
                 
                 // Reload heatmap with new credentials
                 _ = LoadPixelaHeatmapAsync();
+                
+                // CRITICAL: Refresh user data to update AI/Prometheus API keys
+                _ = LoadTickerQuotesAsync();
                 
                 _logger.Information("Settings saved, UI refreshed");
             }
@@ -947,7 +952,7 @@ public partial class MainWindow : System.Windows.Window
         // Check if AI is configured
         if (!_aiProvider.IsAvailable)
         {
-            System.Windows.MessageBox.Show("Prometheus is not configured.\n\nPlease add your Gemini API key in settings to awaken Prometheus.",
+            System.Windows.MessageBox.Show("Prometheus is not configured.\n\ngo settings and enter you're api key to awake prometheus",
                 "Prometheus Not Configured", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
             return;
         }

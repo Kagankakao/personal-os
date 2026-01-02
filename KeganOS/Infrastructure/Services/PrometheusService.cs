@@ -18,6 +18,7 @@ public class PrometheusService : IPrometheusService, IDisposable
     private Process? _serverProcess;
     private bool _disposed;
     private string? _geminiApiKey;
+    private string? _startedWithApiKey;
 
     public PrometheusService(IAIProvider aiProvider)
     {
@@ -48,7 +49,13 @@ public class PrometheusService : IPrometheusService, IDisposable
 
         try
         {
-            // 1. Ensure server is running
+            // 1. Ensure server is running and using the correct API key
+            if (_geminiApiKey != _startedWithApiKey && _serverProcess != null)
+            {
+                _logger.Information("API Key changed or missing in running server. Restarting Prometheus...");
+                await StopServerAsync();
+            }
+
             if (!await IsHealthyAsync())
             {
                 if (!await StartServerAsync())
@@ -173,6 +180,12 @@ public class PrometheusService : IPrometheusService, IDisposable
     {
         try
         {
+            if (_geminiApiKey != _startedWithApiKey && _serverProcess != null)
+            {
+                _logger.Information("API Key changed or missing in running server. Restarting Prometheus...");
+                await StopServerAsync();
+            }
+
             if (!await IsHealthyAsync())
             {
                 if (!await StartServerAsync())
@@ -321,6 +334,11 @@ public class PrometheusService : IPrometheusService, IDisposable
             if (!string.IsNullOrEmpty(_geminiApiKey))
             {
                 startInfo.EnvironmentVariables["GOOGLE_API_KEY"] = _geminiApiKey;
+                _startedWithApiKey = _geminiApiKey;
+            }
+            else
+            {
+                _startedWithApiKey = null;
             }
 
             _serverProcess = Process.Start(startInfo);

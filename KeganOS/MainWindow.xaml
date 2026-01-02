@@ -302,26 +302,66 @@
             <!-- ═══ FLOATING ASK PROMETHEUS BUTTON ═══ -->
             <Button x:Name="AskPrometheusButton" 
                     Grid.Row="1"
-                    HorizontalAlignment="Left" 
+                    HorizontalAlignment="Right" 
                     VerticalAlignment="Bottom"
-                    Margin="20,0,0,20" Padding="12,8"
-                    Click="AskPrometheusButton_Click" Cursor="Hand"
-                    Panel.ZIndex="100">
+                    Margin="0,0,25,25" Padding="0"
+                    Click="AskPrometheusButton_Click" 
+                    Panel.ZIndex="100"
+                    Width="65" Height="65">
                 <Button.Template>
                     <ControlTemplate TargetType="Button">
-                        <Border x:Name="PrometheusBorder"
-                                Background="#1A1A1A" 
-                                BorderBrush="#444444" BorderThickness="1"
-                                CornerRadius="4" Padding="10,6">
-                            <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="🔥" FontSize="14" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                                <TextBlock Text="Ask Prometheus" Foreground="#CCCCCC" FontSize="12" VerticalAlignment="Center"/>
-                            </StackPanel>
-                        </Border>
+                        <Grid RenderTransformOrigin="0.5,0.5">
+                            <Grid.RenderTransform>
+                                <ScaleTransform x:Name="ButtonScale" ScaleX="1" ScaleY="1"/>
+                            </Grid.RenderTransform>
+                            
+                            <!-- Glassy Border Container -->
+                            <Border x:Name="PrometheusBorder"
+                                    BorderBrush="#44FFFFFF" BorderThickness="1.5"
+                                    CornerRadius="32.5">
+                                <Border.Background>
+                                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                        <GradientStop Color="#33FFFFFF" Offset="0"/>
+                                        <GradientStop Color="#11FFFFFF" Offset="1"/>
+                                    </LinearGradientBrush>
+                                </Border.Background>
+                                <Border.Effect>
+                                    <DropShadowEffect BlurRadius="20" ShadowDepth="4" Opacity="0.4" Color="Black"/>
+                                </Border.Effect>
+                                
+                                <!-- Avatar Image with perfect circular clipping -->
+                                <Ellipse Margin="3">
+                                    <Ellipse.Fill>
+                                        <ImageBrush ImageSource="pack://application:,,,/prometheus.jpg" 
+                                                    Stretch="UniformToFill" 
+                                                    RenderOptions.BitmapScalingMode="HighQuality"/>
+                                    </Ellipse.Fill>
+                                </Ellipse>
+                            </Border>
+
+                            <!-- Subtle Inner Gloss -->
+                            <Ellipse Margin="1.5" Stroke="#22FFFFFF" StrokeThickness="1" IsHitTestVisible="False"/>
+                        </Grid>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="PrometheusBorder" Property="Background" Value="#252525"/>
-                                <Setter TargetName="PrometheusBorder" Property="BorderBrush" Value="#666666"/>
+                                <Trigger.EnterActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="ButtonScale" Storyboard.TargetProperty="ScaleX" To="1.05" Duration="0:0:0.2"/>
+                                            <DoubleAnimation Storyboard.TargetName="ButtonScale" Storyboard.TargetProperty="ScaleY" To="1.05" Duration="0:0:0.2"/>
+                                            <ColorAnimation Storyboard.TargetName="PrometheusBorder" Storyboard.TargetProperty="(Border.Background).(LinearGradientBrush.GradientStops)[0].Color" To="#44FFFFFF" Duration="0:0:0.2"/>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.EnterActions>
+                                <Trigger.ExitActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="ButtonScale" Storyboard.TargetProperty="ScaleX" To="1" Duration="0:0:0.2"/>
+                                            <DoubleAnimation Storyboard.TargetName="ButtonScale" Storyboard.TargetProperty="ScaleY" To="1" Duration="0:0:0.2"/>
+                                            <ColorAnimation Storyboard.TargetName="PrometheusBorder" Storyboard.TargetProperty="(Border.Background).(LinearGradientBrush.GradientStops)[0].Color" To="#22FFFFFF" Duration="0:0:0.2"/>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.ExitActions>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>

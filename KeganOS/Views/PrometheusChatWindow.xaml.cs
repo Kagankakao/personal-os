@@ -8,10 +8,12 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Media;
+using System.Windows.Input;
 using KeganOS.Core.Interfaces;
 using KeganOS.Core.Models;
 using Serilog;
 using Color = System.Windows.Media.Color;
+using Cursor = System.Windows.Input.Cursor;
 using Key = System.Windows.Input.Key;
 using Keyboard = System.Windows.Input.Keyboard;
 using ModifierKeys = System.Windows.Input.ModifierKeys;
@@ -98,10 +100,8 @@ public partial class PrometheusChatWindow : Window
     
     private async Task AutoLoadOnStartupAsync()
     {
-        // Initial "Consulting" phase (replaces the old splash delay)
-        await Task.Delay(1800);
-        LoadingText.Text = "Loading history...";
-        await Task.Delay(400);
+        // Initial "Consulting" phase (2.0 seconds as requested)
+        await Task.Delay(2000);
         await LoadHistoryAsync();
     }
 
@@ -121,12 +121,19 @@ public partial class PrometheusChatWindow : Window
         {
             case UIState.Loading:
                 LoadingPanel.Visibility = Visibility.Visible;
+                HeaderBar.Visibility = Visibility.Collapsed;
+                StatusBorder.Visibility = Visibility.Collapsed;
+                FooterBorder.Visibility = Visibility.Collapsed;
                 ModeIndicator.Text = "Loading...";
                 HotkeyHints.Text = "";
                 break;
                 
             case UIState.History:
                 HistoryScroller.Visibility = Visibility.Visible;
+                HeaderBar.Visibility = Visibility.Visible;
+                StatusBorder.Visibility = Visibility.Visible;
+                FooterBorder.Visibility = Visibility.Visible;
+                BackToHistoryBtn.Visibility = Visibility.Collapsed;
                 ModeIndicator.Text = "History";
                 HotkeyHints.Text = "j/k: navigate, Enter: open, /new: new chat, Esc: quit";
                 ConversationTitle.Text = "";
@@ -135,8 +142,12 @@ public partial class PrometheusChatWindow : Window
             case UIState.Chat:
                 ChatScrollViewer.Visibility = Visibility.Visible;
                 InputRow.Visibility = Visibility.Visible;
+                HeaderBar.Visibility = Visibility.Visible;
+                StatusBorder.Visibility = Visibility.Visible;
+                FooterBorder.Visibility = Visibility.Visible;
+                BackToHistoryBtn.Visibility = Visibility.Visible;
                 ModeIndicator.Text = "Chat";
-                HotkeyHints.Text = "Tab: history, /new: new chat, /clear: clear, Esc: quit";
+                HotkeyHints.Text = "Esc: back, Tab: history, /new: new chat, /clear: clear";
                 InputBox.Focus();
                 break;
         }
@@ -148,10 +159,18 @@ public partial class PrometheusChatWindow : Window
     
     private async void Window_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
     {
-        // Global escape to quit
+        // Global escape handling
         if (e.Key == Key.Escape)
         {
-            Close();
+            if (_currentState == UIState.Chat && !_isProcessing)
+            {
+                await LoadHistoryAsync();
+                e.Handled = true;
+            }
+            else if (_currentState == UIState.History || _currentState == UIState.Loading)
+            {
+                Close();
+            }
             return;
         }
         
@@ -239,6 +258,17 @@ public partial class PrometheusChatWindow : Window
     private void CloseBtn_Click(object sender, MouseButtonEventArgs e) => Close();
     private void CloseBtn_MouseEnter(object sender, System.Windows.Input.MouseEventArgs e) => CloseBtn.Fill = new SolidColorBrush(Color.FromRgb(255, 120, 120));
     private void CloseBtn_MouseLeave(object sender, System.Windows.Input.MouseEventArgs e) => CloseBtn.Fill = new SolidColorBrush(Color.FromRgb(255, 95, 86));
+
+    private void BackToHistoryBtn_Click(object sender, RoutedEventArgs e) => _ = LoadHistoryAsync();
+
+    private void NewChatBtn_Click(object sender, RoutedEventArgs e) => _ = CreateNewConversationAsync();
+    private async void HelpBtn_Click(object sender, RoutedEventArgs e) 
+    {
+        if (_currentState == UIState.Chat)
+            await HandleCommandAsync("/help");
+        else
+            System.Windows.MessageBox.Show("Prometheus commands:\n/new - Start new conversation\n/clear - Clear current chat\n/help - Show this help\n\nNavigation:\nTab - Switch between History and Chat\nEsc - Go back / Exit", "Prometheus Help");
+    }
     
     #endregion
 
@@ -287,12 +317,12 @@ public partial class PrometheusChatWindow : Window
             var conv = _conversations[i];
             var isSelected = i == _selectedHistoryIndex;
             
-            var item = CreateHistoryItem(conv, isSelected);
+            var item = CreateHistoryItem(conv, isSelected, i);
             HistoryPanel.Children.Add(item);
         }
     }
     
-    private Border CreateHistoryItem(Conversation conv, bool isSelected)
+    private Border CreateHistoryItem(Conversation conv, bool isSelected, int i)
     {
         var border = new Border
         {
@@ -301,7 +331,22 @@ public partial class PrometheusChatWindow : Window
             BorderThickness = isSelected ? new Thickness(1) : new Thickness(0),
             Padding = new Thickness(12, 8, 12, 8),
             Margin = new Thickness(0, 4, 0, 0),
-            CornerRadius = new CornerRadius(4)
+            CornerRadius = new CornerRadius(4),
+            ToolTip = "Click to open conversation"
+        };
+        
+        // Mouse interactions
+        border.MouseEnter += (s, e) => {
+            if (i != _selectedHistoryIndex) 
+                border.Background = new SolidColorBrush(Color.FromArgb(30, 255, 255, 255));
+        };
+        border.MouseLeave += (s, e) => {
+            if (i != _selectedHistoryIndex)
+                border.Background = Brushes.Transparent;
+        };
+        border.MouseDown += (s, e) => {
+            _selectedHistoryIndex = i;
+            _ = OpenConversationAsync(conv);
         };
         
         var grid = new Grid();
@@ -382,9 +427,9 @@ public partial class PrometheusChatWindow : Window
             foreach (var msg in messages)
             {
                 if (msg.Role == "user")
-                    AddUserMessage(msg.Content);
+                    AddUserMessage(msg.Content, msg.Timestamp);
                 else
-                    AddAIMessage(msg.Content);
+                    AddAIMessage(msg.Content, msg.Timestamp);
                 
                 _conversationHistory.Add((msg.Role, msg.Content));
             }
@@ -451,6 +496,13 @@ public partial class PrometheusChatWindow : Window
 
     private async void InputBox_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
     {
+        if (e.Key == Key.Escape && !_isProcessing)
+        {
+            await LoadHistoryAsync();
+            e.Handled = true;
+            return;
+        }
+
         if (e.Key == Key.Enter && !_isProcessing)
         {
             await SendMessageAsync();
@@ -572,11 +624,17 @@ public partial class PrometheusChatWindow : Window
                 await CreateNewConversationAsync();
                 break;
                 
+            case "/back":
+            case "/history":
+                await LoadHistoryAsync();
+                break;
+                
             case "/help":
                 AddSystemMessage("─────────────────────────────────────────");
                 AddSystemMessage("Commands:");
                 AddSystemMessage("  /clear  - Clear current chat");
                 AddSystemMessage("  /new    - Start new conversation");
+                AddSystemMessage("  /back   - Back to history (or /history)");
                 AddSystemMessage("  /notes  - Search NeuralNotes");
                 AddSystemMessage("  Tab     - Switch to history view");
                 AddSystemMessage("─────────────────────────────────────────");
@@ -617,13 +675,14 @@ public partial class PrometheusChatWindow : Window
         ChatPanel.Children.Add(tb);
     }
 
-    private void AddUserMessage(string text)
+    private void AddUserMessage(string text, DateTime? timestamp = null)
     {
+        var displayTime = timestamp ?? DateTime.Now;
         var panel = new StackPanel { HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(50, 10, 0, 10) };
         
         var header = new TextBlock
         {
-            Text = $"You   {DateTime.Now:HH:mm}",
+            Text = $"You   {displayTime:HH:mm}",
             Foreground = TerminalDim,
             FontSize = 10,
             HorizontalAlignment = HorizontalAlignment.Right,
@@ -652,13 +711,14 @@ public partial class PrometheusChatWindow : Window
         ChatScrollViewer.ScrollToEnd();
     }
 
-    private void AddAIMessage(string text)
+    private void AddAIMessage(string text, DateTime? timestamp = null)
     {
+        var displayTime = timestamp ?? DateTime.Now;
         var panel = new StackPanel { Margin = new Thickness(0, 10, 50, 10) };
         
         var header = new TextBlock
         {
-            Text = $"Prometheus   {DateTime.Now:HH:mm}",
+            Text = $"Prometheus   {displayTime:HH:mm}",
             Foreground = TerminalCyan,
             FontSize = 10,
             Margin = new Thickness(0, 0, 0, 4)
@@ -680,10 +740,11 @@ public partial class PrometheusChatWindow : Window
 
     private (StackPanel, TextBlock, Run) CreateStreamingAIMessage()
     {
+        var displayTime = DateTime.Now;
         var panel = new StackPanel { Margin = new Thickness(0, 10, 50, 10) };
         
         var header = new TextBlock { Foreground = TerminalCyan, FontSize = 10, Margin = new Thickness(0, 0, 0, 4) };
-        header.Inlines.Add(new Run($"Prometheus   {DateTime.Now:HH:mm}"));
+        header.Inlines.Add(new Run($"Prometheus   {displayTime:HH:mm}"));
         var thinkingIndicator = new Run(" thinking...") { Foreground = TerminalDim };
         header.Inlines.Add(thinkingIndicator);
         

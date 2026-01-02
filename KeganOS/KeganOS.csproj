@@ -32,5 +32,8 @@
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.0" />
     <PackageReference Include="System.Management" Version="10.0.1" />
   </ItemGroup>
+  <ItemGroup>
+    <Resource Include="prometheus.jpg" />
+  </ItemGroup>
 
 </Project>
